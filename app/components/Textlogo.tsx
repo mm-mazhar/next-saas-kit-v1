@@ -1,3 +1,5 @@
+// app/components/Textlogo.tsx
+
 'use client'
 
 import { Zap } from 'lucide-react'
@@ -13,7 +15,7 @@ const Textlogo = () => {
         {/* Consolidate both text parts into a single h1 element */}
         <h1 className='font-bold text-xl'>
           {/* <span>Automation</span> */}
-          <span>SaaS</span>
+          <span>Next SaaS </span>
           <span className='text-2xl italic text-primary'>Kit</span>
           {/* <span className='text-2xl italic text-primary-300'>Gryd</span> */}
           {/* <span className='text-2xl italic text-[oklch(0.795_0.184_86.047)]'>

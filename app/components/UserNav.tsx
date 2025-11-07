@@ -1,3 +1,5 @@
+// app/components/UserNav.tsx
+
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import {
@@ -15,7 +17,7 @@ import { CreditCard, DoorClosed, Home, Settings } from 'lucide-react'
 import Link from 'next/link'
 
 export const navItems = [
-  { name: 'Home', href: '/dashboard', icon: Home },
+  { name: 'Dashbaord', href: '/dashboard', icon: Home },
   { name: 'Settings', href: '/dashboard/settings', icon: Settings },
   { name: 'Billing', href: '/dashboard/billing', icon: CreditCard },
 ]

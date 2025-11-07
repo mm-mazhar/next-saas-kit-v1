@@ -38,8 +38,19 @@ export async function POST(req: Request) {
 
     if (!user) throw new Error('User not found...')
 
-    await prisma.subscription.create({
-      data: {
+    await prisma.subscription.upsert({
+      where: {
+        userId: user.id,
+      },
+      update: {
+        stripeSubscriptionId: subscription.id,
+        currentPeriodStart: subscription.items.data[0].current_period_start,
+        currentPeriodEnd: subscription.items.data[0].current_period_end,
+        status: subscription.status,
+        planId: subscription.items.data[0].plan.id,
+        interval: String(subscription.items.data[0].plan.interval),
+      },
+      create: {
         stripeSubscriptionId: subscription.id,
         userId: user.id,
         currentPeriodStart: subscription.items.data[0].current_period_start,
@@ -54,13 +65,15 @@ export async function POST(req: Request) {
   if (event.type === 'invoice.payment_succeeded') {
     // A local interface to extend the type and include the subscription property.
     interface InvoiceWithSubscription extends Stripe.Invoice {
-      subscription?: string;
+      subscription?: string
     }
 
     const invoice = event.data.object as InvoiceWithSubscription
-    
+
     if (invoice.subscription) {
-      const subscription = await stripe.subscriptions.retrieve(invoice.subscription)
+      const subscription = await stripe.subscriptions.retrieve(
+        invoice.subscription
+      )
 
       await prisma.subscription.update({
         where: {

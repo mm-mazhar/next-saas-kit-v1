@@ -1,4 +1,4 @@
-import { DashboardNav } from '@/app/components/DashboardNav'
+import { SideNav } from '@/app/components/SideNav'
 import prisma from '@/app/lib/db'
 import { stripe } from '@/app/lib/stripe'
 import { getKindeServerSession } from '@kinde-oss/kinde-auth-nextjs/server'
@@ -77,12 +77,10 @@ export default async function DashboardLayout({
   })
 
   return (
-    <div className='flex flex-col space-y-6 mt-10'>
-      <div className='container grid flex-1 gap-12 grid-cols-1 md:grid-cols-[200px_1fr]'>
-        <aside className='w-[200px] flex-col flex'>
-          <DashboardNav />
-        </aside>
-        <main>{children}</main>
+    <div className='flex min-h-screen w-full flex-col'>
+      <div className='flex flex-1'>
+        <SideNav />
+        <main className='p-8 w-full'>{children}</main>
       </div>
     </div>
   )

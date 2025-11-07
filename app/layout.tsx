@@ -116,7 +116,8 @@ export default async function RootLayout({
           {/* Navbar remains outside the main content wrapper */}
           <Navbar />
           {/* A <main> tag to wrap and center your page content */}
-          <main className='container mx-auto px-4 py-8'>{children}</main>
+          {/* <main className='container mx-auto px-4 py-8'>{children}</main> */}
+          {children}
         </ThemeProvider>
       </body>
     </html>

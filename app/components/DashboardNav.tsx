@@ -1,29 +1,59 @@
 'use client'
 
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip'
 import { cn } from '@/lib/utils'
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { navItems } from './UserNav'
 
-export function DashboardNav() {
+export function DashboardNav({ isCollapsed }: { isCollapsed: boolean }) {
   const pathname = usePathname()
-  console.log(pathname)
+
   return (
-    <nav className='grid items-start gap-2'>
-      {navItems.map((item, index) => (
-        <Link key={index} href={item.href}>
-          <span
-            className={cn(
-              'group flex items-center rounded-md px-3 py-2 text-sm font-medium hover:bg-accent hover:text-accent-foreground',
-              pathname === item.href ? 'bg-accent' : 'bg-transparent'
-            )}
-          >
-            <item.icon className='mr-2 h-4 w-4 text-primary' />
-            <span>{item.name}</span>
-          </span>
-        </Link>
-      ))}
-    </nav>
+    <TooltipProvider>
+      <nav className='grid items-start gap-2'>
+        {navItems.map((item, index) => {
+          if (!isCollapsed) {
+            return (
+              <Link
+                key={index}
+                href={item.href}
+                className={cn(
+                  'flex items-center gap-2 rounded-lg px-2 py-2 text-sm font-medium hover:bg-accent hover:text-accent-foreground',
+                  pathname === item.href ? 'bg-accent' : 'bg-transparent'
+                )}
+              >
+                <item.icon className='h-4 w-4 text-primary' />
+                <span className='text-sm font-medium'>{item.name}</span>
+              </Link>
+            )
+          }
+
+          return (
+            <Tooltip key={index} delayDuration={0}>
+              <TooltipTrigger asChild>
+                <Link
+                  href={item.href}
+                  className={cn(
+                    // --- CHANGED THIS LINE ---
+                    'flex items-center justify-center gap-2 rounded-lg px-1 sm:px-2 py-2 text-sm font-medium hover:bg-accent hover:text-accent-foreground',
+                    pathname === item.href ? 'bg-accent' : 'bg-transparent'
+                  )}
+                >
+                  <item.icon className='h-4 w-4 text-primary' />
+                  <span className='sr-only'>{item.name}</span>
+                </Link>
+              </TooltipTrigger>
+              <TooltipContent side='right'>{item.name}</TooltipContent>
+            </Tooltip>
+          )
+        })}
+      </nav>
+    </TooltipProvider>
   )
 }
