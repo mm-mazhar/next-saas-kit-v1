@@ -2,6 +2,10 @@
 
 🚀 Build a modern SaaS application with Next.js 15, Supabase, Stripe, Prisma, and Tailwind CSS. This starter kit provides a solid foundation for your next project, complete with authentication, subscriptions, and a database setup.
 
+<p align="center">
+  <a href="https://next-saas-kit-v2.vercel.app" style="font-weight: bold; font-size: 20px; text-decoration: underline;">See the demo</a>
+</p>
+
 ---
 
 ## ✨ Features
