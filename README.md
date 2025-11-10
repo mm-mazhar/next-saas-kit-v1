@@ -309,7 +309,7 @@ This section details the necessary settings in your Supabase Dashboard to config
 
   If you have no production users or can reset all users, you can clear existing data and enable RLS.
 
-  ```SQL
+  ```sql
   -- WARNING: This deletes ALL existing users and subscriptions!
   TRUNCATE TABLE "Subscription" CASCADE;
   TRUNCATE TABLE "User" CASCADE;
@@ -329,38 +329,50 @@ This section details the necessary settings in your Supabase Dashboard to config
 
 Run these in the Supabase SQL Editor in the exact order shown
 
-```SQL
--- Step 1: Enable RLS on User table
+```sql
+-- Step 1: Enable RLS on User table (if not already done)
 ALTER TABLE "User" ENABLE ROW LEVEL SECURITY;
 
 -- Step 2: Policy for users to SELECT their own data
 CREATE POLICY "Users can view own data" ON "User"
   FOR SELECT
-  USING (auth.uid() = id);
+  USING (auth.uid() = id::uuid); -- Cast id to uuid
 
 -- Step 3: Policy for users to UPDATE their own data
 CREATE POLICY "Users can update own data" ON "User"
   FOR UPDATE
-  USING (auth.uid() = id);
+  USING (auth.uid() = id::uuid); -- Cast id to uuid
 
--- Step 4: Policy for users to INSERT their own record (IMPORTANT!)
+-- Step 4: Policy for users to INSERT their own record
 CREATE POLICY "Users can insert own data" ON "User"
   FOR INSERT
-  WITH CHECK (auth.uid() = id);
+  WITH CHECK (auth.uid() = id::uuid); -- Cast id to uuid
 
--- Step 5: Service role has full access (for server-side operations)
+-- Step 5: Service role has full access
 CREATE POLICY "Service role has full access" ON "User"
   FOR ALL
   USING (auth.role() = 'service_role');
+
+-- You'll also need to do this for the Subscription table
+ALTER TABLE "Subscription" ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Users can view their own subscription" ON "Subscription"
+  FOR SELECT
+  USING (auth.uid() = "userId"::uuid); -- Cast userId to uuid
+
+CREATE POLICY "Users can update their own subscription" ON "Subscription"
+  FOR UPDATE
+  USING (auth.uid() = "userId"::uuid); -- Cast userId to uuid
+
 ```
 
 **Verify RLS:**
 
 After enabling RLS, test it in the Supabase SQL Editor:
 
-```SQL
+```sql
 -- This should return your authenticated user only (run while logged in via Supabase Auth)
-SELECT * FROM "User" WHERE id = auth.uid();
+SELECT * FROM "User" WHERE id::uuid = auth.uid();
 
 -- This should return nothing (RLS blocks it), unless you're using service_role key
 SELECT * FROM "User" LIMIT 10;
