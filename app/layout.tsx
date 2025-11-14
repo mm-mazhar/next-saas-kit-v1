@@ -1,13 +1,13 @@
 // app/layout.tsx
 
+import prisma from '@/app/lib/db'
 import { createClient } from '@/app/lib/supabase/server'
 import type { Metadata } from 'next'
 import { unstable_noStore as noStore } from 'next/cache'
 import { Inter } from 'next/font/google'
-import Navbar from './components/Navbar'
+// import HeaderSubComponent from './components/HeaderSubComp'
 import { ThemeProvider } from './components/theme-provider'
 import './globals.css'
-import prisma from '@/app/lib/db'
 
 import {
   APP_DESCRIPTION,
@@ -118,8 +118,8 @@ export default async function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          {/* Navbar remains outside the main content wrapper */}
-          <Navbar />
+          {/* HeaderSubComponent/previously Navbar remains outside the main content wrapper */}
+          {/* <HeaderSubComponent /> */}
           {/* A <main> tag to wrap and center your page content */}
           {/* <main className='container mx-auto px-4 py-8'>{children}</main> */}
           {children}

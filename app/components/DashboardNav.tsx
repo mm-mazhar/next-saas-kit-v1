@@ -11,15 +11,17 @@ import {
 import { cn } from '@/lib/utils'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { navItems } from './UserNav'
+import { navItems } from './SideUserNav'
 
 export function DashboardNav({ isCollapsed }: { isCollapsed: boolean }) {
   const pathname = usePathname()
+  // Show only Dashboard in the left sidebar; keep other items in UserNav
+  const sidebarNavItems = navItems.filter((item) => item.href === '/dashboard')
 
   return (
     <TooltipProvider>
       <nav className='grid items-start gap-2'>
-        {navItems.map((item, index) => {
+        {sidebarNavItems.map((item, index) => {
           if (!isCollapsed) {
             return (
               <Link

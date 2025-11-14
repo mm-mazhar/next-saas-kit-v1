@@ -8,9 +8,9 @@ export const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL
 // ### Socials & SEO
 export const NEXT_PUBLIC_SITE_NAME = `Next SaaS Kit v2` as string
 export const APP_SLOGAN = `Launch your SaaS faster` as string
-export const APP_DESCRIPTION = `The ultimate toolkit` as string
+export const APP_DESCRIPTION = `Launch your SaaS App 10x Faster` as string
 export const APP_DESCRIPTION_LONG =
-  `Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et d` as string
+  `Highly customizable components for building modern websites and pplications that look and feel the way you mean it.` as string
 export const KEYWORDS_LST: string[] = [
   'Saas,Next.js',
   'TypeScript',
@@ -26,6 +26,7 @@ export const YOUTUBE_ID = `@yourchannel`
 export const FBOOK_ID = `@yourdomain`
 export const INSTA_ID = `@yourdomain`
 export const TIKTOK_ID = `@yourdomain`
+export const LINKEDIN_ID = `@yourdomain`
 
 // ###Pricing
 export const PRICE_01 = `30` as string

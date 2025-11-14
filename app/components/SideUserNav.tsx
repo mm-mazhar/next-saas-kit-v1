@@ -1,4 +1,5 @@
-// app/components/UserNav.tsx
+// app/components/SideUserNav.tsx
+'use client'
 
 import { LogoutButton } from '@/app/components/LogoutButton'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
@@ -52,11 +53,18 @@ export function UserNav({
           </Avatar>
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent className='w-56' align='end' forceMount>
+      <DropdownMenuContent
+        className='w-fit min-w-[14rem] max-w-[22rem]'
+        // side='right'
+        // sideOffset={1}
+        align='end'
+        collisionPadding={16}
+        forceMount
+      >
         <DropdownMenuLabel>
           <div className='flex flex-col space-y-1'>
             <p className='text-sm font-medium leading-none'>{name}</p>
-            <p className='text-xs leading-none text-muted-foreground'>
+            <p className='text-xs leading-none text-muted-foreground truncate max-w-[22rem] whitespace-nowrap'>
               {email}
             </p>
           </div>

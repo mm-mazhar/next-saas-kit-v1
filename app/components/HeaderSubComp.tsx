@@ -1,22 +1,19 @@
 // app/components/Navbar.tsx
 
+import { LogoutButton } from '@/app/components/LogoutButton'
 import { createClient } from '@/app/lib/supabase/server'
 import { Button } from '@/components/ui/button'
 import Link from 'next/link'
-import Textlogo from './Textlogo'
-import { Themetoggle } from './Themetoggle'
-import { UserNav } from './UserNav'
+import Textlogo from '../(marketing)/_components/Sitelogo'
+// import { Themetoggle } from './Themetoggle'
+// import { UserNav } from './UserNav'
 // import { Imagelogo } from './ImageLogo'
 
-export default async function Navbar() {
+export default async function HeaderSubComponent() {
   const supabase = await createClient()
   const {
     data: { user },
   } = await supabase.auth.getUser()
-
-  // Get user metadata for display
-  const userName =
-    user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'User'
 
   return (
     <nav className='border-b bg-background h-[10vh] flex items-center'>
@@ -28,19 +25,21 @@ export default async function Navbar() {
         <div className='flex items-center gap-x-2'>
           {/* Conditional auth buttons */}
           {user ? (
-            <UserNav
-              email={user.email as string}
-              image={user.user_metadata?.avatar_url}
-              name={userName}
-            />
+            <>
+              {/* <Themetoggle /> */}
+              <Link href='/dashboard'>
+                <Button size='default'>Dashboard</Button>
+              </Link>
+              <LogoutButton />
+            </>
           ) : (
-            <Link href='/login'>
-              <Button size='lg'>Get Started</Button>
-            </Link>
+            <>
+              {/* <Themetoggle /> */}
+              <Link href='/get-started'>
+                <Button size='default'>Get Started</Button>
+              </Link>
+            </>
           )}
-
-          {/* Theme toggle */}
-          <Themetoggle />
         </div>
       </div>
     </nav>
