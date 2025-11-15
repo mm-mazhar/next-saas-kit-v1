@@ -1,4 +1,4 @@
-// app/components/LogoutButton.tsx
+// app/(dashboard)/_components/LogoutButton.tsx
 
 'use client'
 

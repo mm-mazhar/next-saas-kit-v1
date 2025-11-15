@@ -6,7 +6,7 @@ import type { Metadata } from 'next'
 import { unstable_noStore as noStore } from 'next/cache'
 import { Inter } from 'next/font/google'
 // import HeaderSubComponent from './components/HeaderSubComp'
-import { ThemeProvider } from './components/theme-provider'
+import { ThemeProvider } from '@/components/theme-provider'
 import './globals.css'
 
 import {

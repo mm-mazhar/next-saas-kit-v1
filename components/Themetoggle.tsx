@@ -1,4 +1,4 @@
-//app/components/Themetoggle.tsx
+// components/Themetoggle.tsx
 
 'use client'
 
@@ -30,15 +30,9 @@ export function Themetoggle() {
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align='end' onCloseAutoFocus={(e) => e.preventDefault()}>
-        <DropdownMenuItem onClick={() => setTheme('light')}>
-          Light
-        </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => setTheme('dark')}>
-          Dark
-        </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => setTheme('system')}>
-          System
-        </DropdownMenuItem>
+        <DropdownMenuItem onClick={() => setTheme('light')}>Light</DropdownMenuItem>
+        <DropdownMenuItem onClick={() => setTheme('dark')}>Dark</DropdownMenuItem>
+        <DropdownMenuItem onClick={() => setTheme('system')}>System</DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
   )

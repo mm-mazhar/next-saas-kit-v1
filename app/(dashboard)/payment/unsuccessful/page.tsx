@@ -1,4 +1,4 @@
-// app/payment/unsuccessful/page.tsx
+// app/(dashboard)/payment/unsuccessful/page.tsx
 
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'

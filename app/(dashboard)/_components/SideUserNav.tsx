@@ -1,9 +1,10 @@
-// app/components/SideUserNav.tsx
+// app/(dashboard)/_components/SideUserNav.tsx
 'use client'
 
-import { LogoutButton } from '@/app/components/LogoutButton'
+import { LogoutButton } from './LogoutButton'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
+import { useState } from 'react'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -26,12 +27,13 @@ export function UserNav({
   name,
   email,
   image,
+  onMenuOpenChange,
 }: {
   name: string
   email: string
   image?: string
+  onMenuOpenChange?: (open: boolean) => void
 }) {
-  // Generate initials from name
   const getInitials = (name: string) => {
     return name
       .split(' ')
@@ -40,10 +42,21 @@ export function UserNav({
       .join('')
   }
 
+  const [open, setOpen] = useState(false)
+
   return (
-    <DropdownMenu>
+    <DropdownMenu
+      open={open}
+      onOpenChange={(o) => {
+        setOpen(o)
+        onMenuOpenChange?.(o)
+      }}
+    >
       <DropdownMenuTrigger asChild>
-        <Button variant='ghost' className='relative h-10 w-10 rounded-full'>
+        <Button
+          variant='ghost'
+          className='relative h-10 w-10 rounded-full focus:outline-none focus-visible:outline-none focus:ring-0 focus-visible:ring-0 focus-visible:border-transparent transition-colors'
+        >
           <Avatar className='h-10 w-10 rounded-full'>
             <AvatarImage
               src={image || 'https://github.com/shadcn.png'}
@@ -55,11 +68,25 @@ export function UserNav({
       </DropdownMenuTrigger>
       <DropdownMenuContent
         className='w-fit min-w-[14rem] max-w-[22rem]'
-        // side='right'
-        // sideOffset={1}
         align='end'
         collisionPadding={16}
         forceMount
+        onMouseLeave={() => {
+          setOpen(false)
+          onMenuOpenChange?.(false)
+        }}
+        onPointerLeave={() => {
+          setOpen(false)
+          onMenuOpenChange?.(false)
+        }}
+        onEscapeKeyDown={() => {
+          setOpen(false)
+          onMenuOpenChange?.(false)
+        }}
+        onInteractOutside={() => {
+          setOpen(false)
+          onMenuOpenChange?.(false)
+        }}
       >
         <DropdownMenuLabel>
           <div className='flex flex-col space-y-1'>

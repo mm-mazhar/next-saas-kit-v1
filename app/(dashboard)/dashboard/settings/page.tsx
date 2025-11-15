@@ -1,6 +1,6 @@
-// app/dashboard/settings/page.tsx
+// app/(dashboard)/dashboard/settings/page.tsx
 
-import { SubmitButton } from '@/app/components/Submitbuttons'
+import { SubmitButton } from '@/components/Submitbuttons'
 import prisma from '@/app/lib/db'
 import { createClient } from '@/app/lib/supabase/server'
 import {

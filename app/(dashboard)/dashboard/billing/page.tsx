@@ -1,9 +1,9 @@
-// app/dashboard/billing/page.tsx
+// app/(dashboard)/dashboard/billing/page.tsx
 
 import {
   StripePortal,
   StripeSubscriptionCreationButton,
-} from '@/app/components/Submitbuttons'
+} from '@/components/Submitbuttons'
 import prisma from '@/app/lib/db'
 import { getStripeSession, stripe } from '@/app/lib/stripe'
 import { createClient } from '@/app/lib/supabase/server'
@@ -28,17 +28,6 @@ import {
   STRIPE_PRICE_ID,
 } from '@/lib/constants'
 
-// const featureItems1 = [
-//   { name: 'Lorem Ipsum something' },
-//   { name: 'Lorem Ipsum something' },
-//   { name: 'Lorem Ipsum something' },
-//   { name: 'Lorem Ipsum something' },
-//   { name: 'Lorem Ipsum something' },
-// ]
-
-// const featureItems = PRICE_01_FEATUREITEMS_LST.map((feature: string) => ({
-//   name: feature,
-// }))
 const featureItems = PRICE_01_FEATUREITEMS_LST.map((feature: string) => ({
   name: feature,
 }))
@@ -77,7 +66,6 @@ export default async function BillingPage() {
   async function createSubscription() {
     'use server'
 
-    // Get or create Stripe customer
     const dbUser = await prisma.user.findUnique({
       where: { id: user?.id },
       select: { stripeCustomerId: true, email: true, name: true },
@@ -85,20 +73,16 @@ export default async function BillingPage() {
 
     let stripeCustomerId = dbUser?.stripeCustomerId
 
-    // If no Stripe customer exists, create one
     if (!stripeCustomerId) {
-      // Add this check first
       if (!dbUser?.email) {
         throw new Error('User email not found')
       }
 
-      // Now TypeScript knows dbUser and dbUser.email exist
       const stripeCustomer = await stripe.customers.create({
-        email: dbUser.email, // ✅ Safe - already checked above
+        email: dbUser.email,
         name: dbUser.name || undefined,
       })
 
-      // Update database with new customer ID
       await prisma.user.update({
         where: { id: user?.id },
         data: { stripeCustomerId: stripeCustomer.id },
@@ -107,7 +91,6 @@ export default async function BillingPage() {
       stripeCustomerId = stripeCustomer.id
     }
 
-    // Now create subscription with the customer ID
     const subscriptionUrl = await getStripeSession({
       customerId: stripeCustomerId,
       domainUrl:
@@ -149,17 +132,14 @@ export default async function BillingPage() {
             <CardDescription>
               Click on the button below, this will give you the opportunity to
               <span className='font-bold text-secondary-foreground'>
-                {' '}
-                change your payment details,
+                {' '}change your payment details,
               </span>
               <span className='font-bold text-secondary-foreground'>
-                {' '}
-                view your statement
+                {' '}view your statement
               </span>{' '}
               and
               <span className='font-bold text-secondary-foreground'>
-                {' '}
-                Cancel Subscription{' '}
+                {' '}Cancel Subscription{' '}
               </span>
               at the same time.
             </CardDescription>
@@ -195,7 +175,6 @@ export default async function BillingPage() {
             {featureItems.map((item, index) => (
               <li key={index} className='flex items-center'>
                 <div className='flex-shrink-0'>
-                  {/* <CheckCircle2 className='h-6 w-6 text-green-500' /> */}
                   <CheckCircle2 className='h-6 w-6 text-primary' />
                 </div>
                 <p className='ml-3 text-base'>{item.name}</p>

@@ -1,4 +1,4 @@
-// app/components/SideNav.tsx
+// app/(dashboard)/_components/SideNav.tsx
 
 'use client'
 import { useMediaQuery } from '@/app/hooks/use-media-query'
@@ -10,21 +10,24 @@ import { UserNav } from './SideUserNav'
 export const SideNav = () => {
   const isMobile = useMediaQuery('(max-width: 768px)')
   const [isCollapsed, setIsCollapsed] = useState(true)
+  const [isFrozen, setIsFrozen] = useState(false)
 
-  // --- Handlers and useEffects remain the same ---
   const handleToggle = () => {
+    if (isFrozen) return
     if (isMobile) {
       setIsCollapsed(!isCollapsed)
     }
   }
 
   const handleMouseEnter = () => {
+    if (isFrozen) return
     if (!isMobile) {
       setIsCollapsed(false)
     }
   }
 
   const handleMouseLeave = () => {
+    if (isFrozen) return
     if (!isMobile) {
       setIsCollapsed(true)
     }
@@ -36,7 +39,6 @@ export const SideNav = () => {
     }
   }, [isMobile])
 
-  // --- User loading logic remains the same ---
   const [name, setName] = useState<string>('')
   const [email, setEmail] = useState<string>('')
   const [image, setImage] = useState<string | undefined>(undefined)
@@ -77,14 +79,18 @@ export const SideNav = () => {
         `}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
-      onClick={handleToggle} // Add the onClick handler for mobile toggling
+      onClick={handleToggle}
     >
-      {/* Sidebar content area under the header height; top = nav, bottom = user menu */}
       <div className='flex h-full flex-col justify-between'>
         <DashboardNav isCollapsed={isCollapsed} />
 
         <div className='border-t mt-2 pt-2 flex items-center justify-center'>
-          <UserNav name={name} email={email} image={image} />
+          <UserNav
+            name={name}
+            email={email}
+            image={image}
+            onMenuOpenChange={(open) => setIsFrozen(open)}
+          />
         </div>
       </div>
     </div>

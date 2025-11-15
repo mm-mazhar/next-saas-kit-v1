@@ -1,6 +1,6 @@
-// app/dashboard/layout.tsx
+// app/(dashboard)/dashboard/layout.tsx
 
-import { SideNav } from '@/app/components/SideNav'
+import { SideNav } from '@/app/(dashboard)/_components/SideNav'
 import { getData } from '@/app/lib/db'
 import { createClient } from '@/app/lib/supabase/server'
 import { redirect } from 'next/navigation'
@@ -16,7 +16,6 @@ async function DashboardLayout({ children }: { children: ReactNode }) {
     return redirect('/get-started')
   }
 
-  // Get or create user in database
   const userName =
     user.user_metadata?.full_name || user.email?.split('@')[0] || 'User'
   const [firstName, ...lastNameParts] = userName.split(' ')

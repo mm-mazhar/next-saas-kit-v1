@@ -1,4 +1,4 @@
-// app/components/DashboardNav.tsx
+// app/(dashboard)/_components/DashboardNav.tsx
 
 'use client'
 
@@ -15,7 +15,6 @@ import { navItems } from './SideUserNav'
 
 export function DashboardNav({ isCollapsed }: { isCollapsed: boolean }) {
   const pathname = usePathname()
-  // Show only Dashboard in the left sidebar; keep other items in UserNav
   const sidebarNavItems = navItems.filter((item) => item.href === '/dashboard')
 
   return (
@@ -44,7 +43,6 @@ export function DashboardNav({ isCollapsed }: { isCollapsed: boolean }) {
                 <Link
                   href={item.href}
                   className={cn(
-                    // --- CHANGED THIS LINE ---
                     'flex items-center justify-center gap-2 rounded-lg px-1 sm:px-2 py-2 text-sm font-medium hover:bg-accent hover:text-accent-foreground',
                     pathname === item.href ? 'bg-accent' : 'bg-transparent'
                   )}

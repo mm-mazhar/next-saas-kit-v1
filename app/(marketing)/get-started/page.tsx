@@ -1,19 +1,17 @@
-// app/get-started/page.tsx
+// app/(marketing)/get-started/page.tsx
 
-import { EmailAuthForm } from '@/app/components/auth/EmailAuthForm'
-import { GoogleAuthButton } from '@/app/components/auth/GoogleAuthButton'
+import { EmailAuthForm } from '@/app/(marketing)/_components/auth/EmailAuthForm'
+import { GoogleAuthButton } from '@/app/(marketing)/_components/auth/GoogleAuthButton'
 import { createClient } from '@/app/lib/supabase/server'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 
 export default async function LoginPage() {
-  // Check if user is already logged in
   const supabase = await createClient()
   const {
     data: { user },
   } = await supabase.auth.getUser()
 
-  // If logged in, redirect to dashboard
   if (user) {
     redirect('/dashboard')
   }

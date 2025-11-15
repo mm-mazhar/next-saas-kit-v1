@@ -1,4 +1,4 @@
-// app/components/Submitbuttons.tsx
+// components/Submitbuttons.tsx
 
 'use client'
 

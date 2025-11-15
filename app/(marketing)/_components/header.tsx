@@ -1,8 +1,8 @@
 // app/(marketing)/_components/header.tsx
 
 'use client'
-import { Themetoggle } from '@/app/components/Themetoggle'
 import { createClient } from '@/app/lib/supabase/client'
+import { Themetoggle } from '@/components/Themetoggle'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { type User } from '@supabase/supabase-js'

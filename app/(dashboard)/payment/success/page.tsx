@@ -1,4 +1,4 @@
-// app/payment/success/page.tsx
+// app/(dashboard)/payment/success/page.tsx
 
 'use client'
 
@@ -15,11 +15,9 @@ export default function SuccessRoute() {
   const [seconds, setSeconds] = useState(10)
 
   useEffect(() => {
-    // tick every second for the countdown
     const tick = setInterval(() => setSeconds((s) => (s > 0 ? s - 1 : 0)), 1000)
-    // redirect after 10s
     timerRef.current = setTimeout(() => {
-      router.replace('/dashboard') // replace so Back won’t return to success page
+      router.replace('/dashboard')
     }, 10_000)
 
     return () => {
