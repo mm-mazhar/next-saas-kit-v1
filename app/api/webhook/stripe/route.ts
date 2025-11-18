@@ -1,3 +1,5 @@
+// app/api/webhook/stripe/route.ts
+
 import prisma from '@/app/lib/db'
 import { stripe } from '@/app/lib/stripe'
 import { headers } from 'next/headers'

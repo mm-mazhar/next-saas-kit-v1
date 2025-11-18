@@ -13,8 +13,17 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 
+// ✅ 1. Import your server action
+import { updateThemePreference } from '@/app/actions'
+
 export function Themetoggle() {
   const { setTheme } = useTheme()
+
+  // This function now calls the server action directly
+  const persistTheme = async (value: 'light' | 'dark' | 'system') => {
+    // We don't need try/catch as much with server actions, but it's fine to keep
+    await updateThemePreference(value)
+  }
 
   return (
     <DropdownMenu modal={false}>
@@ -29,10 +38,35 @@ export function Themetoggle() {
           <span className='sr-only'>Toggle theme</span>
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align='end' onCloseAutoFocus={(e) => e.preventDefault()}>
-        <DropdownMenuItem onClick={() => setTheme('light')}>Light</DropdownMenuItem>
-        <DropdownMenuItem onClick={() => setTheme('dark')}>Dark</DropdownMenuItem>
-        <DropdownMenuItem onClick={() => setTheme('system')}>System</DropdownMenuItem>
+      <DropdownMenuContent
+        align='end'
+        onCloseAutoFocus={(e) => e.preventDefault()}
+      >
+        {/* ✅ 2. The onClick handlers now correctly call the new persistTheme function */}
+        <DropdownMenuItem
+          onClick={() => {
+            setTheme('light')
+            persistTheme('light')
+          }}
+        >
+          Light
+        </DropdownMenuItem>
+        <DropdownMenuItem
+          onClick={() => {
+            setTheme('dark')
+            persistTheme('dark')
+          }}
+        >
+          Dark
+        </DropdownMenuItem>
+        <DropdownMenuItem
+          onClick={() => {
+            setTheme('system')
+            persistTheme('system')
+          }}
+        >
+          System
+        </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
   )

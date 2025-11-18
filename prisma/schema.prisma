@@ -17,6 +17,7 @@ model User {
   email            String        @unique
   stripeCustomerId String?       @unique
   colorScheme      String        @default("theme-orange")
+  themePreference  String        @default("dark")
   Subscription     Subscription?
   createdAt        DateTime      @default(now())  // Add this
   updatedAt        DateTime      @updatedAt       // Add this

@@ -6,17 +6,22 @@ import type { Metadata } from 'next'
 import { unstable_noStore as noStore } from 'next/cache'
 import { Inter } from 'next/font/google'
 // import HeaderSubComponent from './components/HeaderSubComp'
+import { JsonLd } from '@/components/JsonLd'
 import { ThemeProvider } from '@/components/theme-provider'
+
 import './globals.css'
 
+import { ThemeInitializer } from '@/components/ThemeInitializer'
 import {
   APP_DESCRIPTION,
   APP_SLOGAN,
+  // DEFAULT_COLOR_SCHEME,
+  DEFAULT_THEME_MODE,
   KEYWORDS_LST,
   LOCALE,
   NEXT_PUBLIC_SITE_NAME,
   SITE_URL,
-  TWITTER_ID,
+  SOCIAL_HANDLES,
 } from '@/lib/constants'
 
 const inter = Inter({ subsets: ['latin'] })
@@ -31,67 +36,95 @@ const inter = Inter({ subsets: ['latin'] })
 //   subsets: ['latin'],
 // })
 
-// // ===================================================================
-// // PASTE THE CONSOLE LOG HERE
-// // ===================================================================
-// console.log('--- CHECKING CONSTANTS IN LAYOUT.TSX ---')
-// console.log({
-//   APP_DESCRIPTION,
-//   APP_SLOGAN,
-//   KEYWORDS_LST,
-//   LOCALE,
-//   NEXT_PUBLIC_SITE_NAME,
-//   SITE_URL,
-//   TWITTER_ID,
-// })
-// // ===================================================================
-
 export const metadata: Metadata = {
-  title: `${NEXT_PUBLIC_SITE_NAME} - ${APP_SLOGAN}`,
-  description: `${APP_DESCRIPTION}`,
+  // ✅ Sets the canonical URL for your site. Crucial for SEO.
+  metadataBase: new URL(SITE_URL),
+
+  // ✅ Creates a dynamic title template. `%s` is replaced by page-specific titles.
+  title: {
+    default: `${NEXT_PUBLIC_SITE_NAME} - ${APP_SLOGAN}`,
+    template: `%s | ${NEXT_PUBLIC_SITE_NAME}`,
+  },
+
+  // ✅ Uses your existing description constant.
+  description: APP_DESCRIPTION,
+
+  // SEO and author information
   keywords: KEYWORDS_LST,
-  authors: [{ name: `${NEXT_PUBLIC_SITE_NAME} Team` }],
-  creator: `${NEXT_PUBLIC_SITE_NAME}`,
-  publisher: `${NEXT_PUBLIC_SITE_NAME}`,
-  openGraph: {
-    type: 'website',
-    locale: `${LOCALE}`,
-    url: `${SITE_URL}`,
-    title: `${NEXT_PUBLIC_SITE_NAME} - ${APP_SLOGAN}`,
-    description: `${APP_DESCRIPTION}`,
-    siteName: `${NEXT_PUBLIC_SITE_NAME}`,
-  },
-  twitter: {
-    card: 'summary_large_image',
-    title: `${NEXT_PUBLIC_SITE_NAME} - ${APP_SLOGAN}`,
-    description: `${APP_DESCRIPTION}`,
-    creator: `${TWITTER_ID}`,
-  },
+  authors: [{ name: `${NEXT_PUBLIC_SITE_NAME} Team`, url: SITE_URL }],
+  creator: NEXT_PUBLIC_SITE_NAME,
+  publisher: NEXT_PUBLIC_SITE_NAME,
+
+  // Robots meta tag
   robots: {
     index: true,
     follow: true,
-    googleBot: {
-      index: true,
-      follow: true,
-      'max-video-preview': -1,
-      'max-image-preview': 'large',
-      'max-snippet': -1,
-    },
   },
+
+  // Open Graph (for Facebook, LinkedIn, etc.)
+  openGraph: {
+    type: 'website',
+    locale: LOCALE,
+    url: SITE_URL,
+    title: {
+      default: `${NEXT_PUBLIC_SITE_NAME} - ${APP_SLOGAN}`,
+      template: `%s | ${NEXT_PUBLIC_SITE_NAME}`,
+    },
+    description: APP_DESCRIPTION,
+    siteName: NEXT_PUBLIC_SITE_NAME,
+    // CRITICAL: Add a default Open Graph image.
+    images: [
+      {
+        url: '/og.png', // This should be in your /public directory
+        width: 1200,
+        height: 630,
+        alt: `${NEXT_PUBLIC_SITE_NAME} - ${APP_SLOGAN}`,
+      },
+    ],
+  },
+
+  // Twitter (for sharing on X)
+  twitter: {
+    card: 'summary_large_image',
+    title: {
+      default: `${NEXT_PUBLIC_SITE_NAME} - ${APP_SLOGAN}`,
+      template: `%s | ${NEXT_PUBLIC_SITE_NAME}`,
+    },
+    description: APP_DESCRIPTION,
+    // CRITICAL: Add the same image for Twitter cards.
+    images: ['/og.png'],
+    creator: SOCIAL_HANDLES.twitter,
+  },
+
+  // Icons and manifest for PWA/browser tabs
+  icons: {
+    icon: '/favicon.ico',
+    shortcut: '/favicon-16x16.png',
+    apple: '/apple-touch-icon.png',
+  },
+  manifest: `/site.webmanifest`, // Relative URL is fine when metadataBase is set
 }
 
-async function getData(userId: string) {
+type ThemeSettings = {
+  colorScheme: string | null
+  themePreference: 'light' | 'dark' | 'system' | null
+}
+
+async function getData(userId: string): Promise<ThemeSettings | null> {
   noStore()
-  if (userId) {
-    const data = await prisma.user.findUnique({
-      where: {
-        id: userId,
-      },
-      select: {
-        colorScheme: true,
-      },
-    })
-    return data
+  if (!userId) return null
+  try {
+    const rows = await prisma.$queryRaw<
+      {
+        colorScheme: string | null
+        themePreference: 'light' | 'dark' | 'system' | null
+      }[]
+    >`
+      SELECT "colorScheme", "themePreference" FROM "User" WHERE "id" = ${userId}
+    `
+    return rows[0] ?? null
+  } catch {
+    return null
   }
 }
 
@@ -109,19 +142,19 @@ export default async function RootLayout({
 
   return (
     <html lang='en' suppressHydrationWarning>
-      <body
-        className={`${inter.className} ${data?.colorScheme ?? 'theme-orange'}`}
-      >
+      {/* ✅ The body now only needs the font class. All theme logic is handled by the initializer. */}
+      <body className={inter.className}>
         <ThemeProvider
           attribute='class'
-          defaultTheme='system'
+          defaultTheme={DEFAULT_THEME_MODE}
+          storageKey='app-theme'
           enableSystem
           disableTransitionOnChange
         >
-          {/* HeaderSubComponent/previously Navbar remains outside the main content wrapper */}
-          {/* <HeaderSubComponent /> */}
-          {/* A <main> tag to wrap and center your page content */}
-          {/* <main className='container mx-auto px-4 py-8'>{children}</main> */}
+          {/* This component now handles BOTH light/dark mode AND color scheme */}
+          {/* Add the JSON-LD component here */}
+          <JsonLd />
+          <ThemeInitializer settings={data} />
           {children}
         </ThemeProvider>
       </body>

@@ -1,25 +1,33 @@
 // app/(marketing)/get-started/page.tsx
 
 import { EmailAuthForm } from '@/app/(marketing)/_components/auth/EmailAuthForm'
+import SiteLogo from '@/app/(marketing)/_components/Sitelogo'
 import { GoogleAuthButton } from '@/app/(marketing)/_components/auth/GoogleAuthButton'
 import { createClient } from '@/app/lib/supabase/server'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 
-export default async function LoginPage() {
+export default async function LoginPage({
+  searchParams,
+}: {
+  searchParams?: { next?: string }
+}) {
   const supabase = await createClient()
   const {
     data: { user },
   } = await supabase.auth.getUser()
 
   if (user) {
-    redirect('/dashboard')
+    redirect(searchParams?.next ?? '/dashboard')
   }
 
   return (
     <div className='flex min-h-screen items-center justify-center'>
-      <div className='w-full max-w-md space-y-8 p-8'>
-        <div className='text-center'>
+      <div className='w-full max-w-md space-y-8 p-8 border rounded-lg'>
+        <div className='text-center space-y-6'>
+          <div className='flex justify-center'>
+            <SiteLogo />
+          </div>
           <h1 className='text-3xl font-bold'>Welcome</h1>
           <p className='mt-2 text-muted-foreground'>Sign in to your account</p>
         </div>

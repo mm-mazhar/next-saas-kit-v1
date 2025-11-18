@@ -3,7 +3,7 @@
 'use client'
 
 import { createClient } from '@/app/lib/supabase/client'
-import { DoorClosed } from 'lucide-react'
+import { LogOut } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 
 export function LogoutButton() {
@@ -19,12 +19,10 @@ export function LogoutButton() {
   return (
     <button
       onClick={handleLogout}
-      className='w-full flex justify-between items-center cursor-pointer'
+      className='w-full flex items-center gap-2 px-2 py-1.5 cursor-pointer focus:outline-none focus-visible:outline-none focus:ring-0 focus-visible:ring-0 focus:border-transparent'
     >
-      <span className='ml-2'>Logout</span>
-      <span>
-        <DoorClosed className='mr-2 w-4 h-4' />
-      </span>
+      <LogOut className='w-4 h-4' />
+      <span>Log out</span>
     </button>
   )
 }

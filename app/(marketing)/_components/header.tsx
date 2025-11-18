@@ -15,7 +15,7 @@ import SiteLogo from './Sitelogo'
 const menuItems = [
   { name: 'Features', href: '#link' },
   { name: 'Solution', href: '#link' },
-  { name: 'Pricing', href: '#link' },
+  { name: 'Pricing', href: '#pricing' },
   { name: 'About', href: '#link' },
 ]
 

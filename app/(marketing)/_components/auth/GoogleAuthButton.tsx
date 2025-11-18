@@ -5,9 +5,12 @@
 import { createClient } from '@/app/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { useState } from 'react'
+import { useSearchParams } from 'next/navigation'
 
 export function GoogleAuthButton() {
   const [isLoading, setIsLoading] = useState(false)
+  const searchParams = useSearchParams()
+  const nextParam = searchParams.get('next') ?? '/dashboard'
 
   const handleGoogleLogin = async () => {
     setIsLoading(true)
@@ -16,7 +19,7 @@ export function GoogleAuthButton() {
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: `${window.location.origin}/auth/callback?next=/dashboard`,
+        redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(nextParam)}`,
         queryParams: {
           access_type: 'offline',
           prompt: 'select_account',

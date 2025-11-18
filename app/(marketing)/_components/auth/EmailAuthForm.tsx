@@ -5,16 +5,33 @@ import { createClient } from '@/app/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { useState } from 'react'
+import { useSearchParams } from 'next/navigation'
 
 export function EmailAuthForm() {
   const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
+  const [errorMsg, setErrorMsg] = useState<string | null>(null)
+  const [infoMsg, setInfoMsg] = useState<string | null>(null)
   const supabase = createClient()
+  const searchParams = useSearchParams()
+  const nextParam = searchParams.get('next') ?? '/dashboard'
 
-  const handleLogin = async () => {
+  const handleMagicLink = async () => {
     setLoading(true)
-    await supabase.auth.signInWithPassword({ email, password })
+    setErrorMsg(null)
+    setInfoMsg(null)
+    const { error } = await supabase.auth.signInWithOtp({
+      email,
+      options: {
+        shouldCreateUser: true,
+        emailRedirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(nextParam)}`,
+      },
+    })
+    if (error) {
+      setErrorMsg(error.message)
+    } else {
+      setInfoMsg('Check your inbox for the magic link')
+    }
     setLoading(false)
   }
 
@@ -26,15 +43,19 @@ export function EmailAuthForm() {
         onChange={(e) => setEmail(e.target.value)}
         type='email'
       />
-      <Input
-        placeholder='Password'
-        value={password}
-        onChange={(e) => setPassword(e.target.value)}
-        type='password'
-      />
-      <Button className='w-full' onClick={handleLogin} disabled={loading}>
-        {loading ? 'Signing in...' : 'Sign in'}
+      <Button
+        className='w-full'
+        onClick={handleMagicLink}
+        disabled={loading || !email}
+      >
+        {loading ? 'Sending...' : 'Send Magic Link'}
       </Button>
+      {errorMsg && (
+        <p className='text-sm text-destructive text-center mt-2'>{errorMsg}</p>
+      )}
+      {infoMsg && (
+        <p className='text-sm text-muted-foreground text-center mt-2'>{infoMsg}</p>
+      )}
     </div>
   )
 }

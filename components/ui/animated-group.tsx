@@ -23,8 +23,8 @@ export type AnimatedGroupProps = {
     item?: Variants;
   };
   preset?: PresetType;
-  as?: React.ElementType;
-  asChild?: React.ElementType;
+  as?: string | React.ComponentType<any>;
+  asChild?: string | React.ComponentType<any>;
 };
 
 const defaultContainerVariants: Variants = {
@@ -115,12 +115,12 @@ function AnimatedGroup({
   const containerVariants = variants?.container || selectedVariants.container;
   const itemVariants = variants?.item || selectedVariants.item;
 
-  const MotionComponent = React.useMemo(
-    () => motion.create(as as keyof JSX.IntrinsicElements),
+  const MotionComponent: any = React.useMemo(
+    () => motion.create(as as any),
     [as]
   );
-  const MotionChild = React.useMemo(
-    () => motion.create(asChild as keyof JSX.IntrinsicElements),
+  const MotionChild: any = React.useMemo(
+    () => motion.create(asChild as any),
     [asChild]
   );
 

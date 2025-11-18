@@ -1,8 +1,8 @@
 // app/(dashboard)/dashboard/settings/page.tsx
 
-import { SubmitButton } from '@/components/Submitbuttons'
 import prisma from '@/app/lib/db'
 import { createClient } from '@/app/lib/supabase/server'
+import { SettingsSubmitButton } from '@/components/Submitbuttons'
 import {
   Card,
   CardContent,
@@ -13,15 +13,7 @@ import {
 } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectLabel,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
+import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { unstable_noStore as noStore, revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 
@@ -66,6 +58,7 @@ export default async function SettingPage() {
       data: {
         name: name ?? undefined,
         colorScheme: colorScheme ?? undefined,
+        // themePreference is updated via global theme toggles (header/topbar)
       },
     })
 
@@ -134,11 +127,13 @@ export default async function SettingPage() {
                   </SelectContent>
                 </Select>
               </div>
+
+              {/* Theme Mode removed; use global toggles to change theme instantly */}
             </div>
           </CardContent>
 
           <CardFooter className='pt-3'>
-            <SubmitButton />
+            <SettingsSubmitButton />
           </CardFooter>
         </form>
       </Card>

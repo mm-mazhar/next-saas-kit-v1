@@ -24,7 +24,7 @@ export default async function Home() {
   //           // --- LAYOUT FOR LOGGED-IN USERS (SINGLE CENTERED COLUMN) ---
   //           <div className='max-w-xl mx-auto text-center'>
   //             <h1 className='mt-8 text-3xl font-extrabold tracking-tight lg:text-6xl'>
-  //               Welcome Back!
+  //               Welcome!
   //             </h1>
   //             <p className='max-w-xl mx-auto mt-8 text-base lg:text-xl text-secondary-foreground'>
   //               You are logged in. You can now access your dashboard.
