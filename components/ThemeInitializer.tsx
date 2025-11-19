@@ -13,15 +13,25 @@ type ThemeSettings = {
 
 export function ThemeInitializer({
   settings,
+  forceFromServer,
 }: {
   settings: ThemeSettings | null
+  forceFromServer?: boolean
 }) {
   const { setTheme } = useTheme()
 
   useEffect(() => {
-    // Set the light/dark theme preference
+    const storageKey = 'app-theme'
+    const stored = (typeof window !== 'undefined'
+      ? window.localStorage.getItem(storageKey)
+      : null) as 'light' | 'dark' | 'system' | null
+
     if (settings?.themePreference) {
-      setTheme(settings.themePreference)
+      if (forceFromServer) {
+        setTheme(settings.themePreference)
+      } else if (!stored) {
+        setTheme(settings.themePreference)
+      }
     }
 
     // 1. Find the body element.
@@ -30,7 +40,7 @@ export function ThemeInitializer({
     body.className = body.className.replace(/theme-\w+/g, '')
     // 3. Add the new color scheme class.
     body.classList.add(settings?.colorScheme ?? DEFAULT_COLOR_SCHEME)
-  }, [settings, setTheme]) // Dependencies are correct
+  }, [settings, setTheme, forceFromServer])
 
   return null
 }

@@ -154,7 +154,7 @@ export default async function RootLayout({
           {/* This component now handles BOTH light/dark mode AND color scheme */}
           {/* Add the JSON-LD component here */}
           <JsonLd />
-          <ThemeInitializer settings={data} />
+          <ThemeInitializer settings={data} forceFromServer={!!user} />
           {children}
         </ThemeProvider>
       </body>

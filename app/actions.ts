@@ -4,6 +4,7 @@
 import { createClient } from '@/app/lib/supabase/server'
 import prisma from '@/app/lib/db'
 import { revalidatePath } from 'next/cache'
+import { createClient as createSupabaseAdminClient } from '@supabase/supabase-js'
 
 export async function updateThemePreference(
   theme: 'light' | 'dark' | 'system'
@@ -18,14 +19,27 @@ export async function updateThemePreference(
     return
   }
 
-  await prisma.user.update({
-    where: {
-      id: user.id,
-    },
-    data: {
-      themePreference: theme,
-    },
-  })
+  try {
+    await prisma.user.update({
+      where: {
+        id: user.id,
+      },
+      data: {
+        themePreference: theme,
+      },
+    })
+  } catch {
+    try {
+      const admin = createSupabaseAdminClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL as string,
+        process.env.SUPABASE_SERVICE_ROLE_KEY as string
+      )
+      await admin
+        .from('User')
+        .update({ themePreference: theme })
+        .eq('id', user.id)
+    } catch {}
+  }
 
   // Revalidate the root layout to ensure the new theme is fetched on next navigation
   revalidatePath('/', 'layout')

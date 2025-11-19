@@ -2,6 +2,7 @@
 
 'use client'
 
+import * as React from 'react'
 import { Moon, Sun } from 'lucide-react'
 import { useTheme } from 'next-themes'
 
@@ -18,14 +19,21 @@ import { updateThemePreference } from '@/app/actions'
 
 export function Themetoggle() {
   const { setTheme } = useTheme()
+  const [saved, setSaved] = React.useState(false)
 
   // This function now calls the server action directly
   const persistTheme = async (value: 'light' | 'dark' | 'system') => {
-    // We don't need try/catch as much with server actions, but it's fine to keep
-    await updateThemePreference(value)
+    try {
+      await updateThemePreference(value)
+      setSaved(true)
+      setTimeout(() => setSaved(false), 1500)
+    } catch {
+      setSaved(false)
+    }
   }
 
   return (
+    <div className='flex items-center'>
     <DropdownMenu modal={false}>
       <DropdownMenuTrigger asChild>
         <Button
@@ -69,5 +77,9 @@ export function Themetoggle() {
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
+    {saved && (
+      <span aria-live='polite' className='ml-2 text-xs text-muted-foreground'>Saved</span>
+    )}
+    </div>
   )
 }
