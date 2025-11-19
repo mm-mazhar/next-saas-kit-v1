@@ -32,12 +32,14 @@ import * as React from 'react'
 
 export function NavUser({
   user,
+  currentPlanId,
 }: {
   user: {
     name: string
     email: string
     avatar: string
   }
+  currentPlanId?: 'free' | 'pro' | 'pro_plus' | null
 }) {
   const { isMobile } = useSidebar()
   const [mounted, setMounted] = React.useState(false)
@@ -102,9 +104,24 @@ export function NavUser({
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
             <DropdownMenuGroup>
-              <DropdownMenuItem>
-                <Sparkles />
-                Upgrade to Pro
+              <DropdownMenuItem asChild>
+                <Link
+                  href='/dashboard/billing'
+                  className='flex items-center text-sm gap-2'
+                >
+                  <Sparkles />
+                  {currentPlanId === 'pro' ? (
+                    <>
+                      Pro, Upgrade to <span className="text-primary font-semibold">Pro Plus</span>
+                    </>
+                  ) : currentPlanId === 'pro_plus' ? (
+                    <span className="text-primary font-semibold">Pro Plus</span>
+                  ) : (
+                    <>
+                      Free, Upgrade to <span className="text-primary font-semibold">Pro</span>
+                    </>
+                  )}
+                </Link>
               </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />

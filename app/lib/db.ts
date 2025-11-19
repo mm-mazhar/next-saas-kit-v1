@@ -35,8 +35,10 @@ export async function getData(userData?: UserData | string) {
           id: true,
           email: true,
           name: true,
+          createdAt: true,
           colorScheme: true,
           themePreference: true,
+          credits: true,
           stripeCustomerId: true,
           Subscription: {
             select: {
@@ -56,56 +58,54 @@ export async function getData(userData?: UserData | string) {
 
   // If UserData object is passed, ensure user exists or create
   if (userData) {
-    let user = null as any
+    const selection = {
+      id: true,
+      email: true,
+      name: true,
+      createdAt: true,
+      colorScheme: true,
+      themePreference: true,
+      credits: true,
+      Subscription: true,
+    } as const
     try {
-      user = await prisma.user.findUnique({
+      const found = await prisma.user.findUnique({
         where: { email: userData.email },
-        select: {
-          id: true,
-          email: true,
-          name: true,
-          colorScheme: true,
-          themePreference: true,
-          Subscription: true,
-        },
+        select: selection,
       })
+      if (found) return found
     } catch {
       // swallow and attempt create path below (may also fail)
     }
 
-    if (!user) {
+    {
       const fullName = `${userData.firstName} ${userData.lastName}`.trim()
       try {
-        user = await prisma.user.create({
+        const created = await prisma.user.create({
           data: {
             id: userData.id,
             email: userData.email,
             name: fullName || null,
           },
-          select: {
-            id: true,
-            email: true,
-            name: true,
-            colorScheme: true,
-            themePreference: true,
-            Subscription: true,
-          },
+          select: selection,
         })
+        return created
       } catch {
         // if create fails (db down), return minimal object for UI
         return {
           id: userData.id,
           email: userData.email,
           name: fullName || null,
+          createdAt: undefined,
           colorScheme: undefined,
           themePreference: undefined,
-          stripeCustomerId: undefined,
+          credits: 0,
           Subscription: undefined,
-        } as any
+        }
       }
     }
-
-    return user
+    // Should never reach here; return null to satisfy return type
+    return null
   }
 
   return null

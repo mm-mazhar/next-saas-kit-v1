@@ -43,9 +43,11 @@ const teams = [
 
 export function AppSidebar({
   user,
+  currentPlanId,
   ...props
 }: React.ComponentProps<typeof Sidebar> & {
   user?: { name: string; email: string; avatar: string }
+  currentPlanId?: 'free' | 'pro' | 'pro_plus' | null
 }) {
   const pathname = usePathname()
   const mappedNavMain = navItems
@@ -76,7 +78,7 @@ export function AppSidebar({
         <NavMain items={mappedNavMain} />
       </SidebarContent>
       <SidebarFooter>
-        <NavUser user={finalUser} />
+        <NavUser user={finalUser} currentPlanId={currentPlanId} />
       </SidebarFooter>
       <SidebarRail />
     </Sidebar>

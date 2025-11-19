@@ -22,8 +22,18 @@ import {
   Settings,
 } from 'lucide-react'
 import { usePathname } from 'next/navigation'
+import * as React from 'react'
 
-export function TopBar() {
+export function TopBar({
+  usageInfo,
+}: {
+  usageInfo?: {
+    creditsUsed: number
+    creditsTotal: number
+    renewalDate?: number | null
+    currentPlanId?: 'free' | 'pro' | 'pro_plus' | null
+  }
+}) {
   const pathname = usePathname()
   const parts = pathname.split('/').filter(Boolean)
   const startIndex = Math.max(parts.indexOf('dashboard'), 0)
@@ -91,7 +101,25 @@ export function TopBar() {
           </BreadcrumbList>
         </Breadcrumb>
       </div>
-      <Themetoggle />
+      <div className='flex items-center gap-2'>
+        {usageInfo && (
+          <span className='inline-flex items-center h-8 px-3 rounded-md bg-muted text-primary font-medium border leading-none'>
+            Credits: {usageInfo.creditsUsed}/{usageInfo.creditsTotal}
+          </span>
+        )}
+        {usageInfo?.renewalDate ? (
+          <span className='inline-flex items-center h-8 px-3 rounded-md bg-muted text-primary font-medium border leading-none'>
+            Renews: {' '}
+            {new Date(usageInfo.renewalDate * 1000).toLocaleDateString('en-US', {
+              month: 'long',
+              day: 'numeric',
+              year: 'numeric',
+              timeZone: 'UTC',
+            })}
+          </span>
+        ) : null}
+        <Themetoggle />
+      </div>
     </header>
   )
 }

@@ -28,6 +28,8 @@ export default function PricingComponent({
   mode = 'billing',
   onSubscribeAction,
 }: PricingComponentProps) {
+  const isBillingFreeState =
+    mode === 'billing' && (currentPlanId === null || currentPlanId === 'free')
   const visiblePlans =
     mode === 'billing' &&
     (currentPlanId === 'pro' || currentPlanId === 'pro_plus')
@@ -39,7 +41,10 @@ export default function PricingComponent({
       ? 'grid grid-cols-1 md:grid-cols-3 gap-2 justify-items-center justify-center'
       : `grid grid-cols-1 ${
           visiblePlans.length === 2 ? 'md:grid-cols-2' : 'md:grid-cols-3'
-        } gap-4 justify-center`
+        } ${isBillingFreeState ? 'gap-8 xl:gap-10' : 'gap-4'} justify-center`
+  const headerPaddingClass = isBillingFreeState ? 'p-6' : 'p-4'
+  const contentPaddingXClass = isBillingFreeState ? 'px-6' : 'px-4'
+  const priceTextSizeClass = isBillingFreeState ? 'text-6xl' : 'text-5xl'
   const renderButton = (plan: PricingPlan) => {
     const isCurrent = currentPlanId === plan.id
 
@@ -173,7 +178,7 @@ export default function PricingComponent({
             mode === 'marketing' ? 'w-full max-w-sm mx-2' : 'w-full'
           }`}
         >
-          <CardHeader className='p-4'>
+          <CardHeader className={headerPaddingClass}>
             <div className='flex items-center justify-between'>
               <CardTitle>{plan.title}</CardTitle>
               {(plan.id === 'free' &&
@@ -195,8 +200,8 @@ export default function PricingComponent({
             </div>
             <CardDescription>{plan.description}</CardDescription>
           </CardHeader>
-          <CardContent className='flex-grow space-y-4 px-4'>
-            <div className='flex items-baseline text-5xl font-extrabold'>
+          <CardContent className={`flex-grow space-y-4 ${contentPaddingXClass}`}>
+            <div className={`flex items-baseline ${priceTextSizeClass} font-extrabold`}>
               ${plan.price}
               <span className='ml-1 text-2xl text-muted-foreground'>
                 {plan.priceSuffix}

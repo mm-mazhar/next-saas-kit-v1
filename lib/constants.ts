@@ -72,6 +72,7 @@ export type PricingPlan = {
   price: string
   priceSuffix: string
   description: string
+  credits: number
   features: string[]
   stripePriceId?: string // Optional because 'Free' plan has no Stripe ID
 }
@@ -84,6 +85,7 @@ export const PRICING_PLANS: PricingPlan[] = [
     price: '0',
     priceSuffix: '/mo',
     description: 'Lorem ipsum dolor sit amet',
+    credits: 5,
     features: [
       'Lorem ipsum dolor sit amet, consetetur sadipscing',
       'Lorem ipsum dolor sit amet, consetetur sadipscing',
@@ -98,6 +100,7 @@ export const PRICING_PLANS: PricingPlan[] = [
     price: '30',
     priceSuffix: '/mo',
     description: 'Lorem ipsum dolor sit amet',
+    credits: 50,
     features: [
       'Lorem ipsum dolor sit amet, consetetur sadipscing',
       'Lorem ipsum dolor sit amet, consetetur sadipscing',
@@ -112,6 +115,7 @@ export const PRICING_PLANS: PricingPlan[] = [
     price: '60',
     priceSuffix: '/mo',
     description: 'Lorem ipsum dolor sit amet',
+    credits: 100,
     features: [
       'Lorem ipsum dolor sit amet, consetetur sadipscing',
       'Lorem ipsum dolor sit amet, consetetur sadipscingr',

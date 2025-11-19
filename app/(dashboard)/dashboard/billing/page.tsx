@@ -5,11 +5,11 @@ import { getStripeSession, stripe } from '@/app/lib/stripe'
 import { createClient } from '@/app/lib/supabase/server'
 import { StripePortal } from '@/components/Submitbuttons'
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
+    Card,
+    CardContent,
+    CardDescription,
+    CardHeader,
+    CardTitle,
 } from '@/components/ui/card'
 
 import { unstable_noStore as noStore } from 'next/cache'
@@ -17,10 +17,10 @@ import { redirect } from 'next/navigation'
 
 import PricingComponent from '@/components/PricingComponent'
 import {
-  LOCAL_SITE_URL,
-  PRICING_PLANS,
-  PRODUCTION_URL,
-  type PricingPlan,
+    LOCAL_SITE_URL,
+    PRICING_PLANS,
+    PRODUCTION_URL,
+    type PricingPlan,
 } from '@/lib/constants'
 
 // const PLAN_MAP = {
@@ -39,9 +39,11 @@ async function getData(userId: string) {
       select: {
         status: true,
         planId: true,
+        currentPeriodEnd: true,
         user: {
           select: {
             stripeCustomerId: true,
+            credits: true,
           },
         },
       },
@@ -64,15 +66,30 @@ export default async function BillingPage() {
 
   const data = await getData(user.id)
 
-  const resolvePlanId = (
+  const resolvePlanId = async (
     planIdFromDb?: string | null
-  ): 'free' | 'pro' | 'pro_plus' | null => {
+  ): Promise<'free' | 'pro' | 'pro_plus' | null> => {
     if (!planIdFromDb) return null
     if (planIdFromDb === 'free') return 'free'
     const matched = PRICING_PLANS.find(
       (p: PricingPlan) => p.stripePriceId === planIdFromDb
     )
-    return matched?.id ?? null
+    if (matched?.id) return matched.id
+    if (planIdFromDb.startsWith('price_')) {
+      try {
+        const price = await stripe.prices.retrieve(planIdFromDb)
+        let productName = ''
+        if (typeof price.product === 'string') {
+          const prod = await stripe.products.retrieve(price.product)
+          productName = (prod.name || '').toLowerCase()
+        } else {
+          productName = ((price.product as { name?: string }).name || '').toLowerCase()
+        }
+        if (productName.includes('pro plus')) return 'pro_plus'
+        if (productName.includes('pro')) return 'pro'
+      } catch {}
+    }
+    return null
   }
 
   async function createSubscriptionAction(formData: FormData) {
@@ -157,11 +174,11 @@ export default async function BillingPage() {
     return redirect('/dashboard')
   }
 
-  const resolvedCurrent = resolvePlanId(data?.planId)
+  const resolvedCurrent = await resolvePlanId(data?.planId)
   if (data?.status === 'active' && resolvedCurrent === 'pro_plus') {
     return (
       <div className='min-h-[calc(100vh-8rem)] flex items-center'>
-        <div className='max-w-3xl mx-auto w-full space-y-6'>
+        <div className='max-w-3xl mx-auto w-full space-y-4'>
           <div className='px-2 text-center'>
             <h1 className='text-3xl md:text-4xl'>Subscription</h1>
             <p className='text-lg text-muted-foreground'>
@@ -169,31 +186,51 @@ export default async function BillingPage() {
             </p>
           </div>
 
-          <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
+          <div className='grid grid-cols-1 md:grid-cols-2 gap-3'>
             <Card className='w-full'>
-              <CardHeader className='py-2 px-4'>
+              <CardHeader className='py-0.5 px-4'>
                 <CardTitle>Usage</CardTitle>
-                <CardDescription>Coming soon</CardDescription>
+                <CardDescription>Usage Summary</CardDescription>
               </CardHeader>
-              <CardContent className='py-2 px-4'>
-                <div className='text-sm text-muted-foreground'>0%</div>
+              <CardContent className='py-0.5 px-4'>
+                <div className='flex items-center justify-center'>
+                  <div className='text-5xl md:text-4xl font-bold text-primary -mt-1'>
+                    {data?.user?.credits ?? 0}
+                  </div>
+                </div>
+                <div className='text-xs text-muted-foreground text-center -mt-1'>
+                  Used Credits
+                </div>
+                <div className='mt-2 text-sm text-primary'>
+                  Total Credits:{' '}
+                  {PRICING_PLANS.find((p) => p.id === resolvedCurrent)
+                    ?.credits ?? 0}
+                </div>
               </CardContent>
             </Card>
             <Card className='w-full'>
-              <CardHeader className='py-2 px-4'>
-                <CardTitle>Invoices</CardTitle>
+              <CardHeader className='py-0.5 px-4'>
+                <CardTitle>Plan Renewal</CardTitle>
                 <CardDescription>Summary</CardDescription>
               </CardHeader>
-              <CardContent className='py-2 px-4'>
-                <div className='text-sm text-muted-foreground'>
-                  No recent invoices
+              <CardContent className='py-0.5 px-4 min-h-[64px] flex items-center justify-center'>
+                <div className='text-lg md:text-xl font-semibold text-primary text-center -mt-1'>
+                  {data?.currentPeriodEnd
+                    ? `${new Date(
+                        data.currentPeriodEnd * 1000
+                      ).toLocaleDateString('en-US', {
+                        month: 'long',
+                        day: 'numeric',
+                        year: 'numeric',
+                      })}`
+                    : 'Renewal date unavailable'}
                 </div>
               </CardContent>
             </Card>
           </div>
 
           <Card className='w-full'>
-            <CardHeader className='px-4'>
+            <CardHeader className='px-4 py-1'>
               <CardTitle>Edit Subscription</CardTitle>
               <CardDescription>
                 Click on the button below, this will give you the opportunity to
@@ -213,7 +250,7 @@ export default async function BillingPage() {
                 at the same time.
               </CardDescription>
             </CardHeader>
-            <CardContent className='px-4 pb-3'>
+            <CardContent className='px-4 pb-2'>
               <form action={createCustomerPortal}>
                 <StripePortal />
               </form>
@@ -231,31 +268,51 @@ export default async function BillingPage() {
   if (data?.status === 'active' && resolvedCurrent === 'pro') {
     return (
       <div className='min-h-[calc(100vh-8rem)] flex items-center'>
-        <div className='max-w-4xl mx-auto w-full px-2 md:px-0 space-y-6'>
-          <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
+        <div className='max-w-4xl mx-auto w-full px-2 md:px-0 space-y-4'>
+          <div className='grid grid-cols-1 md:grid-cols-2 gap-3'>
             <Card className='w-full'>
-              <CardHeader className='py-2 px-4'>
+              <CardHeader className='py-0.5 px-4'>
                 <CardTitle>Usage</CardTitle>
-                <CardDescription>Coming soon</CardDescription>
+                <CardDescription>Usage Summary</CardDescription>
               </CardHeader>
-              <CardContent className='py-2 px-4'>
-                <div className='text-sm text-muted-foreground'>0%</div>
+              <CardContent className='py-0.5 px-4'>
+                <div className='flex items-center justify-center'>
+                  <div className='text-5xl md:text-4xl font-bold text-primary -mt-1'>
+                    {data?.user?.credits ?? 0}
+                  </div>
+                </div>
+                <div className='text-xs text-muted-foreground text-center -mt-1'>
+                  Used Credits
+                </div>
+                <div className='mt-2 text-sm text-primary'>
+                  Total Credits:{' '}
+                  {PRICING_PLANS.find((p) => p.id === resolvedCurrent)
+                    ?.credits ?? 0}
+                </div>
               </CardContent>
             </Card>
             <Card className='w-full'>
-              <CardHeader className='py-2 px-4'>
-                <CardTitle>Invoices</CardTitle>
-                <CardDescription>Summary</CardDescription>
+              <CardHeader className='py-0.5 px-4'>
+                <CardTitle>Plan Renewal</CardTitle>
+                {/* <CardDescription>Summary</CardDescription> */}
               </CardHeader>
-              <CardContent className='py-2 px-4'>
-                <div className='text-sm text-muted-foreground'>
-                  No recent invoices
+              <CardContent className='py-0.5 px-4 min-h-[64px] flex items-center justify-center'>
+                <div className='text-lg md:text-xl font-semibold text-primary text-center -mt-1'>
+                  {data?.currentPeriodEnd
+                    ? `${new Date(
+                        data.currentPeriodEnd * 1000
+                      ).toLocaleDateString('en-US', {
+                        month: 'long',
+                        day: 'numeric',
+                        year: 'numeric',
+                      })}`
+                    : 'Renewal date unavailable'}
                 </div>
               </CardContent>
             </Card>
           </div>
           <Card className='w-full'>
-            <CardHeader className='px-4'>
+            <CardHeader className='px-4 py-1'>
               <CardTitle>Edit Subscription</CardTitle>
               <CardDescription>
                 Click on the button below, this will give you the opportunity to
@@ -275,7 +332,7 @@ export default async function BillingPage() {
                 at the same time.
               </CardDescription>
             </CardHeader>
-            <CardContent className='px-4 pb-3'>
+            <CardContent className='px-4 pb-2'>
               <form action={createCustomerPortal}>
                 <StripePortal />
               </form>
@@ -292,9 +349,15 @@ export default async function BillingPage() {
     )
   }
 
+
+  const containerWidthClass =
+    resolvedCurrent === null || resolvedCurrent === 'free'
+      ? 'max-w-6xl'
+      : 'max-w-4xl'
+
   return (
     <div className='min-h-[calc(100vh-8rem)] flex items-center'>
-      <div className='max-w-4xl mx-auto w-full space-y-6'>
+      <div className={`${containerWidthClass} mx-auto w-full space-y-6`}>
         <PricingComponent
           currentPlanId={current}
           onSubscribeAction={createSubscriptionAction}
