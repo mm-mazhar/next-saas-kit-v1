@@ -4,6 +4,7 @@
 import { createClient } from '@/app/lib/supabase/client'
 import { Themetoggle } from '@/components/Themetoggle'
 import { Button } from '@/components/ui/button'
+import { ShineBorder } from '@/components/ui/shine-border'
 import { cn } from '@/lib/utils'
 import { type User } from '@supabase/supabase-js'
 import { Menu, X } from 'lucide-react'
@@ -71,10 +72,13 @@ export const HeroHeader = () => {
       >
         <div
           className={cn(
-            'mx-auto mt-1 max-w-6xl px-5 transition-all duration-300 rounded-2xl border border-transparent',
+            'mx-auto mt-1 max-w-6xl px-5 rounded-2xl border border-transparent relative overflow-hidden',
             isScrolled && 'bg-background/50 backdrop-blur-lg border'
           )}
         >
+          {isScrolled ? (
+            <ShineBorder borderWidth={1} duration={20} shineColor={['var(--primary)']} />
+          ) : null}
           <div className='relative flex flex-wrap items-center justify-between gap-6 py-2 lg:gap-0 lg:py-3'>
             <div className='flex w-full justify-between lg:w-auto'>
               <SiteLogo />
@@ -123,7 +127,7 @@ export const HeroHeader = () => {
                 <div className='flex w-full flex-col space-y-3 sm:flex-row sm:gap-3 sm:space-y-0 md:w-fit'>
                   {user ? (
                     <>
-                        <Themetoggle />
+                      <Themetoggle />
                       <Button
                         asChild
                         variant='default'
@@ -139,7 +143,7 @@ export const HeroHeader = () => {
                     </>
                   ) : (
                     <>
-                    <Themetoggle />
+                      <Themetoggle />
                       {/* <Button
                   asChild
                   variant='outline'
@@ -169,7 +173,7 @@ export const HeroHeader = () => {
                     <span>Sign Up</span>
                   </Link>
                 </Button> */}
-                        
+
                       <Button
                         asChild
                         size='sm'

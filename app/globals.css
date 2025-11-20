@@ -42,7 +42,44 @@
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
-}
+  --animate-aurora: aurora 8s ease-in-out infinite alternate;
+  @keyframes aurora {
+  0% {
+    background-position: 0% 50%;
+    transform: rotate(-5deg) scale(0.9);
+    }
+  25% {
+    background-position: 50% 100%;
+    transform: rotate(5deg) scale(1.1);
+    }
+  50% {
+    background-position: 100% 50%;
+    transform: rotate(-3deg) scale(0.95);
+    }
+  75% {
+    background-position: 50% 0%;
+    transform: rotate(3deg) scale(1.05);
+    }
+  100% {
+    background-position: 0% 50%;
+    transform: rotate(-5deg) scale(0.9);
+    }
+  }
+  --animate-shiny-text: shiny-text 8s infinite
+;
+  @keyframes shiny-text {
+  0%, 90%, 100% {
+    background-position: calc(-100% - var(--shiny-width)) 0;}
+  30%, 60% {
+    background-position: calc(100% + var(--shiny-width)) 0;}}
+  --animate-shine: shine var(--duration) infinite linear;
+  @keyframes shine {
+  0% {
+    background-position: 0% 0%;}
+  50% {
+    background-position: 100% 100%;}
+  to {
+    background-position: 0% 0%;}}}
 
 .theme-green {
   --radius: 0.65rem;
@@ -557,3 +594,4 @@
   --sidebar-border: hsl(240 3.7% 15.9%);
   --sidebar-ring: hsl(217.2 91.2% 59.8%);
 }
+ 

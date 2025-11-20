@@ -41,6 +41,5 @@ export async function updateThemePreference(
     } catch {}
   }
 
-  // Revalidate the root layout to ensure the new theme is fetched on next navigation
-  revalidatePath('/', 'layout')
+  
 }

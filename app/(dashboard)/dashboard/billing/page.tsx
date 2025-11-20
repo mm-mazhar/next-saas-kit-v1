@@ -5,11 +5,11 @@ import { getStripeSession, stripe } from '@/app/lib/stripe'
 import { createClient } from '@/app/lib/supabase/server'
 import { StripePortal } from '@/components/Submitbuttons'
 import {
-    Card,
-    CardContent,
-    CardDescription,
-    CardHeader,
-    CardTitle,
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
 } from '@/components/ui/card'
 
 import { unstable_noStore as noStore } from 'next/cache'
@@ -17,10 +17,10 @@ import { redirect } from 'next/navigation'
 
 import PricingComponent from '@/components/PricingComponent'
 import {
-    LOCAL_SITE_URL,
-    PRICING_PLANS,
-    PRODUCTION_URL,
-    type PricingPlan,
+  LOCAL_SITE_URL,
+  PRICING_PLANS,
+  PRODUCTION_URL,
+  type PricingPlan,
 } from '@/lib/constants'
 
 // const PLAN_MAP = {
@@ -178,7 +178,7 @@ export default async function BillingPage() {
   if (data?.status === 'active' && resolvedCurrent === 'pro_plus') {
     return (
       <div className='min-h-[calc(100vh-8rem)] flex items-center'>
-        <div className='max-w-3xl mx-auto w-full space-y-4'>
+        <div className='max-w-3xl mx-auto w-full space-y-2'>
           <div className='px-2 text-center'>
             <h1 className='text-3xl md:text-4xl'>Subscription</h1>
             <p className='text-lg text-muted-foreground'>
@@ -186,35 +186,31 @@ export default async function BillingPage() {
             </p>
           </div>
 
-          <div className='grid grid-cols-1 md:grid-cols-2 gap-3'>
-            <Card className='w-full'>
+          <div className='grid grid-cols-1 md:grid-cols-2 gap-2'>
+            <Card className='w-full py-3 gap-3'>
               <CardHeader className='py-0.5 px-4'>
                 <CardTitle>Usage</CardTitle>
-                <CardDescription>Usage Summary</CardDescription>
               </CardHeader>
-              <CardContent className='py-0.5 px-4'>
-                <div className='flex items-center justify-center'>
-                  <div className='text-5xl md:text-4xl font-bold text-primary -mt-1'>
+              <CardContent className='py-0.5 px-4 min-h-[48px] grid place-items-center text-center'>
+                <div className='flex items-center justifiy-item-center gap-3'>
+                  <span className='text-4xl md:text-3xl font-bold text-primary'>
                     {data?.user?.credits ?? 0}
-                  </div>
+                  </span>
+                  <span className='text-xs text-muted-foreground'>Used Credits</span>
                 </div>
-                <div className='text-xs text-muted-foreground text-center -mt-1'>
-                  Used Credits
-                </div>
-                <div className='mt-2 text-sm text-primary'>
+                <div className='mt-2 text-xs text-primary'>
                   Total Credits:{' '}
                   {PRICING_PLANS.find((p) => p.id === resolvedCurrent)
                     ?.credits ?? 0}
                 </div>
               </CardContent>
             </Card>
-            <Card className='w-full'>
+            <Card className='w-full py-3 gap-3'>
               <CardHeader className='py-0.5 px-4'>
                 <CardTitle>Plan Renewal</CardTitle>
-                <CardDescription>Summary</CardDescription>
               </CardHeader>
-              <CardContent className='py-0.5 px-4 min-h-[64px] flex items-center justify-center'>
-                <div className='text-lg md:text-xl font-semibold text-primary text-center -mt-1'>
+              <CardContent className='py-0.5 px-4 min-h-[48px] flex items-center justify-center'>
+                <div className='text-base md:text-lg font-semibold text-primary text-center'>
                   {data?.currentPeriodEnd
                     ? `${new Date(
                         data.currentPeriodEnd * 1000
@@ -250,7 +246,7 @@ export default async function BillingPage() {
                 at the same time.
               </CardDescription>
             </CardHeader>
-            <CardContent className='px-4 pb-2'>
+            <CardContent className='px-4 py-1'>
               <form action={createCustomerPortal}>
                 <StripePortal />
               </form>
@@ -268,36 +264,32 @@ export default async function BillingPage() {
   if (data?.status === 'active' && resolvedCurrent === 'pro') {
     return (
       <div className='min-h-[calc(100vh-8rem)] flex items-center'>
-        <div className='max-w-4xl mx-auto w-full px-2 md:px-0 space-y-4'>
-          <div className='grid grid-cols-1 md:grid-cols-2 gap-3'>
-            <Card className='w-full'>
+        <div className='max-w-4xl mx-auto w-full px-2 md:px-0 space-y-2'>
+          <div className='grid grid-cols-1 md:grid-cols-2 gap-2'>
+            <Card className='w-full py-3 gap-3'>
               <CardHeader className='py-0.5 px-4'>
                 <CardTitle>Usage</CardTitle>
-                <CardDescription>Usage Summary</CardDescription>
               </CardHeader>
-              <CardContent className='py-0.5 px-4'>
-                <div className='flex items-center justify-center'>
-                  <div className='text-5xl md:text-4xl font-bold text-primary -mt-1'>
+              <CardContent className='py-0.5 px-4 min-h-[48px] grid place-items-center text-center'>
+                <div className='flex items-center justify-center gap-3'>
+                  <span className='text-4xl md:text-3xl font-bold text-primary'>
                     {data?.user?.credits ?? 0}
-                  </div>
+                  </span>
+                  <span className='text-xs text-muted-foreground'>Used Credits</span>
                 </div>
-                <div className='text-xs text-muted-foreground text-center -mt-1'>
-                  Used Credits
-                </div>
-                <div className='mt-2 text-sm text-primary'>
+                <div className='mt-2 text-xs text-primary'>
                   Total Credits:{' '}
                   {PRICING_PLANS.find((p) => p.id === resolvedCurrent)
                     ?.credits ?? 0}
                 </div>
               </CardContent>
             </Card>
-            <Card className='w-full'>
+            <Card className='w-full py-3 gap-3'>
               <CardHeader className='py-0.5 px-4'>
                 <CardTitle>Plan Renewal</CardTitle>
-                {/* <CardDescription>Summary</CardDescription> */}
               </CardHeader>
-              <CardContent className='py-0.5 px-4 min-h-[64px] flex items-center justify-center'>
-                <div className='text-lg md:text-xl font-semibold text-primary text-center -mt-1'>
+              <CardContent className='py-0.5 px-4 min-h-[48px] flex items-center justify-center'>
+                <div className='text-base md:text-lg font-semibold text-primary text-center'>
                   {data?.currentPeriodEnd
                     ? `${new Date(
                         data.currentPeriodEnd * 1000
@@ -311,7 +303,7 @@ export default async function BillingPage() {
               </CardContent>
             </Card>
           </div>
-          <Card className='w-full'>
+          <Card className='w-full py-3 gap-3'>
             <CardHeader className='px-4 py-1'>
               <CardTitle>Edit Subscription</CardTitle>
               <CardDescription>
@@ -332,7 +324,7 @@ export default async function BillingPage() {
                 at the same time.
               </CardDescription>
             </CardHeader>
-            <CardContent className='px-4 pb-2'>
+            <CardContent className='px-4 py-1'>
               <form action={createCustomerPortal}>
                 <StripePortal />
               </form>
@@ -357,7 +349,7 @@ export default async function BillingPage() {
 
   return (
     <div className='min-h-[calc(100vh-8rem)] flex items-center'>
-      <div className={`${containerWidthClass} mx-auto w-full space-y-6`}>
+      <div className={`${containerWidthClass} mx-auto w-full space-y-2`}>
         <PricingComponent
           currentPlanId={current}
           onSubscribeAction={createSubscriptionAction}

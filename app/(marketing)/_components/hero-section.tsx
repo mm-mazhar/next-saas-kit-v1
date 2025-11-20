@@ -3,7 +3,9 @@
 import { PageSection } from '@/components/page-section'
 import PricingComponent from '@/components/PricingComponent'
 import { AnimatedGroup } from '@/components/ui/animated-group'
+import { AnimatedShinyText } from '@/components/ui/animated-shiny-text'
 import { Button } from '@/components/ui/button'
+import { HyperText } from '@/components/ui/hyper-text'
 import { TextEffect } from '@/components/ui/text-effect'
 import HeroLight from '@/public/HeroDark-02.png'
 import HeroDark from '@/public/HeroDark-03.png'
@@ -26,7 +28,14 @@ import { HeroHeader } from './header'
 
 import { getData } from '@/app/lib/db'
 import { createClient } from '@/app/lib/supabase/server'
-import { APP_DESCRIPTION, APP_SLOGAN, PRICE_HEADING, PRICING_PLANS, type PricingPlan } from '@/lib/constants'
+import {
+  APP_DESCRIPTION,
+  APP_DESCRIPTION_LONG,
+  APP_SLOGAN,
+  PRICE_HEADING,
+  PRICING_PLANS,
+  type PricingPlan,
+} from '@/lib/constants'
 
 const transitionVariants = {
   item: {
@@ -57,12 +66,12 @@ export default async function HeroSection() {
   const dbUser = user ? await getData(user.id) : null
   const rawPlanId = dbUser?.Subscription?.planId ?? null
   const currentPlanId = (() => {
-    if (!rawPlanId) return null as const
+    if (!rawPlanId) return null
     if (rawPlanId === 'free') return 'free' as const
     const matched = PRICING_PLANS.find(
       (p: PricingPlan) => p.stripePriceId === rawPlanId
     )
-    return (matched?.id ?? null) as 'free' | 'pro' | 'pro_plus' | null
+    return matched?.id ?? null
   })()
 
   return (
@@ -112,12 +121,18 @@ export default async function HeroSection() {
         <div className='relative z-10'>
           <PageSection>
             <div className='text-center sm:mx-auto lg:mr-auto lg:mt-0'>
+              
               <AnimatedGroup variants={transitionVariants}>
                 <Link
                   href='/get-started'
-                  className='hover:bg-background dark:hover:border-t-border bg-muted group mx-auto flex w-fit items-center gap-4 rounded-full border p-1 pl-4 shadow-md shadow-zinc-950/5 transition-colors duration-300 dark:border-t-white/5 dark:shadow-zinc-950'
+                  className='hover:bg-background dark:hover:border-t-border bg-muted group mx-auto flex w-fit items-center gap-4 rounded-full border py-1 px-4 shadow-md shadow-zinc-950/5 transition-colors duration-300 dark:border-t-white/5 dark:shadow-zinc-950'
                 >
-                  <span className='text-primary text-sm'>{APP_SLOGAN}</span>
+                  <AnimatedShinyText className='inline-flex items-center justify-center px-1 py-1 transition ease-out hover:text-neutral-600 hover:duration-300 hover:dark:text-neutral-400'>
+                    <span className='text-primary text-sm'>
+                      ✨ {APP_SLOGAN}
+                    </span>
+                  </AnimatedShinyText>
+
                   <span className='dark:border-background block h-4 w-0.5 border-l bg-white dark:bg-zinc-700'></span>
                   <div className='bg-background group-hover:bg-muted size-6 overflow-hidden rounded-full duration-500'>
                     <div className='flex w-12 -translate-x-1/2 duration-500 ease-in-out group-hover:translate-x-0'>
@@ -140,7 +155,8 @@ export default async function HeroSection() {
               >
                 {APP_DESCRIPTION}
               </TextEffect>
-              <TextEffect
+
+              {/* <TextEffect
                 per='line'
                 preset='fade-in-blur'
                 speedSegment={0.3}
@@ -148,9 +164,11 @@ export default async function HeroSection() {
                 as='p'
                 className='mx-auto mt-8 max-w-2xl text-balance text-lg'
               >
-                Highly customizable components for building modern websites and
-                applications that look and feel the way you mean it.
-              </TextEffect>
+                {APP_DESCRIPTION_LONG}
+              </TextEffect> */}
+              <HyperText className='mx-auto mt-8 max-w-2xl text-balance text-lg'>
+                {APP_DESCRIPTION_LONG}
+              </HyperText>
 
               <AnimatedGroup
                 variants={{

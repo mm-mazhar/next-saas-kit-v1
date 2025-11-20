@@ -11,8 +11,10 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
+import { ShineBorder } from '@/components/ui/shine-border'
 import { PRICING_PLANS, type PricingPlan } from '@/lib/constants'
-import Link from 'next/link' // Ensure Link is imported
+import { cn } from '@/lib/utils'
+import Link from 'next/link'; // Ensure Link is imported
 
 export type PricingComponentProps = {
   currentPlanId: 'free' | 'pro' | 'pro_plus' | null
@@ -41,10 +43,17 @@ export default function PricingComponent({
       ? 'grid grid-cols-1 md:grid-cols-3 gap-2 justify-items-center justify-center'
       : `grid grid-cols-1 ${
           visiblePlans.length === 2 ? 'md:grid-cols-2' : 'md:grid-cols-3'
-        } ${isBillingFreeState ? 'gap-8 xl:gap-10' : 'gap-4'} justify-center`
-  const headerPaddingClass = isBillingFreeState ? 'p-6' : 'p-4'
-  const contentPaddingXClass = isBillingFreeState ? 'px-6' : 'px-4'
-  const priceTextSizeClass = isBillingFreeState ? 'text-6xl' : 'text-5xl'
+        } gap-3 justify-center`
+  const headerPaddingClass =
+    mode === 'billing' ? 'p-3' : isBillingFreeState ? 'p-6' : 'p-4'
+  const contentPaddingXClass =
+    mode === 'billing' ? 'px-3' : isBillingFreeState ? 'px-6' : 'px-4'
+  const priceTextSizeClass =
+    mode === 'billing'
+      ? 'text-3xl'
+      : isBillingFreeState
+      ? 'text-6xl'
+      : 'text-5xl'
   const renderButton = (plan: PricingPlan) => {
     const isCurrent = currentPlanId === plan.id
 
@@ -170,14 +179,17 @@ export default function PricingComponent({
 
   // The rest of your component remains the same
   return (
-    <div className={gridColsClass}>
+    <div className={cn('mx-auto max-w-6xl', gridColsClass)}>
       {visiblePlans.map((plan) => (
         <Card
           key={plan.id}
-          className={`flex flex-col ${
-            mode === 'marketing' ? 'w-full max-w-sm mx-2' : 'w-full'
+          className={`flex flex-col relative overflow-hidden ${
+            mode === 'marketing' ? 'w-full max-w-sm mx-2' : 'w-full py-3 gap-3'
           }`}
         >
+          {mode === 'marketing' ? (
+            <ShineBorder borderWidth={1} duration={20} shineColor={['var(--primary)']} />
+          ) : null}
           <CardHeader className={headerPaddingClass}>
             <div className='flex items-center justify-between'>
               <CardTitle>{plan.title}</CardTitle>
@@ -193,15 +205,19 @@ export default function PricingComponent({
               (plan.id === 'pro_plus' &&
                 currentPlanId === 'pro_plus' &&
                 (mode === 'marketing' || mode === 'billing')) ? (
-                <span className='text-xs px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-600 border border-emerald-600/20'>
+                <span className='text-xs px-2 py-0.5 rounded-full bg-primary/15 text-primary border border-primary/30'>
                   Subscribed
                 </span>
               ) : null}
             </div>
             <CardDescription>{plan.description}</CardDescription>
           </CardHeader>
-          <CardContent className={`flex-grow space-y-4 ${contentPaddingXClass}`}>
-            <div className={`flex items-baseline ${priceTextSizeClass} font-extrabold`}>
+          <CardContent
+            className={`flex-grow ${mode === 'billing' ? 'space-y-3' : 'space-y-4'} ${contentPaddingXClass}`}
+          >
+            <div
+              className={`flex items-baseline ${priceTextSizeClass} font-extrabold`}
+            >
               ${plan.price}
               <span className='ml-1 text-2xl text-muted-foreground'>
                 {plan.priceSuffix}
@@ -217,6 +233,7 @@ export default function PricingComponent({
             </ul>
           </CardContent>
           <CardFooter className='p-4 pt-0'>{renderButton(plan)}</CardFooter>
+          {mode === 'marketing' ? <ShineBorder /> : null}
         </Card>
       ))}
     </div>

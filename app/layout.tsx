@@ -8,6 +8,7 @@ import { Inter } from 'next/font/google'
 // import HeaderSubComponent from './components/HeaderSubComp'
 import { JsonLd } from '@/components/JsonLd'
 import { ThemeProvider } from '@/components/theme-provider'
+import { ToastProvider } from '@/components/ToastProvider'
 
 import './globals.css'
 
@@ -149,13 +150,14 @@ export default async function RootLayout({
           defaultTheme={DEFAULT_THEME_MODE}
           storageKey='app-theme'
           enableSystem
+          enableColorScheme={false}
           disableTransitionOnChange
         >
-          {/* This component now handles BOTH light/dark mode AND color scheme */}
-          {/* Add the JSON-LD component here */}
-          <JsonLd />
-          <ThemeInitializer settings={data} forceFromServer={!!user} />
-          {children}
+          <ToastProvider>
+            <JsonLd />
+            <ThemeInitializer settings={data} forceFromServer={!!user} />
+            {children}
+          </ToastProvider>
         </ThemeProvider>
       </body>
     </html>

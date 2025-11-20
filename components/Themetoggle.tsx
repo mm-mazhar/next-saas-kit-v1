@@ -2,7 +2,7 @@
 
 'use client'
 
-import * as React from 'react'
+import { useToast } from '@/components/ToastProvider'
 import { Moon, Sun } from 'lucide-react'
 import { useTheme } from 'next-themes'
 
@@ -19,16 +19,30 @@ import { updateThemePreference } from '@/app/actions'
 
 export function Themetoggle() {
   const { setTheme } = useTheme()
-  const [saved, setSaved] = React.useState(false)
+  const { show, update } = useToast()
+
+  const applyImmediateTheme = (value: 'light' | 'dark' | 'system') => {
+    const el = document.documentElement
+    const sysDark = window.matchMedia('(prefers-color-scheme: dark)').matches
+    const target = value === 'system' ? (sysDark ? 'dark' : 'light') : value
+    el.classList.remove('light', 'dark')
+    el.classList.add(target)
+  }
 
   // This function now calls the server action directly
   const persistTheme = async (value: 'light' | 'dark' | 'system') => {
     try {
+      const id = show({ title: 'Saving theme…', variant: 'info', duration: 4000 })
       await updateThemePreference(value)
-      setSaved(true)
-      setTimeout(() => setSaved(false), 1500)
+      update(id, {
+        title: 'Theme updated',
+        description: value === 'system' ? 'System theme saved' : `${value} theme saved`,
+        variant: 'success',
+        duration: 2000,
+      })
     } catch {
-      setSaved(false)
+      const id = show({ title: 'Saving theme…', variant: 'info', duration: 4000 })
+      update(id, { title: 'Failed to save theme', variant: 'error', duration: 2500 })
     }
   }
 
@@ -54,6 +68,7 @@ export function Themetoggle() {
         <DropdownMenuItem
           onClick={() => {
             setTheme('light')
+            applyImmediateTheme('light')
             persistTheme('light')
           }}
         >
@@ -62,6 +77,7 @@ export function Themetoggle() {
         <DropdownMenuItem
           onClick={() => {
             setTheme('dark')
+            applyImmediateTheme('dark')
             persistTheme('dark')
           }}
         >
@@ -70,6 +86,7 @@ export function Themetoggle() {
         <DropdownMenuItem
           onClick={() => {
             setTheme('system')
+            applyImmediateTheme('system')
             persistTheme('system')
           }}
         >
@@ -77,9 +94,6 @@ export function Themetoggle() {
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
-    {saved && (
-      <span aria-live='polite' className='ml-2 text-xs text-muted-foreground'>Saved</span>
-    )}
     </div>
   )
 }
