@@ -6,6 +6,7 @@ import { AnimatedGroup } from '@/components/ui/animated-group'
 import { AnimatedShinyText } from '@/components/ui/animated-shiny-text'
 import { Button } from '@/components/ui/button'
 import { HyperText } from '@/components/ui/hyper-text'
+import { ShineBorder } from '@/components/ui/shine-border'
 import { TextEffect } from '@/components/ui/text-effect'
 import HeroLight from '@/public/HeroDark-02.png'
 import HeroDark from '@/public/HeroDark-03.png'
@@ -125,8 +126,9 @@ export default async function HeroSection() {
               <AnimatedGroup variants={transitionVariants}>
                 <Link
                   href='/get-started'
-                  className='hover:bg-background dark:hover:border-t-border bg-muted group mx-auto flex w-fit items-center gap-4 rounded-full border py-1 px-4 shadow-md shadow-zinc-950/5 transition-colors duration-300 dark:border-t-white/5 dark:shadow-zinc-950'
+                  className='hover:bg-background dark:hover:border-t-border bg-muted group mx-auto flex w-fit items-center gap-4 rounded-full border py-1 px-4 shadow-md shadow-zinc-950/5 transition-colors duration-300 dark:border-t-white/5 dark:shadow-zinc-950 relative overflow-hidden'
                 >
+                  <ShineBorder borderWidth={1} duration={20} shineColor={['var(--primary)']} />
                   <AnimatedShinyText className='inline-flex items-center justify-center px-1 py-1 transition ease-out hover:text-neutral-600 hover:duration-300 hover:dark:text-neutral-400'>
                     <span className='text-primary text-sm'>
                       ✨ {APP_SLOGAN}
@@ -223,6 +225,7 @@ export default async function HeroSection() {
             >
               <div className='mask-b-from-55% relative -mr-56 mt-8 overflow-hidden px-2 sm:mr-0 sm:mt-12 md:mt-20'>
                 <div className='inset-shadow-2xs ring-background dark:inset-shadow-white/20 bg-background relative mx-auto max-w-6xl overflow-hidden rounded-2xl border p-4 shadow-lg shadow-zinc-950/15 ring-1'>
+                  <ShineBorder borderWidth={1} duration={20} shineColor={['var(--primary)']} />
                   <Image
                     className='bg-background aspect-15/8 relative hidden rounded-2xl dark:block object-contain object-top'
                     src={HeroDark}

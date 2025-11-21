@@ -1,9 +1,10 @@
 // app/(marketing)/get-started/page.tsx
 
 import { EmailAuthForm } from '@/app/(marketing)/_components/auth/EmailAuthForm'
-import SiteLogo from '@/app/(marketing)/_components/Sitelogo'
 import { GoogleAuthButton } from '@/app/(marketing)/_components/auth/GoogleAuthButton'
+import SiteLogo from '@/app/(marketing)/_components/Sitelogo'
 import { createClient } from '@/app/lib/supabase/server'
+import { ShineBorder } from '@/components/ui/shine-border'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 
@@ -23,7 +24,9 @@ export default async function LoginPage({
 
   return (
     <div className='flex min-h-screen items-center justify-center'>
-      <div className='w-full max-w-md space-y-8 p-8 border rounded-lg'>
+      <div className='w-full max-w-md space-y-8 p-8 border rounded-lg relative overflow-hidden'>
+        <ShineBorder borderWidth={1} duration={20} shineColor={['var(--primary)']} />
+      
         <div className='text-center space-y-6'>
           <div className='flex justify-center'>
             <SiteLogo />
@@ -55,6 +58,7 @@ export default async function LoginPage({
           </Link>
         </p>
       </div>
+      
     </div>
   )
 }

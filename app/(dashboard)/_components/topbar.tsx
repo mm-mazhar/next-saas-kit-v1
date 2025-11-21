@@ -103,19 +103,22 @@ export function TopBar({
       </div>
       <div className='flex items-center gap-2'>
         {usageInfo && (
-          <span className='inline-flex items-center h-8 px-3 rounded-md bg-muted text-primary font-medium border leading-none'>
+          <span className='inline-flex items-center h-8 px-1 rounded-md bg-muted text-primary font-medium text-sm border leading-none'>
             Credits: {usageInfo.creditsUsed}/{usageInfo.creditsTotal}
           </span>
         )}
         {usageInfo?.renewalDate ? (
-          <span className='inline-flex items-center h-8 px-3 rounded-md bg-muted text-primary font-medium border leading-none'>
-            Renews: {' '}
-            {new Date(usageInfo.renewalDate * 1000).toLocaleDateString('en-US', {
-              month: 'long',
-              day: 'numeric',
-              year: 'numeric',
-              timeZone: 'UTC',
-            })}
+          <span className='inline-flex items-center h-8 px-1 rounded-md bg-muted text-primary font-medium text-sm border leading-none'>
+            Renews:{' '}
+            {new Date(usageInfo.renewalDate * 1000).toLocaleDateString(
+              'en-US',
+              {
+                month: 'long',
+                day: 'numeric',
+                year: 'numeric',
+                timeZone: 'UTC',
+              }
+            )}
           </span>
         ) : null}
         <Themetoggle />
