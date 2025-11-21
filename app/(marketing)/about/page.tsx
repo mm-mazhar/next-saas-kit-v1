@@ -18,11 +18,11 @@ export default function AboutPage() {
                 <img src='https://images.unsplash.com/photo-1633332755192-727a05c4013d?q=80&w=200' alt='' className='size-9 rounded-full border-[3px] border-background' />
                 <img src='https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=200' alt='' className='size-9 rounded-full border-[3px] border-background' />
                 <img src='https://images.unsplash.com/photo-1438761681033-6461ffad8d80?q=80&w=200&h=200&auto=format&fit=crop' alt='' className='size-9 rounded-full border-[3px] border-background' />
-                <div className='flex items-center justify-center text-xs text-primary-foreground size-9 rounded-full border-[3px] border-background bg-primary'>
+                {/* <div className='flex items-center justify-center text-xs text-primary-foreground size-9 rounded-full border-[3px] border-background bg-primary'>
                   50+
-                </div>
+                </div> */}
               </div>
-              <p className='text-sm font-medium text-foreground'>Join our community</p>
+              <p className='text-sm font-medium text-foreground'>Unlock Your Productivity</p>
             </div>
           </div>
 
