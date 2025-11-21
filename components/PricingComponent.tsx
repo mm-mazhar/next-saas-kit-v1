@@ -190,6 +190,13 @@ export default function PricingComponent({
           {mode === 'marketing' ? (
             <ShineBorder borderWidth={1} duration={20} shineColor={['var(--primary)']} />
           ) : null}
+          {mode === 'marketing' && plan.id === 'pro' ? (
+            <div className='absolute top-2 left-1/2 -translate-x-1/2 z-10'>
+              <span className='text-medium font-bold px-2 py-0.5 rounded-full bg-primary/15 text-primary border border-primary/30 shadow-sm'>
+                Popular
+              </span>
+            </div>
+          ) : null}
           <CardHeader className={headerPaddingClass}>
             <div className='flex items-center justify-between'>
               <CardTitle>{plan.title}</CardTitle>

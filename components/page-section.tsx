@@ -17,7 +17,7 @@ export function PageSection({
   return (
     <Component
       // ✅ THE FIX: Changed py-* to pt-* to prevent doubling the vertical space
-      className={cn('w-full pt-16 md:pt-20', className)}
+      className={cn('w-full pt-18 md:pt-24', className)}
       {...props}
     >
       <div className='max-w-7xl mx-auto px-4 sm:px-6 lg:px-8'>{children}</div>

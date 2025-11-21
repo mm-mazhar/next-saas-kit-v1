@@ -8,19 +8,19 @@ import Link from 'next/link'
 const links = [
   {
     title: 'Privacy Policy',
-    href: '#',
+    href: '/privacy-policy',
   },
   {
     title: 'Terms and Conditions',
-    href: '#',
+    href: '/terms',
   },
   {
-    title: 'Help',
-    href: '#',
+    title: 'Contact Us',
+    href: '/contact',
   },
   {
     title: 'About',
-    href: '#',
+    href: '/about',
   },
 ]
 

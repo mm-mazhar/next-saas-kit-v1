@@ -3,7 +3,7 @@
 import prisma from '@/app/lib/db'
 import { getStripeSession, stripe } from '@/app/lib/stripe'
 import { createClient } from '@/app/lib/supabase/server'
-import { StripePortal } from '@/components/Submitbuttons'
+import { StripePortal } from '@/app/(dashboard)/_components/Submitbuttons'
 import {
   Card,
   CardContent,

@@ -2,7 +2,7 @@
 
 import prisma from '@/app/lib/db'
 import { createClient } from '@/app/lib/supabase/server'
-import { SettingsSubmitButton } from '@/components/Submitbuttons'
+import { SettingsSubmitButton } from '@/app/(dashboard)/_components/Submitbuttons'
 import {
   Card,
   CardContent,

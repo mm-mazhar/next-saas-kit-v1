@@ -14,7 +14,6 @@ import BackgroundImage from '@/public/night-background.webp'
 import { ArrowRight } from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { HeroHeader } from './header'
 
 // import ArcjetLogo from '@/public/companies/arcjet.jpg'
 // import MotionLogo from '@/public/companies/motion.jpg'
@@ -77,7 +76,6 @@ export default async function HeroSection() {
 
   return (
     <>
-      <HeroHeader />
       <main className='overflow-hidden relative'>
         {/* --- BACKGROUND LAYER --- */}
         {/* These elements are positioned absolutely and sit on negative z-indexes */}
@@ -116,7 +114,7 @@ export default async function HeroSection() {
           className='absolute inset-0 -z-10 size-full [background:radial-gradient(125%_125%_at_50%_100%,transparent_0%,var(--color-background)_75%)]'
         />
 
-        {/* ✅ THE FIX: A new "content layer" wrapper. */}
+        {/* Content layer wrapper */}
         {/* This div is positioned relatively and lifted to a higher z-index (z-10), */}
         {/* ensuring everything inside it is on top of the background and clickable. */}
         <div className='relative z-10'>

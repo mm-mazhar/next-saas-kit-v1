@@ -48,6 +48,15 @@ export const SOCIAL_LINKS = {
   linkedin: `https://linkedin.com/company/${SOCIAL_HANDLES.linkedin}`,
 }
 
+// ✅ Contact
+export const APP_EMAIL = `mail@example.com` as string
+export const APP_OFFICE_ADDRESS = `Building Number: 2200, Street Name: Fairmount Avenue, Street Address: Philadelphia Museum of Art, 'Rocky Steps'
+State: PA
+City: Philadelphia
+Post Code: 19130` as string
+export const APP_PHONE_1 = `+1 xxx xxxx` as string
+export const APP_PHONE_2 = `+1 xxx xxxx` as string
+
 // ✅ Pricing
 export const PRICE_01 = `30` as string
 export const PRICE_01_DESC =

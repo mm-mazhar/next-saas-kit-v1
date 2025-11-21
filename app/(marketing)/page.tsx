@@ -5,7 +5,6 @@ import { getData } from '@/app/lib/db'
 import { createClient } from '@/app/lib/supabase/server'
 // import { HeroHeader } from '@/components/header'
 // import  HeroSection from '@/components/hero-section'
-import FooterSection from '@/app/(marketing)/_components/footer'
 import HeroSection from '@/app/(marketing)/_components/hero-section'
 
 export default async function Home() {
@@ -78,13 +77,5 @@ export default async function Home() {
   //   )
   // }
 
-  return (
-    <div className='flex min-h-screen flex-col'>
-      {/* <HeroHeader /> */}
-      <main className='flex-1'>
-        <HeroSection />
-      </main>
-      <FooterSection />
-    </div>
-  )
+  return <HeroSection />
 }

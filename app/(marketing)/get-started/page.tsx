@@ -52,11 +52,24 @@ export default async function LoginPage({
           <EmailAuthForm />
         </div>
 
-        <p className='text-center text-sm text-muted-foreground'>
-          <Link href='/' className='hover:text-primary underline'>
-            Back to home
-          </Link>
-        </p>
+        <div className='text-center text-sm text-muted-foreground space-y-4'>
+          <p>
+            <Link href='/' className='text-xs hover:text-primary underline'>
+              Back to Home
+            </Link>
+          </p>
+          <p className='text-xs'>
+            By signing up, you agree to our
+            <Link href='/terms' className='underline hover:text-primary ml-1'>
+              Terms & Conditions
+            </Link>
+            ,
+            <Link href='/privacy-policy' className='underline hover:text-primary ml-1'>
+              Privacy Policy
+            </Link>
+            .
+          </p>
+        </div>
       </div>
       
     </div>
