@@ -25,7 +25,26 @@ interface UserData {
   profileImage?: string
 }
 
-export async function getData(userData?: UserData | string) {
+export type DbUser = {
+  id: string
+  email: string
+  name: string | null
+  createdAt?: Date
+  colorScheme?: string
+  themePreference?: string
+  credits: number
+  stripeCustomerId?: string | null
+  autoRenewOnCreditExhaust?: boolean
+  creditsReminderThresholdSent?: boolean
+  Subscription?: {
+    status: string
+    interval: string
+    planId: string
+    currentPeriodEnd: number
+  } | null
+}
+
+export async function getData(userData?: UserData | string): Promise<DbUser | null> {
   // If string is passed, it's just the user ID for fetching
   if (typeof userData === 'string') {
     try {
@@ -39,6 +58,8 @@ export async function getData(userData?: UserData | string) {
           colorScheme: true,
           themePreference: true,
           credits: true,
+          autoRenewOnCreditExhaust: true,
+          creditsReminderThresholdSent: true,
           stripeCustomerId: true,
           Subscription: {
             select: {
@@ -66,6 +87,8 @@ export async function getData(userData?: UserData | string) {
       colorScheme: true,
       themePreference: true,
       credits: true,
+      autoRenewOnCreditExhaust: true,
+      creditsReminderThresholdSent: true,
       Subscription: true,
     } as const
     try {
@@ -100,11 +123,11 @@ export async function getData(userData?: UserData | string) {
           colorScheme: undefined,
           themePreference: undefined,
           credits: 0,
+          autoRenewOnCreditExhaust: undefined,
           Subscription: undefined,
         }
       }
     }
-    // Should never reach here; return null to satisfy return type
     return null
   }
 

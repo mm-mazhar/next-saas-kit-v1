@@ -12,12 +12,12 @@ import {
   CardTitle,
 } from '@/components/ui/card'
 import { ShineBorder } from '@/components/ui/shine-border'
-import { PRICING_PLANS, type PricingPlan } from '@/lib/constants'
+import { PRICING_PLANS, type PricingPlan, formatPrice, PLAN_IDS, type PlanId } from '@/lib/constants'
 import { cn } from '@/lib/utils'
 import Link from 'next/link'; // Ensure Link is imported
 
 export type PricingComponentProps = {
-  currentPlanId: 'free' | 'pro' | 'pro_plus' | null
+  currentPlanId: PlanId | null
   isAuthenticated?: boolean
   mode?: 'marketing' | 'billing'
   onSubscribeAction?: (formData: FormData) => Promise<void> | void
@@ -31,11 +31,11 @@ export default function PricingComponent({
   onSubscribeAction,
 }: PricingComponentProps) {
   const isBillingFreeState =
-    mode === 'billing' && (currentPlanId === null || currentPlanId === 'free')
+    mode === 'billing' && (currentPlanId === null || currentPlanId === PLAN_IDS.free)
   const visiblePlans =
     mode === 'billing' &&
-    (currentPlanId === 'pro' || currentPlanId === 'pro_plus')
-      ? PRICING_PLANS.filter((p) => p.id !== 'free')
+    (currentPlanId === PLAN_IDS.pro || currentPlanId === PLAN_IDS.pro_plus)
+      ? PRICING_PLANS.filter((p) => p.id !== PLAN_IDS.free)
       : PRICING_PLANS
 
   const gridColsClass =
@@ -67,7 +67,7 @@ export default function PricingComponent({
       }
 
       if (isAuthenticated && currentPlanId === null) {
-        if (plan.id === 'free') {
+        if (plan.id === PLAN_IDS.free) {
           return (
             <Button className='w-full' asChild>
               <Link href='/dashboard'>Go to Dashboard</Link>
@@ -81,8 +81,8 @@ export default function PricingComponent({
         )
       }
 
-      if (currentPlanId === 'free') {
-        if (plan.id === 'free') {
+      if (currentPlanId === PLAN_IDS.free) {
+        if (plan.id === PLAN_IDS.free) {
           return (
             <Button className='w-full' asChild>
               <Link href='/dashboard'>Go to Dashboard</Link>
@@ -96,15 +96,15 @@ export default function PricingComponent({
         )
       }
 
-      if (currentPlanId === 'pro') {
-        if (plan.id === 'free') {
+      if (currentPlanId === PLAN_IDS.pro) {
+        if (plan.id === PLAN_IDS.free) {
           return (
             <Button className='w-full' disabled>
               Current Plan Unavailable
             </Button>
           )
         }
-        if (plan.id === 'pro') {
+        if (plan.id === PLAN_IDS.pro) {
           return (
             <Button className='w-full' asChild>
               <Link href='/dashboard'>Go To Dashboard</Link>
@@ -118,8 +118,8 @@ export default function PricingComponent({
         )
       }
 
-      if (currentPlanId === 'pro_plus') {
-        if (plan.id === 'pro_plus') {
+      if (currentPlanId === PLAN_IDS.pro_plus) {
+        if (plan.id === PLAN_IDS.pro_plus) {
           return (
             <Button className='w-full' asChild>
               <Link href='/dashboard'>Go to Dashboard</Link>
@@ -135,8 +135,8 @@ export default function PricingComponent({
     }
 
     // --- Logic for the 'billing' mode ---
-    if (plan.id === 'free') {
-      if (currentPlanId === 'pro' || currentPlanId === 'pro_plus') {
+    if (plan.id === PLAN_IDS.free) {
+      if (currentPlanId === PLAN_IDS.pro || currentPlanId === PLAN_IDS.pro_plus) {
         return (
           <Button className='w-full' disabled>
             Current Plan Unavailable
@@ -190,7 +190,7 @@ export default function PricingComponent({
           {mode === 'marketing' ? (
             <ShineBorder borderWidth={1} duration={20} shineColor={['var(--primary)']} />
           ) : null}
-          {mode === 'marketing' && plan.id === 'pro' ? (
+          {mode === 'marketing' && plan.id === PLAN_IDS.pro ? (
             <div className='absolute top-2 left-1/2 -translate-x-1/2 z-10'>
               <span className='text-medium font-bold px-2 py-0.5 rounded-full bg-primary/15 text-primary border border-primary/30 shadow-sm'>
                 Popular
@@ -200,17 +200,17 @@ export default function PricingComponent({
           <CardHeader className={headerPaddingClass}>
             <div className='flex items-center justify-between'>
               <CardTitle>{plan.title}</CardTitle>
-              {(plan.id === 'free' &&
+              {(plan.id === PLAN_IDS.free &&
                 ((mode === 'marketing' &&
                   isAuthenticated &&
-                  (currentPlanId === null || currentPlanId === 'free')) ||
+                  (currentPlanId === null || currentPlanId === PLAN_IDS.free)) ||
                   (mode === 'billing' &&
-                    (currentPlanId === null || currentPlanId === 'free')))) ||
-              (plan.id === 'pro' &&
-                currentPlanId === 'pro' &&
+                    (currentPlanId === null || currentPlanId === PLAN_IDS.free)))) ||
+              (plan.id === PLAN_IDS.pro &&
+                currentPlanId === PLAN_IDS.pro &&
                 (mode === 'marketing' || mode === 'billing')) ||
-              (plan.id === 'pro_plus' &&
-                currentPlanId === 'pro_plus' &&
+              (plan.id === PLAN_IDS.pro_plus &&
+                currentPlanId === PLAN_IDS.pro_plus &&
                 (mode === 'marketing' || mode === 'billing')) ? (
                 <span className='text-xs px-2 py-0.5 rounded-full bg-primary/15 text-primary border border-primary/30'>
                   Subscribed
@@ -225,7 +225,7 @@ export default function PricingComponent({
             <div
               className={`flex items-baseline ${priceTextSizeClass} font-extrabold`}
             >
-              ${plan.price}
+              {formatPrice(plan.price)}
               <span className='ml-1 text-2xl text-muted-foreground'>
                 {plan.priceSuffix}
               </span>

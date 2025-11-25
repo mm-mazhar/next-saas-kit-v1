@@ -27,6 +27,7 @@ async function getData(userId: string) {
       name: true,
       email: true,
       colorScheme: true,
+      autoRenewOnCreditExhaust: true,
     },
   })
 
@@ -127,7 +128,6 @@ export default async function SettingPage() {
                   </SelectContent>
                 </Select>
               </div>
-
               {/* Theme Mode removed; use global toggles to change theme instantly */}
             </div>
           </CardContent>

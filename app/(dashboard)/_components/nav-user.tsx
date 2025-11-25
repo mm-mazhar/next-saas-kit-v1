@@ -29,6 +29,7 @@ import {
 } from '@/components/ui/sidebar'
 import Link from 'next/link'
 import * as React from 'react'
+import { PLAN_IDS, type PlanId } from '@/lib/constants'
 
 export function NavUser({
   user,
@@ -39,7 +40,7 @@ export function NavUser({
     email: string
     avatar: string
   }
-  currentPlanId?: 'free' | 'pro' | 'pro_plus' | null
+  currentPlanId?: PlanId | null
 }) {
   const { isMobile } = useSidebar()
   const [mounted, setMounted] = React.useState(false)
@@ -110,11 +111,11 @@ export function NavUser({
                   className='flex items-center text-sm gap-2'
                 >
                   <Sparkles />
-                  {currentPlanId === 'pro' ? (
+                  {currentPlanId === PLAN_IDS.pro ? (
                     <>
                       Pro, Upgrade to <span className="text-primary font-semibold">Pro Plus</span>
                     </>
-                  ) : currentPlanId === 'pro_plus' ? (
+                  ) : currentPlanId === PLAN_IDS.pro_plus ? (
                     <span className="text-primary font-semibold">Pro Plus</span>
                   ) : (
                     <>

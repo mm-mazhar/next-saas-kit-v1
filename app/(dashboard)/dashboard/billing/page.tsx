@@ -1,25 +1,29 @@
 // app/(dashboard)/dashboard/billing/page.tsx
 
+import { AutoRenewSwitch } from '@/app/(dashboard)/_components/AutoRenewSwitch'
+import { StripePortal } from '@/app/(dashboard)/_components/Submitbuttons'
 import prisma from '@/app/lib/db'
 import { getStripeSession, stripe } from '@/app/lib/stripe'
 import { createClient } from '@/app/lib/supabase/server'
-import { StripePortal } from '@/app/(dashboard)/_components/Submitbuttons'
+import { Button } from '@/components/ui/button'
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
-  CardTitle,
+  CardTitle
 } from '@/components/ui/card'
 
-import { unstable_noStore as noStore } from 'next/cache'
+import { unstable_noStore as noStore, revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 
 import PricingComponent from '@/components/PricingComponent'
 import {
   LOCAL_SITE_URL,
+  PLAN_IDS,
   PRICING_PLANS,
   PRODUCTION_URL,
+  type PlanId,
   type PricingPlan,
 } from '@/lib/constants'
 
@@ -39,11 +43,13 @@ async function getData(userId: string) {
       select: {
         status: true,
         planId: true,
+        stripeSubscriptionId: true,
         currentPeriodEnd: true,
         user: {
           select: {
             stripeCustomerId: true,
             credits: true,
+            autoRenewOnCreditExhaust: true,
           },
         },
       },
@@ -66,11 +72,26 @@ export default async function BillingPage() {
 
   const data = await getData(user.id)
 
+  let latestInvoiceUrl = ''
+  if (data?.user?.stripeCustomerId) {
+    try {
+      const invs = await stripe.invoices.list({
+        customer: data.user.stripeCustomerId as string,
+        limit: 5,
+      })
+      const candidate =
+        invs.data.find((i) => i.status === 'paid' && !!i.hosted_invoice_url) ||
+        invs.data.find((i) => !!i.hosted_invoice_url) ||
+        null
+      latestInvoiceUrl = candidate?.hosted_invoice_url || ''
+    } catch {}
+  }
+
   const resolvePlanId = async (
     planIdFromDb?: string | null
-  ): Promise<'free' | 'pro' | 'pro_plus' | null> => {
+  ): Promise<PlanId | null> => {
     if (!planIdFromDb) return null
-    if (planIdFromDb === 'free') return 'free'
+    if (planIdFromDb === PLAN_IDS.free) return PLAN_IDS.free
     const matched = PRICING_PLANS.find(
       (p: PricingPlan) => p.stripePriceId === planIdFromDb
     )
@@ -85,8 +106,8 @@ export default async function BillingPage() {
         } else {
           productName = ((price.product as { name?: string }).name || '').toLowerCase()
         }
-        if (productName.includes('pro plus')) return 'pro_plus'
-        if (productName.includes('pro')) return 'pro'
+        if (productName.includes('pro plus')) return PLAN_IDS.pro_plus
+        if (productName.includes('pro')) return PLAN_IDS.pro
       } catch {}
     }
     return null
@@ -101,6 +122,14 @@ export default async function BillingPage() {
     })
 
     let stripeCustomerId = dbUser?.stripeCustomerId
+
+    if (stripeCustomerId && stripeCustomerId.startsWith('cus_')) {
+      try {
+        await stripe.customers.retrieve(stripeCustomerId)
+      } catch {
+        stripeCustomerId = undefined
+      }
+    }
 
     if (!stripeCustomerId || !stripeCustomerId.startsWith('cus_')) {
       if (!dbUser?.email) {
@@ -126,16 +155,114 @@ export default async function BillingPage() {
     if (!priceId || !priceId.startsWith('price_')) {
       throw new Error('Invalid or missing Stripe price ID')
     }
+
+    // Enforce single subscription at Stripe: prefer updating existing over creating new
+    if (stripeCustomerId) {
+      const subsResp = await stripe.subscriptions.list({
+        customer: stripeCustomerId,
+        limit: 20,
+      })
+      const candidates = subsResp.data.filter((s) => s.status !== 'canceled')
+      console.log('Stripe subs found:', candidates.map((s) => ({ id: s.id, status: s.status })))
+      if (candidates.length > 0) {
+        const sorted = candidates.sort((a, b) => (a.created || 0) - (b.created || 0))
+        const canonical = sorted.at(-1)!
+        console.log('Using canonical subscription:', { id: canonical.id, status: canonical.status })
+
+        if (sorted.length > 1) {
+          const toCancel = sorted.slice(0, -1)
+          for (const s of toCancel) {
+            try {
+              await stripe.subscriptions.cancel(s.id)
+              console.log('Canceled duplicate subscription:', s.id)
+            } catch (e) {
+              console.error('Failed to cancel duplicate subscription:', s.id, e)
+            }
+          }
+        }
+
+        const currentItem = canonical.items.data[0]
+        const currentPriceId = currentItem.price.id
+        if (currentPriceId === priceId) {
+          return redirect('/dashboard')
+        }
+
+        try {
+          console.log('Updating subscription price', { subscriptionId: canonical.id, from: currentPriceId, to: priceId })
+          const updateResp = await stripe.subscriptions.update(canonical.id, {
+            items: [{ id: currentItem.id, price: priceId }],
+            proration_behavior: 'create_prorations',
+            payment_behavior: 'pending_if_incomplete',
+          })
+          console.log('Subscription updated successfully:', updateResp.id)
+          if (!updateResp || !updateResp.id) {
+            throw new Error('Update response invalid')
+          }
+        } catch (e) {
+          console.error('Subscription update failed:', e)
+          throw new Error('Failed to update existing subscription')
+        }
+        return redirect('/payment/success')
+      }
+    }
+    if (stripeCustomerId) {
+      const secondCheck = await stripe.subscriptions.list({ customer: stripeCustomerId, limit: 20 })
+      const stillHasSubs = secondCheck.data.some((s) => s.status !== 'canceled')
+      console.log('Second check for existing subs:', stillHasSubs)
+      if (stillHasSubs) {
+        return redirect('/dashboard/billing')
+      }
+    }
+
     const subscriptionUrl = await getStripeSession({
-      customerId: stripeCustomerId,
       domainUrl:
         process.env.NODE_ENV === 'production' ? PRODUCTION_URL : LOCAL_SITE_URL,
       priceId,
+      customerId: stripeCustomerId && stripeCustomerId.startsWith('cus_') ? stripeCustomerId : undefined,
     })
+    console.log('Creating new checkout session for subscription')
 
     return redirect(subscriptionUrl)
   }
 
+  async function renewNowAction() {
+    'use server'
+    const dbUser = await prisma.user.findUnique({
+      where: { id: user?.id },
+      select: { stripeCustomerId: true, credits: true, Subscription: { select: { stripeSubscriptionId: true, status: true } } },
+    })
+    const subId = dbUser?.Subscription?.stripeSubscriptionId
+    if (!subId) throw new Error('No active subscription to renew')
+    await stripe.subscriptions.update(subId, {
+      billing_cycle_anchor: 'now',
+      proration_behavior: 'create_prorations',
+      payment_behavior: 'pending_if_incomplete',
+    })
+    try {
+      await prisma.subscription.update({ where: { stripeSubscriptionId: subId }, data: { periodEndReminderSent: false } })
+    } catch {}
+    await prisma.user.update({ where: { id: user?.id }, data: { credits: 0 } })
+    return redirect('/payment/success')
+  }
+
+  async function updateAutoRenewAction(formData: FormData) {
+    'use server'
+    const autoRenew = (formData.get('autoRenew') as string) ?? undefined
+    await prisma.user.update({
+      where: { id: user?.id },
+      data: {
+        autoRenewOnCreditExhaust:
+          autoRenew === undefined
+            ? undefined
+            : autoRenew === 'on'
+            ? true
+            : autoRenew === 'off'
+            ? false
+            : undefined,
+      },
+    })
+    revalidatePath('/dashboard', 'layout')
+  }
   async function createCustomerPortal() {
     'use server'
     const session = await stripe.billingPortal.sessions.create({
@@ -162,7 +289,7 @@ export default async function BillingPage() {
       await prisma.subscription.update({
         where: { userId: user!.id },
         data: {
-          planId: 'free',
+          planId: PLAN_IDS.free,
           status: 'active',
         },
       })
@@ -175,7 +302,10 @@ export default async function BillingPage() {
   }
 
   const resolvedCurrent = await resolvePlanId(data?.planId)
-  if (data?.status === 'active' && resolvedCurrent === 'pro_plus') {
+  if (data?.status === 'active' && resolvedCurrent === PLAN_IDS.pro_plus) {
+    const planCredits = PRICING_PLANS.find((p) => p.id === PLAN_IDS.pro_plus)?.credits ?? 0
+    const used = data?.user?.credits ?? 0
+    const exhaustedPlus = used >= planCredits
     return (
       <div className='min-h-[calc(100vh-8rem)] flex items-center'>
         <div className='max-w-3xl mx-auto w-full space-y-2'>
@@ -224,7 +354,16 @@ export default async function BillingPage() {
               </CardContent>
             </Card>
           </div>
-
+          {exhaustedPlus ? (
+            <div className='rounded-lg border p-4 bg-muted/30'>
+              <div className='flex items-center justify-between'>
+                <p className='text-sm'>Credits exhausted. Renew now to reset your cycle or upgrade.</p>
+                {/* <form action={renewNowAction}>
+                  <Button type='submit' className='h-9 px-3'>Renew</Button>
+                </form> */}
+              </div>
+            </div>
+          ) : null}
           <Card className='w-full'>
             <CardHeader className='px-4 py-1'>
               <CardTitle>Edit Subscription</CardTitle>
@@ -247,11 +386,26 @@ export default async function BillingPage() {
               </CardDescription>
             </CardHeader>
             <CardContent className='px-4 py-1'>
-              <form action={createCustomerPortal}>
-                <StripePortal />
-              </form>
+              <div className='flex items-center gap-2 flex-wrap'>
+                <form action={createCustomerPortal}>
+                  <StripePortal />
+                </form>
+                {latestInvoiceUrl ? (
+                  <Button asChild className='w-fit focus:outline-none focus-visible:outline-none focus:ring-0 focus-visible:ring-0'>
+                    <a href={latestInvoiceUrl} target='_blank' rel='noopener noreferrer'>View latest invoice</a>
+                  </Button>
+                ) : null}
+                <form action={renewNowAction}>
+                  <Button type='submit' className='h-9 px-3'>Renew</Button>
+                </form>
+                <AutoRenewSwitch
+                  initialOn={!!data?.user?.autoRenewOnCreditExhaust}
+                  onToggleAction={updateAutoRenewAction}
+                />
+              </div>
             </CardContent>
           </Card>
+          
         </div>
       </div>
     )
@@ -261,7 +415,10 @@ export default async function BillingPage() {
 
   // const isFreeActive = data?.status === 'active' && data?.planId === 'free'
 
-  if (data?.status === 'active' && resolvedCurrent === 'pro') {
+  if (data?.status === 'active' && resolvedCurrent === PLAN_IDS.pro) {
+    const planCredits = PRICING_PLANS.find((p) => p.id === PLAN_IDS.pro)?.credits ?? 0
+    const used = data?.user?.credits ?? 0
+    const exhaustedPro = used >= planCredits
     return (
       <div className='min-h-[calc(100vh-8rem)] flex items-center'>
         <div className='max-w-4xl mx-auto w-full px-2 md:px-0 space-y-2'>
@@ -303,6 +460,16 @@ export default async function BillingPage() {
               </CardContent>
             </Card>
           </div>
+          {exhaustedPro ? (
+            <div className='rounded-lg border p-4 bg-muted/30'>
+              <div className='flex items-center justify-between'>
+                <p className='text-sm'>Credits exhausted. Renew now to reset your cycle or upgrade.</p>
+                {/* <form action={renewNowAction}>
+                  <Button type='submit' className='h-9 px-3'>Renew</Button>
+                </form> */}
+              </div>
+            </div>
+          ) : null}
           <Card className='w-full py-3 gap-3'>
             <CardHeader className='px-4 py-1'>
               <CardTitle>Edit Subscription</CardTitle>
@@ -325,14 +492,29 @@ export default async function BillingPage() {
               </CardDescription>
             </CardHeader>
             <CardContent className='px-4 py-1'>
-              <form action={createCustomerPortal}>
-                <StripePortal />
-              </form>
+              <div className='flex items-center gap-2 flex-wrap'>
+                <form action={createCustomerPortal}>
+                  <StripePortal />
+                </form>
+                {latestInvoiceUrl ? (
+                  <Button asChild className='w-fit focus:outline-none focus-visible:outline-none focus:ring-0 focus-visible:ring-0'>
+                    <a href={latestInvoiceUrl} target='_blank' rel='noopener noreferrer'>View latest invoice</a>
+                  </Button>
+                ) : null}
+                <form action={renewNowAction}>
+                  <Button type='submit' className='h-9 px-3'>Renew</Button>
+                </form>
+                <AutoRenewSwitch
+                  initialOn={!!data?.user?.autoRenewOnCreditExhaust}
+                  onToggleAction={updateAutoRenewAction}
+                />
+              </div>
             </CardContent>
           </Card>
+          
 
           <PricingComponent
-            currentPlanId={'pro'}
+            currentPlanId={PLAN_IDS.pro}
             onSubscribeAction={createSubscriptionAction}
             onFreeAction={handleFreePlanSubscription}
           />
@@ -343,15 +525,37 @@ export default async function BillingPage() {
 
 
   const containerWidthClass =
-    resolvedCurrent === null || resolvedCurrent === 'free'
+    (data?.status !== 'active') || resolvedCurrent === null || resolvedCurrent === PLAN_IDS.free
       ? 'max-w-6xl'
       : 'max-w-4xl'
 
   return (
     <div className='min-h-[calc(100vh-8rem)] flex items-center'>
       <div className={`${containerWidthClass} mx-auto w-full space-y-2`}>
+        {(() => {
+          const planCredits = PRICING_PLANS.find((p) => p.id === (data?.planId === PLAN_IDS.free ? PLAN_IDS.free : resolvedCurrent || PLAN_IDS.free))?.credits ?? 0
+          const used = data?.user?.credits ?? 0
+          const exhausted = data?.status === 'active' && used >= planCredits
+          return exhausted ? (
+            <div className='rounded-lg border p-4 bg-muted/30'>
+              <div className='flex items-center justify-between'>
+                <p className='text-sm'>Credits exhausted. Renew now to reset your cycle or upgrade.</p>
+                <form action={renewNowAction}>
+                  <Button type='submit' className='h-9 px-3'>Renew</Button>
+                </form>
+              </div>
+            </div>
+          ) : null
+        })()}
+        {data?.status === 'active' && !!data?.stripeSubscriptionId ? (
+          <div className='flex items-center justify-end'>
+            <form action={renewNowAction}>
+              <Button type='submit' className='h-9 px-3'>Renew</Button>
+            </form>
+          </div>
+        ) : null}
         <PricingComponent
-          currentPlanId={current}
+          currentPlanId={data?.status === 'active' ? current : null}
           onSubscribeAction={createSubscriptionAction}
           onFreeAction={handleFreePlanSubscription}
         />

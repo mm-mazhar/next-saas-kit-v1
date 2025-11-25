@@ -452,6 +452,44 @@ The Stripe CLI will forward webhook events to your local server.
 
 Open `http://localhost:3000` in your browser to see the result.
 
+## CRON SECRET
+
+Run:
+
+```bash
+node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+```
+
+Add the generated secret to your `.env` file:
+
+```bash
+CRON_SECRET=YOUR-GENERATED-SECRET
+```
+
+#### **TEST CREDIT EXHAUSTION EMAIL**
+
+Run:
+
+```bash
+curl -H "Authorization: Bearer <CRON_SECRET>" http://localhost:3000/api/cron/notify
+```
+
+#### **TEST Reminder Emails: 2-Day Renewal Reminder / Credits Exhaustion Reminder Email**
+
+- 2‑day renewal reminder:
+  - Ensure a user’s subscription is active and currentPeriodEnd is exactly 2 days ahead.
+  - Invoke: curl -H "Authorization: Bearer <CRON_SECRET>" http://localhost:3000/api/cron/notify
+  - Expect details to include { reason: 'days', daysLeft: 2 } .
+- Credits Exhaustion reminder (Pro/Pro Plus only):
+  - Set user credits to max credit (Plan's Max Credit) - 10 and creditsReminderThresholdSent to false .
+    - e.g. Pro Plan max credits are 50m, then credits in User Table should be set to 40
+  - Invoke endpoint; expect details entry { reason: 'credits' } .
+  - It flips creditsReminderThresholdSent to true after sending.
+- Flag resets:
+  - On first payment sync and on renewals the flag is reset with credits:
+    - app/api/webhook/stripe/route.ts:100–102
+    - app/api/webhook/stripe/route.ts:180–185
+
 ## Useful Commands
 
 This section provides a quick reference for common commands and additional guides.

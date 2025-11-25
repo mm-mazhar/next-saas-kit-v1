@@ -2,15 +2,20 @@
 
 import { ClientAppSidebar } from '@/app/(dashboard)/_components/ClientAppSidebar'
 import { TopBar } from '@/app/(dashboard)/_components/topbar'
-import { getData } from '@/app/lib/db'
+import prisma, { getData } from '@/app/lib/db'
 import { stripe } from '@/app/lib/stripe'
 import { createClient } from '@/app/lib/supabase/server'
 import { SidebarProvider } from '@/components/ui/sidebar'
-import { PRICING_PLANS, type PricingPlan } from '@/lib/constants'
+import { PRICING_PLANS, type PricingPlan, PLAN_IDS, type PlanId } from '@/lib/constants'
 import { redirect } from 'next/navigation'
 import { ReactNode } from 'react'
+import { unstable_noStore as noStore } from 'next/cache'
+
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
 
 async function DashboardGroupLayout({ children }: { children: ReactNode }) {
+  noStore()
   const supabase = await createClient()
   const {
     data: { user },
@@ -35,9 +40,9 @@ async function DashboardGroupLayout({ children }: { children: ReactNode }) {
 
   const resolvePlanId = async (
     planIdFromDb?: string | null
-  ): Promise<'free' | 'pro' | 'pro_plus' | null> => {
+  ): Promise<PlanId | null> => {
     if (!planIdFromDb) return null
-    if (planIdFromDb === 'free') return 'free'
+    if (planIdFromDb === PLAN_IDS.free) return PLAN_IDS.free
     const matched = PRICING_PLANS.find(
       (p: PricingPlan) => p.stripePriceId === planIdFromDb
     )
@@ -52,18 +57,32 @@ async function DashboardGroupLayout({ children }: { children: ReactNode }) {
         } else {
           productName = ((price.product as { name?: string }).name || '').toLowerCase()
         }
-        if (productName.includes('pro plus')) return 'pro_plus'
-        if (productName.includes('pro')) return 'pro'
+        if (productName.includes('pro plus')) return PLAN_IDS.pro_plus
+        if (productName.includes('pro')) return PLAN_IDS.pro
       } catch {}
     }
     return null
   }
 
   const currentPlan = await resolvePlanId(userRow?.Subscription?.planId)
-  const effectivePlan: 'free' | 'pro' | 'pro_plus' =
-    currentPlan === null ? 'free' : currentPlan
+  const now = Math.floor(Date.now() / 1000)
+  const isFreeLike = !userRow?.Subscription || userRow?.Subscription?.status !== 'active' || userRow?.Subscription?.planId === PLAN_IDS.free
+  const freeCycleEndFallback = userRow?.createdAt ? Math.floor(userRow.createdAt.getTime() / 1000) + 30 * 24 * 60 * 60 : null
+  const freeCycleEnd = userRow?.Subscription?.currentPeriodEnd ?? freeCycleEndFallback
+  if (isFreeLike && freeCycleEnd && freeCycleEnd <= now) {
+    try {
+      await prisma.user.update({ where: { id: user.id }, data: { credits: 0 } })
+      if (userRow?.Subscription) {
+        await prisma.subscription.update({ where: { userId: user.id }, data: { currentPeriodStart: now, currentPeriodEnd: now + 30 * 24 * 60 * 60 } })
+      }
+    } catch {}
+  }
+  const subStatus = userRow?.Subscription?.status
+  const effectivePlan: PlanId =
+    subStatus === 'active' ? (currentPlan ?? PLAN_IDS.free) : PLAN_IDS.free
   const creditsTotal = PRICING_PLANS.find((p) => p.id === effectivePlan)?.credits ?? 0
   const creditsUsed = (userRow?.credits as number | undefined) ?? 0
+  const exhausted = (userRow?.Subscription?.status === 'active') && (effectivePlan !== PLAN_IDS.free) && (creditsUsed >= creditsTotal)
   const renewalDate =
     userRow?.Subscription?.currentPeriodEnd ??
     (userRow?.createdAt
@@ -84,7 +103,7 @@ async function DashboardGroupLayout({ children }: { children: ReactNode }) {
             (user.user_metadata?.avatar_url as string) ||
             'https://github.com/shadcn.png',
         }}
-        currentPlanId={currentPlan}
+        currentPlanId={subStatus === 'active' ? currentPlan : null}
       />
       <main className='w-full'>
         <TopBar
@@ -93,6 +112,8 @@ async function DashboardGroupLayout({ children }: { children: ReactNode }) {
             creditsTotal,
             renewalDate,
             currentPlanId: effectivePlan,
+            exhausted,
+            autoRenewOnCreditExhaust: !!userRow?.autoRenewOnCreditExhaust,
           }}
         />
         <div className='px-4 md:px-8 pt-2 md:pt-4 pb-4 md:pb-8'>

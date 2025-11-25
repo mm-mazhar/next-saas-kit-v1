@@ -4,6 +4,7 @@
 
 import { NEXT_PUBLIC_SITE_NAME } from '@/lib/constants'
 import Logo from '@/public/logo-01.png'
+export const SITE_LOGO_PATH = '/logo-01.png'
 import Image from 'next/image'
 import Link from 'next/link'
 

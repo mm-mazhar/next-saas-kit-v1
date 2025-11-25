@@ -5,7 +5,6 @@
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Check } from 'lucide-react'
-import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useEffect, useRef, useState } from 'react'
 
@@ -17,7 +16,7 @@ export default function SuccessRoute() {
   useEffect(() => {
     const tick = setInterval(() => setSeconds((s) => (s > 0 ? s - 1 : 0)), 1000)
     timerRef.current = setTimeout(() => {
-      router.replace('/dashboard')
+      router.replace(`/dashboard?t=${Date.now()}`)
     }, 10_000)
 
     return () => {
@@ -28,7 +27,7 @@ export default function SuccessRoute() {
 
   const goNow = () => {
     if (timerRef.current) clearTimeout(timerRef.current)
-    router.push('/')
+    router.push(`/dashboard?t=${Date.now()}`)
   }
 
   return (
@@ -48,8 +47,8 @@ export default function SuccessRoute() {
             </p>
 
             <div className='mt-5 sm:mt-6 w-full'>
-              <Button className='w-full' onClick={goNow} asChild>
-                <Link href='/dashboard'>Go back to Dashboard</Link>
+              <Button className='w-full' onClick={goNow}>
+                Go back to Dashboard
               </Button>
             </div>
           </div>

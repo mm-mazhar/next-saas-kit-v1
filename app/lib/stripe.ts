@@ -15,10 +15,9 @@ export const getStripeSession = async ({
 }: {
   priceId: string
   domainUrl: string
-  customerId: string
+  customerId?: string
 }) => {
-  const session = await stripe.checkout.sessions.create({
-    customer: customerId,
+  const payload: Stripe.Checkout.SessionCreateParams = {
     mode: 'subscription',
     billing_address_collection: 'auto',
     line_items: [{ price: priceId, quantity: 1 }],
@@ -30,7 +29,15 @@ export const getStripeSession = async ({
     success_url: `${domainUrl}/payment/success`,
     cancel_url: `${domainUrl}/payment/unsuccessful`,
     allow_promotion_codes: true,
-  })
+  }
+
+  if (customerId && customerId.startsWith('cus_')) {
+    payload.customer = customerId
+  } else {
+    payload.customer_creation = 'always'
+  }
+
+  const session = await stripe.checkout.sessions.create(payload)
 
   return session.url as string
 }

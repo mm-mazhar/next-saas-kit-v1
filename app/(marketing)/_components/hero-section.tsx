@@ -35,6 +35,8 @@ import {
   PRICE_HEADING,
   PRICING_PLANS,
   type PricingPlan,
+  PLAN_IDS,
+  type PlanId,
 } from '@/lib/constants'
 
 const transitionVariants = {
@@ -64,10 +66,12 @@ export default async function HeroSection() {
   } = await supabase.auth.getUser()
 
   const dbUser = user ? await getData(user.id) : null
+  const subStatus = dbUser?.Subscription?.status ?? null
   const rawPlanId = dbUser?.Subscription?.planId ?? null
-  const currentPlanId = (() => {
+  const currentPlanId: PlanId | null = (() => {
     if (!rawPlanId) return null
-    if (rawPlanId === 'free') return 'free' as const
+    if (subStatus !== 'active') return null
+    if (rawPlanId === PLAN_IDS.free) return PLAN_IDS.free
     const matched = PRICING_PLANS.find(
       (p: PricingPlan) => p.stripePriceId === rawPlanId
     )

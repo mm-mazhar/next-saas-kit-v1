@@ -11,6 +11,26 @@ export const DEFAULT_THEME_MODE = `dark` as string
 
 // ✅ LOCALE
 export const LOCALE = `en_US`
+export const DEFAULT_CURRENCY = `USD`
+
+export function formatPrice(
+  price: string | number,
+  currency: string = DEFAULT_CURRENCY,
+  locale: string = LOCALE
+) {
+  const amount = typeof price === 'string' ? Number(price) : price
+  const resolvedLocale = locale.replace('_', '-')
+  try {
+    return new Intl.NumberFormat(resolvedLocale, {
+      style: 'currency',
+      currency,
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(amount)
+  } catch {
+    return `${amount}`
+  }
+}
 
 // ✅ SOCIALS AND SEO
 export const NEXT_PUBLIC_SITE_NAME = `Next SaaS Kit v2` as string
@@ -58,13 +78,6 @@ export const APP_PHONE_1 = `+1 xxx xxxx` as string
 export const APP_PHONE_2 = `+1 xxx xxxx` as string
 
 // ✅ Pricing
-export const PRICE_01 = `30` as string
-export const PRICE_01_DESC =
-  `Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmo` as string
-export const PRICE_01_FEATUREITEMS_LST: string[] =
-  'Lorem Ipsum something1,Lorem Ipsum something2,Lorem Ipsum something3,Lorem Ipsum something4,Lorem Ipsum something5'
-    .split(',')
-    .map((item) => item.trim())
 export const STRIPE_PRICE_ID_1 = (process.env.STRIPE_PRICE_ID_1 ||
   process.env.STRIPE_PRICE_ID ||
   '') as string
@@ -74,9 +87,15 @@ export const STRIPE_PRICE_ID_2 = (process.env.STRIPE_PRICE_ID_2 ||
   '') as string
 
 // A new type definition for a pricing plan
-export const PRICE_HEADING = `Pricing that scales with your business` as string
+export const PRICE_HEADING = `Pricing that scales with your interests` as string
+export const PLAN_IDS = {
+  free: 'RZ5wzP!PwpF%gj',       // random generated
+  pro: 'X6t!RNJPq#7Jdb',        // random generated
+  pro_plus: 'UyWYzJ#FPJ7&Xg',   // random generated
+} as const
+export type PlanId = (typeof PLAN_IDS)[keyof typeof PLAN_IDS]
 export type PricingPlan = {
-  id: 'free' | 'pro' | 'pro_plus'
+  id: PlanId
   title: string
   price: string
   priceSuffix: string
@@ -89,7 +108,7 @@ export type PricingPlan = {
 // Define the three plans using the new type
 export const PRICING_PLANS: PricingPlan[] = [
   {
-    id: 'free',
+    id: PLAN_IDS.free,
     title: 'Free',
     price: '0',
     priceSuffix: '/mo',
@@ -104,7 +123,7 @@ export const PRICING_PLANS: PricingPlan[] = [
     stripePriceId: undefined,
   },
   {
-    id: 'pro',
+    id: PLAN_IDS.pro,
     title: 'Pro',
     price: '30',
     priceSuffix: '/mo',
@@ -119,7 +138,7 @@ export const PRICING_PLANS: PricingPlan[] = [
     stripePriceId: STRIPE_PRICE_ID_1,
   },
   {
-    id: 'pro_plus',
+    id: PLAN_IDS.pro_plus,
     title: 'Pro Plus',
     price: '60',
     priceSuffix: '/mo',
@@ -134,3 +153,6 @@ export const PRICING_PLANS: PricingPlan[] = [
     stripePriceId: STRIPE_PRICE_ID_2,
   },
 ]
+
+export const RENEWAL_REMINDER_DAYS_BEFORE = 2
+export const CREDIT_REMINDER_THRESHOLD = 10

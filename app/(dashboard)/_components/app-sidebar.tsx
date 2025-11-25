@@ -17,6 +17,7 @@ import {
 } from '@/components/ui/sidebar'
 import { ChartNoAxesCombined, CreditCard, Settings } from 'lucide-react'
 import { usePathname } from 'next/navigation'
+import { type PlanId } from '@/lib/constants'
 
 const navItems = [
   { name: 'Dashboard', href: '/dashboard', icon: ChartNoAxesCombined },
@@ -47,7 +48,7 @@ export function AppSidebar({
   ...props
 }: React.ComponentProps<typeof Sidebar> & {
   user?: { name: string; email: string; avatar: string }
-  currentPlanId?: 'free' | 'pro' | 'pro_plus' | null
+  currentPlanId?: PlanId | null
 }) {
   const pathname = usePathname()
   const mappedNavMain = navItems

@@ -3,7 +3,8 @@
 'use client'
 
 import { DEFAULT_COLOR_SCHEME } from '@/lib/constants'
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
+import { useTheme } from 'next-themes'
 
 type ThemeSettings = {
   colorScheme: string | null
@@ -17,9 +18,10 @@ export function ThemeInitializer({
   settings: ThemeSettings | null
   forceFromServer?: boolean
 }) {
-  useEffect(() => {
-    // Do not set theme here; let next-themes handle toggling.
+  const { setTheme } = useTheme()
+  const appliedRef = useRef(false)
 
+  useEffect(() => {
     const body = document.body
     const desired = settings?.colorScheme ?? DEFAULT_COLOR_SCHEME
     const existing = Array.from(body.classList).find((c) => c.startsWith('theme-'))
@@ -27,7 +29,13 @@ export function ThemeInitializer({
       if (existing) body.classList.remove(existing)
       body.classList.add(desired)
     }
-  }, [settings, forceFromServer])
+
+    if (!appliedRef.current && forceFromServer && settings?.themePreference) {
+      const pref = settings.themePreference
+      setTheme(pref)
+      appliedRef.current = true
+    }
+  }, [settings, forceFromServer, setTheme])
 
   return null
 }

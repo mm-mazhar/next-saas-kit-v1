@@ -3,6 +3,7 @@
 'use client'
 import { createClient } from '@/app/lib/supabase/client'
 import { Themetoggle } from '@/components/Themetoggle'
+import { ToastProvider } from '@/components/ToastProvider'
 import { Button } from '@/components/ui/button'
 import { ShineBorder } from '@/components/ui/shine-border'
 import { cn } from '@/lib/utils'
@@ -127,7 +128,9 @@ export const HeroHeader = () => {
                 <div className='flex w-full flex-col space-y-3 sm:flex-row sm:gap-3 sm:space-y-0 md:w-fit'>
                   {user ? (
                     <>
-                      <Themetoggle />
+                      <ToastProvider>
+                        <Themetoggle />
+                      </ToastProvider>
                       <Button
                         asChild
                         variant='default'
@@ -143,7 +146,9 @@ export const HeroHeader = () => {
                     </>
                   ) : (
                     <>
-                      <Themetoggle />
+                      <ToastProvider>
+                        <Themetoggle />
+                      </ToastProvider>
                       {/* <Button
                   asChild
                   variant='outline'

@@ -2,13 +2,13 @@
 
 import prisma from '@/app/lib/db'
 import { createClient } from '@/app/lib/supabase/server'
-import type { Metadata } from 'next'
-import { unstable_noStore as noStore } from 'next/cache'
-import { Inter } from 'next/font/google'
-// import HeaderSubComponent from './components/HeaderSubComp'
 import { JsonLd } from '@/components/JsonLd'
 import { ThemeProvider } from '@/components/theme-provider'
 import { ToastProvider } from '@/components/ToastProvider'
+import type { Metadata } from 'next'
+import { unstable_noStore as noStore } from 'next/cache'
+import { Inter } from 'next/font/google'
+import Script from 'next/script'
 
 import './globals.css'
 
@@ -16,7 +16,7 @@ import { ThemeInitializer } from '@/components/ThemeInitializer'
 import {
   APP_DESCRIPTION,
   APP_SLOGAN,
-  // DEFAULT_COLOR_SCHEME,
+  DEFAULT_COLOR_SCHEME,
   DEFAULT_THEME_MODE,
   KEYWORDS_LST,
   LOCALE,
@@ -143,8 +143,10 @@ export default async function RootLayout({
 
   return (
     <html lang='en' suppressHydrationWarning>
-      {/* ✅ The body now only needs the font class. All theme logic is handled by the initializer. */}
-      <body className={inter.className}>
+      <body className={`${inter.className} ${data?.colorScheme ?? DEFAULT_COLOR_SCHEME}`}>
+        <Script id='theme-init' strategy='beforeInteractive'>
+          {`(function(){try{var k='app-theme';var s=localStorage.getItem(k);var t=s?s:(window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');var d=document.documentElement;d.classList.remove('light','dark');d.classList.add(t);}catch(e){}})();`}
+        </Script>
         <ThemeProvider
           attribute='class'
           defaultTheme={DEFAULT_THEME_MODE}
