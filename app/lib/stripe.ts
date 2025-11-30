@@ -12,29 +12,39 @@ export const getStripeSession = async ({
   priceId,
   domainUrl,
   customerId,
+  userId,
+  mode = 'subscription',
 }: {
   priceId: string
   domainUrl: string
   customerId?: string
+  userId?: string
+  mode?: 'subscription' | 'payment'
 }) => {
   const payload: Stripe.Checkout.SessionCreateParams = {
-    mode: 'subscription',
+    mode,
     billing_address_collection: 'auto',
     line_items: [{ price: priceId, quantity: 1 }],
     payment_method_types: ['card'],
-    customer_update: {
-      address: 'auto',
-      name: 'auto',
-    },
     success_url: `${domainUrl}/payment/success`,
     cancel_url: `${domainUrl}/payment/unsuccessful`,
     allow_promotion_codes: true,
   }
 
+  if (mode === 'payment') {
+    payload.invoice_creation = { enabled: true }
+  }
+
   if (customerId && customerId.startsWith('cus_')) {
     payload.customer = customerId
-  } else {
+    payload.customer_update = { address: 'auto', name: 'auto' }
+  } else if (mode === 'payment') {
     payload.customer_creation = 'always'
+  }
+
+  if (userId) {
+    payload.client_reference_id = userId
+    payload.metadata = { ...(payload.metadata || {}), userId }
   }
 
   const session = await stripe.checkout.sessions.create(payload)

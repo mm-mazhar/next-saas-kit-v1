@@ -13,7 +13,8 @@ import {
   BreadcrumbSeparator,
 } from '@/components/ui/breadcrumb'
 import { Separator } from '@/components/ui/separator'
-import { SidebarTrigger } from '@/components/ui/sidebar'
+import { SidebarTrigger } from '@/app/(dashboard)/_components/sidebar'
+import { PLAN_IDS, type PlanId } from '@/lib/constants'
 import {
   ChartNoAxesCombined,
   CreditCard,
@@ -24,7 +25,6 @@ import {
 } from 'lucide-react'
 import { usePathname } from 'next/navigation'
 import * as React from 'react'
-import { PLAN_IDS, type PlanId } from '@/lib/constants'
 
 export function TopBar({
   usageInfo,
@@ -35,7 +35,6 @@ export function TopBar({
     renewalDate?: number | null
     currentPlanId?: PlanId | null
     exhausted?: boolean
-    autoRenewOnCreditExhaust?: boolean
   }
 }) {
   const pathname = usePathname()
@@ -106,29 +105,29 @@ export function TopBar({
         </Breadcrumb>
       </div>
       <div className='flex items-center gap-2'>
-        {usageInfo?.exhausted && !usageInfo?.autoRenewOnCreditExhaust ? (
+        {usageInfo && (
+          <span className='inline-flex items-center h-9 px-1 rounded-md bg-muted text-primary font-medium text-sm border leading-none'>
+            Credits: {usageInfo.creditsUsed ?? 0}
+          </span>
+        )}
+        {usageInfo?.creditsUsed === 0 ? (
           <span className='inline-flex items-center h-9 px-3 rounded-md bg-primary text-primary-foreground font-medium text-sm border border-primary leading-none'>
             Renewal required
           </span>
         ) : null}
-        {usageInfo && (
-          <span className='inline-flex items-center h-9 px-1 rounded-md bg-muted text-primary font-medium text-sm border leading-none'>
-            Credits: {usageInfo.creditsUsed}/{usageInfo.creditsTotal}
-          </span>
-        )}
         {usageInfo?.currentPlanId === PLAN_IDS.free ? (
           <a
             href='/dashboard/billing'
             className='inline-flex items-center h-9 px-3 rounded-md bg-primary text-primary-foreground font-medium text-sm border border-primary leading-none'
           >
-            Upgrade
+            Purchase Credits
           </a>
         ) : usageInfo?.currentPlanId ? (
           <span className='inline-flex items-center h-9 px-2 rounded-md bg-muted text-primary font-medium text-sm border leading-none'>
-            {usageInfo.currentPlanId === PLAN_IDS.pro_plus
-              ? 'Pro Plus'
-              : usageInfo.currentPlanId === PLAN_IDS.pro
+            {usageInfo.currentPlanId === PLAN_IDS.pro
               ? 'Pro'
+              : usageInfo.currentPlanId === PLAN_IDS.payg
+              ? 'Pay As You Go'
               : 'Free'}
           </span>
         ) : null}

@@ -1,12 +1,10 @@
-// app/(marketing)/about/page.tsx
+// app/(marketing)/_components/mvpblocks/about-us-1.tsx
 
 'use client';
 
 import { BorderBeam } from '@/app/(marketing)/_components/ui/border-beam';
 import { CardHoverEffect } from '@/app/(marketing)/_components/ui/pulse-card';
-import { PageSection } from '@/components/page-section';
-import { Badge } from '@/components/ui/badge';
-// Spotlight removed (background animation disabled)
+import { Spotlight } from '@/app/(marketing)/_components/ui/spotlight';
 import { motion, useInView } from 'framer-motion';
 import {
   Globe,
@@ -89,15 +87,14 @@ export default function AboutUs1() {
   const valuesInView = useInView(valuesRef, { once: true, amount: 0.3 });
 
   return (
-    <PageSection className="relative overflow-hidden">
+    <section className="relative w-full overflow-hidden pt-20">
+      <Spotlight
+        gradientFirst="radial-gradient(68.54% 68.72% at 55.02% 31.46%, hsla(336, 100%, 50%, 0.08) 0, hsla(341, 100%, 55%, 0.04) 50%, hsla(336, 100%, 45%, 0) 80%)"
+        gradientSecond="radial-gradient(50% 50% at 50% 50%, hsla(333, 100%, 85%, 0.08) 0, hsla(335, 100%, 55%, 0.04) 80%, transparent 100%)"
+        gradientThird="radial-gradient(50% 50% at 50% 50%, hsla(332, 100%, 85%, 0.06) 0, hsla(327, 100%, 85%, 0.06) 80%, transparent 100%)"
+      />
 
-      <div className="flex flex-col items-center relative z-10 space-y-8 px-4">
-        <Badge
-                  variant="outline"
-                  className="border-primary mb-4 px-3 py-1 text-xs font-medium tracking-wider uppercase"
-                >
-                  About
-                </Badge>
+      <div className="relative z-10 container mx-auto px-4 md:px-6">
         {/* Header Section */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -155,14 +152,14 @@ export default function AboutUs1() {
               <BorderBeam
                 duration={8}
                 size={300}
-                className="from-transparent via-primary/40 to-transparent"
+                className="from-transparent via-blue-500/40 to-transparent"
                 reverse
               />
-              <div className="mb-6 inline-flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-primary/20 to-primary/5 backdrop-blur-sm">
-                <Target className="h-8 w-8 text-primary" />
+              <div className="mb-6 inline-flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-500/20 to-blue-500/5 backdrop-blur-sm">
+                <Target className="h-8 w-8 text-blue-500" />
               </div>
 
-              <h2 className="mb-4 bg-gradient-to-r from-primary/90 to-primary/70 bg-clip-text text-3xl font-bold text-transparent">
+              <h2 className="mb-4 bg-gradient-to-r from-blue-500/90 to-blue-500/70 bg-clip-text text-3xl font-bold text-transparent">
                 Our Vision
               </h2>
 
@@ -180,7 +177,7 @@ export default function AboutUs1() {
               valuesInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }
             }
             transition={{ duration: 0.6, ease: 'easeOut' }}
-            className="text-center"
+            className="mb-12 text-center"
           >
             <h2 className="from-foreground/80 via-foreground to-foreground/80 bg-gradient-to-r bg-clip-text text-3xl font-bold tracking-tight text-transparent sm:text-4xl">
               Our Core Values
@@ -216,7 +213,6 @@ export default function AboutUs1() {
                     variant={'theme'}
                     glowEffect={true}
                     size="lg"
-                    flat={false}
                   />
                 </motion.div>
               );
@@ -224,6 +220,6 @@ export default function AboutUs1() {
           </div>
         </div>
       </div>
-    </PageSection>
+    </section>
   );
 }

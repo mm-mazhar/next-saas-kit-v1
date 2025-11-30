@@ -3,7 +3,7 @@
 import prisma from '@/app/lib/db'
 import { sendCancellationEmail, sendPaymentConfirmationEmail } from '@/app/lib/email'
 import { stripe } from '@/app/lib/stripe'
-import { PRICING_PLANS } from '@/lib/constants'
+import { PRICING_PLANS, PLAN_IDS } from '@/lib/constants'
 import { headers } from 'next/headers'
 import Stripe from 'stripe'
 
@@ -33,6 +33,72 @@ export async function POST(req: Request) {
   // ============================================================
   if (event.type === 'checkout.session.completed') {
     const session = event.data.object as Stripe.Checkout.Session
+    if (session.mode === 'payment') {
+      const customerId = String(session.customer || '')
+      const refId = (session.client_reference_id as string | null) || (typeof session.metadata?.userId === 'string' ? session.metadata.userId : null)
+      let user = refId ? await prisma.user.findUnique({ where: { id: refId }, select: { id: true, stripeCustomerId: true } }) : null
+      if (!user && customerId) {
+        user = await prisma.user.findUnique({ where: { stripeCustomerId: customerId }, select: { id: true, stripeCustomerId: true } })
+      }
+      if (!user) {
+        const candidateEmail = (session.customer_details?.email as string | undefined) || (session.customer_email as string | undefined)
+        if (candidateEmail) {
+          user = await prisma.user.findUnique({ where: { email: candidateEmail }, select: { id: true, stripeCustomerId: true } })
+        }
+      }
+      if (user) {
+        try {
+          const paygCredits = PRICING_PLANS.find((p) => p.id === PLAN_IDS.payg)?.credits ?? 50
+          await prisma.user.update({
+            where: { id: user.id },
+            data: {
+              credits: { increment: paygCredits },
+              creditsReminderThresholdSent: false,
+              lastPaygPurchaseAt: new Date((session.created || Math.floor(Date.now()/1000)) * 1000),
+              stripeCustomerId: user.stripeCustomerId ? user.stripeCustomerId : (customerId || undefined),
+            },
+          })
+        } catch {}
+      }
+      const to = (session.customer_details?.email as string | undefined) || (session.customer_email as string | undefined)
+      const amountTotal = typeof session.amount_total === 'number' ? session.amount_total : 0
+      const currency = (session.currency as string | undefined) || 'usd'
+      let invoiceUrl = ''
+      let invoiceNumber: string | null = null
+      if (session.invoice) {
+        if (typeof session.invoice === 'string') {
+          const inv = await stripe.invoices.retrieve(session.invoice)
+          invoiceUrl = inv.hosted_invoice_url || ''
+          invoiceNumber = (inv.number as string | null) || null
+        } else {
+          const invObj = session.invoice as Stripe.Invoice
+          invoiceUrl = invObj.hosted_invoice_url || ''
+          invoiceNumber = (invObj.number as string | null) || null
+        }
+      }
+      let finalCredits: number | null = null
+      if (user && user.id) {
+        try {
+          const fresh = await prisma.user.findUnique({ where: { id: user.id }, select: { credits: true } })
+          finalCredits = typeof fresh?.credits === 'number' ? fresh.credits : null
+        } catch {}
+      }
+      if (to) {
+        try {
+          await sendPaymentConfirmationEmail({
+            to,
+            amountPaid: amountTotal,
+            currency,
+            invoiceUrl: invoiceUrl || (process.env.NEXT_PUBLIC_SITE_URL || ''),
+            invoiceNumber,
+            planTitle: 'Pay As You Go',
+            portalUrl: null,
+            finalCredits,
+          })
+        } catch {}
+      }
+      return new Response(null, { status: 200 })
+    }
     const subscriptionId = session.subscription as string
     const customerId = String(session.customer)
 
@@ -99,33 +165,44 @@ export async function POST(req: Request) {
     console.log('✅ Subscription synced to DB')
 
     try {
-      await prisma.user.update({ where: { id: user.id }, data: { credits: 0, creditsReminderThresholdSent: false } })
+      const proCredits = PRICING_PLANS.find((p) => p.id === PLAN_IDS.pro)?.credits ?? 100
+      await prisma.user.update({ where: { id: user.id }, data: { credits: { increment: proCredits }, creditsReminderThresholdSent: false } })
     } catch {}
-
-    // B. Send Welcome / First Payment Email
-    // We fetch the invoice details specifically to get the hosted_invoice_url
+    const to2 = (session.customer_details?.email as string | undefined) || (session.customer_email as string | undefined)
+    const amount2 = typeof session.amount_total === 'number' ? session.amount_total : 0
+    const currency2 = (session.currency as string | undefined) || 'usd'
+    let invUrl2 = ''
+    let invNum2: string | null = null
     if (session.invoice) {
-      try {
-        const invoice = await stripe.invoices.retrieve(session.invoice as string)
-        const priceId = subscription.items.data[0].price.id
-        const plan = PRICING_PLANS.find((p) => p.stripePriceId === priceId)
-        const sp = subscription as unknown as PeriodFields
-
-        await sendPaymentConfirmationEmail({
-          to: user.email!,
-          name: user.name,
-          amountPaid: invoice.amount_paid,
-          currency: invoice.currency,
-          invoiceUrl: invoice.hosted_invoice_url || '',
-          invoiceNumber: invoice.number,
-          planTitle: plan?.title,
-          periodEnd: sp.current_period_end,
-          from: process.env.RESEND_FROM,
-        })
-        console.log('✅ First Payment Email Sent')
-      } catch (e) {
-        console.error('❌ Failed to send first payment email:', e)
+      if (typeof session.invoice === 'string') {
+        const inv = await stripe.invoices.retrieve(session.invoice)
+        invUrl2 = inv.hosted_invoice_url || ''
+        invNum2 = (inv.number as string | null) || null
+      } else {
+        const invObj = session.invoice as Stripe.Invoice
+        invUrl2 = invObj.hosted_invoice_url || ''
+        invNum2 = (invObj.number as string | null) || null
       }
+    }
+    let finalCredits2: number | null = null
+    try {
+      const freshUser = await prisma.user.findUnique({ where: { id: user.id }, select: { credits: true } })
+      finalCredits2 = typeof freshUser?.credits === 'number' ? freshUser.credits : null
+    } catch {}
+    if (to2) {
+      try {
+        await sendPaymentConfirmationEmail({
+          to: to2,
+          amountPaid: amount2,
+          currency: currency2,
+          invoiceUrl: invUrl2 || (process.env.NEXT_PUBLIC_SITE_URL || ''),
+          invoiceNumber: invNum2,
+          planTitle: 'Pro',
+          periodEnd: currentEnd,
+          portalUrl: null,
+          finalCredits: finalCredits2,
+        })
+      } catch {}
     }
   }
 
@@ -176,42 +253,23 @@ export async function POST(req: Request) {
         console.log('⚠️ Could not update subscription (User might have deleted account)')
       }
 
-      // 1b. Reset credits on successful renewal
+      // 1b. Add credits on successful renewal
       try {
         const custId = String(subscription.customer || '')
         if (custId) {
+          const proCredits = PRICING_PLANS.find((p) => p.id === PLAN_IDS.pro)?.credits ?? 100
           await prisma.user.update({
             where: { stripeCustomerId: custId },
-            data: { credits: 0, creditsReminderThresholdSent: false },
+            data: { credits: { increment: proCredits }, creditsReminderThresholdSent: false },
           })
         }
       } catch {}
 
-      // 2. Send Renewal Email
-      const recipientEmail = invoice.customer_email || null
-      if (recipientEmail) {
-        try {
-           const priceId = subscription.items.data[0].price.id
-           const plan = PRICING_PLANS.find((p) => p.stripePriceId === priceId)
-           const sp = subscription as unknown as PeriodFields
-           await sendPaymentConfirmationEmail({
-            to: recipientEmail,
-            name: undefined,
-            amountPaid: invoice.amount_paid,
-            currency: invoice.currency,
-            invoiceUrl: invoice.hosted_invoice_url || '',
-            invoiceNumber: invoice.number,
-            planTitle: plan?.title,
-            periodEnd: sp.current_period_end,
-            from: process.env.RESEND_FROM,
-           })
-           console.log('✅ Renewal Email Sent')
-        } catch (e) {
-           console.error('❌ Failed to send renewal email', e)
-        }
-      }
+      // Email sending disabled
     }
   }
+
+  // Email sending disabled
 
   if (event.type === 'customer.subscription.updated') {
     const sub = event.data.object as Stripe.Subscription
@@ -233,33 +291,21 @@ export async function POST(req: Request) {
     } catch {}
     const scheduled = !!fresh.cancel_at_period_end || !!fresh.cancel_at
     const immediateCanceled = fresh.status === 'canceled'
-    if (scheduled || immediateCanceled) {
-      const customerId = String(sub.customer || '')
-      const user = await prisma.user.findUnique({
-        where: { stripeCustomerId: customerId },
-        select: { email: true, name: true },
-      })
-      const priceId = fresh.items.data[0].price.id
-      const plan = PRICING_PLANS.find((p) => p.stripePriceId === priceId)
-      const customer = user?.email ? null : await stripe.customers.retrieve(customerId)
-      const toEmail = user?.email || (
-        customer && !('deleted' in customer)
-          ? (customer as Stripe.Customer).email || null
-          : null
-      )
-      if (toEmail) {
-        try {
-          const effective = (fresh as unknown as PeriodFields).current_period_end ?? null
+    if (scheduled && !immediateCanceled) {
+      try {
+        const customerId = String(fresh.customer || '')
+        const user = await prisma.user.findUnique({ where: { stripeCustomerId: customerId }, select: { email: true, name: true, credits: true } })
+        if (user?.email) {
           await sendCancellationEmail({
-            to: toEmail,
-            name: user?.name,
-            planTitle: plan?.title || 'Subscription',
-            effectiveDate: effective ?? null,
-            final: immediateCanceled,
-            from: process.env.RESEND_FROM,
+            to: user.email,
+            name: user.name ?? null,
+            planTitle: 'Pro',
+            effectiveDate: typeof fresh.cancel_at === 'number' ? fresh.cancel_at : ((fresh as unknown as PeriodFields).current_period_end as number | undefined),
+            final: false,
+            creditsRemaining: typeof user.credits === 'number' ? user.credits : null,
           })
-        } catch {}
-      }
+        }
+      } catch {}
     }
   }
 
@@ -269,7 +315,7 @@ export async function POST(req: Request) {
     const customerId = String(sub.customer || '')
     const user = await prisma.user.findUnique({
       where: { stripeCustomerId: customerId },
-      select: { email: true, name: true },
+      select: { email: true, name: true, credits: true },
     })
     try {
       await prisma.subscription.update({
@@ -280,24 +326,15 @@ export async function POST(req: Request) {
         },
       })
     } catch {}
-    const priceId = sub.items.data[0].price.id
-    const plan = PRICING_PLANS.find((p) => p.stripePriceId === priceId)
-    const customer = user?.email ? null : await stripe.customers.retrieve(customerId)
-    const toEmail = user?.email || (
-      customer && !('deleted' in customer)
-        ? (customer as Stripe.Customer).email || null
-        : null
-    )
-    if (toEmail) {
+    if (user?.email) {
       try {
-        const effective = (sub as unknown as PeriodFields).current_period_end ?? null
         await sendCancellationEmail({
-          to: toEmail,
-          name: user?.name,
-          planTitle: plan?.title || 'Subscription',
-          effectiveDate: effective ?? null,
+          to: user.email,
+          name: user.name ?? null,
+          planTitle: 'Pro',
+          effectiveDate: (sub as unknown as PeriodFields).current_period_end ?? undefined,
           final: true,
-          from: process.env.RESEND_FROM,
+          creditsRemaining: typeof user.credits === 'number' ? user.credits : null,
         })
       } catch {}
     }

@@ -37,7 +37,7 @@ export const NEXT_PUBLIC_SITE_NAME = `Next SaaS Kit v2` as string
 export const APP_SLOGAN = `Launch your SaaS faster` as string
 export const APP_DESCRIPTION = `Launch your SaaS App 10x Faster` as string
 export const APP_DESCRIPTION_LONG =
-  `Highly customizable components for building modern websites and pplications that look and feel the way you mean it.` as string
+  `Highly customizable components for building modern websites and applications that look and feel the way you mean it.` as string
 export const KEYWORDS_LST: string[] = [
   'Saas,Next.js',
   'TypeScript',
@@ -78,20 +78,15 @@ export const APP_PHONE_1 = `+1 xxx xxxx` as string
 export const APP_PHONE_2 = `+1 xxx xxxx` as string
 
 // ✅ Pricing
-export const STRIPE_PRICE_ID_1 = (process.env.STRIPE_PRICE_ID_1 ||
-  process.env.STRIPE_PRICE_ID ||
-  '') as string
-export const STRIPE_PRICE_ID_2 = (process.env.STRIPE_PRICE_ID_2 ||
-  process.env.STRIPE_PRICE_ID_1 ||
-  process.env.STRIPE_PRICE_ID ||
-  '') as string
+export const STRIPE_PRICE_ID_1 = (process.env.STRIPE_PRICE_ID_1 || '') as string
+export const STRIPE_PRICE_ID_2 = (process.env.STRIPE_PRICE_ID_2 || '') as string
 
 // A new type definition for a pricing plan
 export const PRICE_HEADING = `Pricing that scales with your interests` as string
 export const PLAN_IDS = {
   free: 'RZ5wzP!PwpF%gj',       // random generated
-  pro: 'X6t!RNJPq#7Jdb',        // random generated
-  pro_plus: 'UyWYzJ#FPJ7&Xg',   // random generated
+  payg: 'X6t!RNJPq#7Jdb',       // random generated
+  pro: 'UyWYzJ#FPJ7&Xg',       // random generated
 } as const
 export type PlanId = (typeof PLAN_IDS)[keyof typeof PLAN_IDS]
 export type PricingPlan = {
@@ -123,9 +118,9 @@ export const PRICING_PLANS: PricingPlan[] = [
     stripePriceId: undefined,
   },
   {
-    id: PLAN_IDS.pro,
-    title: 'Pro',
-    price: '30',
+    id: PLAN_IDS.payg,
+    title: 'Pay As You Go',
+    price: '5',
     priceSuffix: '/mo',
     description: 'Lorem ipsum dolor sit amet',
     credits: 50,
@@ -138,9 +133,9 @@ export const PRICING_PLANS: PricingPlan[] = [
     stripePriceId: STRIPE_PRICE_ID_1,
   },
   {
-    id: PLAN_IDS.pro_plus,
-    title: 'Pro Plus',
-    price: '60',
+    id: PLAN_IDS.pro,
+    title: 'Pro',
+    price: '15',
     priceSuffix: '/mo',
     description: 'Lorem ipsum dolor sit amet',
     credits: 100,
@@ -154,5 +149,6 @@ export const PRICING_PLANS: PricingPlan[] = [
   },
 ]
 
-export const RENEWAL_REMINDER_DAYS_BEFORE = 2
+export const RENEWAL_REMINDER_DAYS_BEFORE = 30
 export const CREDIT_REMINDER_THRESHOLD = 10
+export const ENABLE_EMAILS = true

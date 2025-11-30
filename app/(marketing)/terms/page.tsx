@@ -1,9 +1,20 @@
-import { PageSection } from '@/components/page-section'
+// app/(marketing)/terms/page.tsx
+
+'use client'
+
+import { PageSection } from '@/components/page-section';
+import { Badge } from '@/components/ui/badge';
 
 export default function TermsPage() {
   return (
-    <PageSection className='py-16'>
-      <div className='space-y-8 px-4'>
+    <PageSection>
+      <div className='flex flex-col items-center space-y-8 px-4'>
+        <Badge
+                  variant="outline"
+                  className="border-primary mb-4 px-3 py-1 text-xs font-medium tracking-wider uppercase"
+                >
+                  Terms
+                </Badge>
         <h1 className='text-3xl font-bold'>Terms and Conditions</h1>
         <p className='text-muted-foreground'>
           Lorem ipsum dolor sit amet, consectetur adipiscing elit. Etiam

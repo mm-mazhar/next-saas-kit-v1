@@ -1,3 +1,5 @@
+// app/(marketing)/_components/ui/hyper-text.tsx
+
 "use client"
 
 import { useEffect, useRef, useState } from "react"

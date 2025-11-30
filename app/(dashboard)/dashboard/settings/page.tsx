@@ -27,7 +27,6 @@ async function getData(userId: string) {
       name: true,
       email: true,
       colorScheme: true,
-      autoRenewOnCreditExhaust: true,
     },
   })
 

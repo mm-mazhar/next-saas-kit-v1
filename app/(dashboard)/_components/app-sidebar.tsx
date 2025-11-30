@@ -14,7 +14,7 @@ import {
   SidebarFooter,
   SidebarHeader,
   SidebarRail,
-} from '@/components/ui/sidebar'
+} from '@/app/(dashboard)/_components/sidebar'
 import { ChartNoAxesCombined, CreditCard, Settings } from 'lucide-react'
 import { usePathname } from 'next/navigation'
 import { type PlanId } from '@/lib/constants'

@@ -480,15 +480,14 @@ curl -H "Authorization: Bearer <CRON_SECRET>" http://localhost:3000/api/cron/not
   - Ensure a user’s subscription is active and currentPeriodEnd is exactly 2 days ahead.
   - Invoke: curl -H "Authorization: Bearer <CRON_SECRET>" http://localhost:3000/api/cron/notify
   - Expect details to include { reason: 'days', daysLeft: 2 } .
-- Credits Exhaustion reminder (Pro/Pro Plus only):
-  - Set user credits to max credit (Plan's Max Credit) - 10 and creditsReminderThresholdSent to false .
-    - e.g. Pro Plan max credits are 50m, then credits in User Table should be set to 40
-  - Invoke endpoint; expect details entry { reason: 'credits' } .
+- Credits Exhaustion reminder:
+  - Set user credits to CREDIT_REMINDER_THRESHOLD - 1 and creditsReminderThresholdSent to false .
+  - Invoke endpoint; expect details entry {"totalCandidates":0,"creditCandidates":1,"sent":0,"details":[{"email":",<email>","reason":"credits"}]} .
   - It flips creditsReminderThresholdSent to true after sending.
-- Flag resets:
-  - On first payment sync and on renewals the flag is reset with credits:
-    - app/api/webhook/stripe/route.ts:100–102
-    - app/api/webhook/stripe/route.ts:180–185
+
+- Free Plan:
+  - curl -H "Authorization: Bearer <CRON_SECRET>" http://localhost:3000/api/cron/free-refill
+  - Expect details to include {"success":true,"usersRefilled":1} .
 
 ## Useful Commands
 

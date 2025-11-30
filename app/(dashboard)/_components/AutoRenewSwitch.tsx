@@ -26,13 +26,13 @@ export function AutoRenewSwitch({
       }}
       className={`flex items-center gap-2 rounded-md border border-border h-9 px-1 ${className ?? ''}`}
     >
-      <Label className='text-xs text-secondary-foreground'>Credits only Auto Renewal</Label>
+      <Label className='text-xs text-secondary-foreground'>Auto Renew if Credits Exhausted</Label>
       <button
         type='button'
         role='switch'
         aria-checked={on ? 'true' : 'false'}
         className={`relative inline-flex h-5 w-10 items-center rounded-full border transition-colors focus:outline-none focus-visible:outline-none focus:ring-0 focus-visible:ring-0 ${on ? 'bg-neutral-400 dark:bg-neutral-600 border-border' : 'bg-neutral-300 dark:bg-neutral-700 border-border'}`}
-        aria-label='Credits only Auto Renewal'
+        aria-label='Auto Renewal'
         onClick={async () => {
           if (loading) return
           setLoading(true)
@@ -51,7 +51,7 @@ export function AutoRenewSwitch({
           }
         }}
       >
-        <span className='sr-only'>Credits only Auto Renewal</span>
+        <span className='sr-only'>Auto Renewal</span>
         <span
           className={`absolute top-[1px] left-[2px] h-4 w-4 rounded-full transition-transform border ${on ? 'translate-x-4 bg-primary border-primary' : 'translate-x-0 bg-white dark:bg-neutral-200 border-border'}`}
         />

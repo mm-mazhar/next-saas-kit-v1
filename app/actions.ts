@@ -2,9 +2,13 @@
 'use server'
 
 import { createClient } from '@/app/lib/supabase/server'
-import prisma from '@/app/lib/db'
+import prisma, { getData } from '@/app/lib/db'
 import { revalidatePath } from 'next/cache'
 import { createClient as createSupabaseAdminClient } from '@supabase/supabase-js'
+import { stripe } from '@/app/lib/stripe'
+import { PRODUCTION_URL, LOCAL_SITE_URL } from '@/lib/constants'
+import { redirect } from 'next/navigation'
+import { PLAN_IDS, PRICING_PLANS } from '@/lib/constants'
 
 export async function updateThemePreference(
   theme: 'light' | 'dark' | 'system'
@@ -43,3 +47,28 @@ export async function updateThemePreference(
 
   
 }
+
+export async function createCustomerPortal() {
+  const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) {
+    return
+  }
+  const dbUser = await getData(user.id)
+  const customerId = dbUser?.stripeCustomerId as string | undefined
+  if (!customerId) {
+    return
+  }
+  const session = await stripe.billingPortal.sessions.create({
+    customer: customerId,
+    return_url:
+      process.env.NODE_ENV === 'production'
+        ? PRODUCTION_URL
+        : `${LOCAL_SITE_URL}/dashboard`,
+  })
+  return redirect(session.url)
+}
+
+// Removed auto-renew logic

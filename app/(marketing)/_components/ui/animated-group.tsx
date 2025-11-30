@@ -1,3 +1,5 @@
+// app/(marketing)/_components/ui/animated-group.tsx
+
 'use client';
 import { ReactNode } from 'react';
 import { motion, Variants } from 'motion/react';
@@ -23,8 +25,6 @@ export type AnimatedGroupProps = {
     item?: Variants;
   };
   preset?: PresetType;
-  as?: string | React.ComponentType<any>;
-  asChild?: string | React.ComponentType<any>;
 };
 
 const defaultContainerVariants: Variants = {
@@ -105,8 +105,6 @@ function AnimatedGroup({
   className,
   variants,
   preset,
-  as = 'div',
-  asChild = 'div',
 }: AnimatedGroupProps) {
   const selectedVariants = {
     item: addDefaultVariants(preset ? presetVariants[preset] : {}),
@@ -115,14 +113,8 @@ function AnimatedGroup({
   const containerVariants = variants?.container || selectedVariants.container;
   const itemVariants = variants?.item || selectedVariants.item;
 
-  const MotionComponent: any = React.useMemo(
-    () => motion.create(as as any),
-    [as]
-  );
-  const MotionChild: any = React.useMemo(
-    () => motion.create(asChild as any),
-    [asChild]
-  );
+  const MotionComponent = motion.div;
+  const MotionChild = motion.div;
 
   return (
     <MotionComponent

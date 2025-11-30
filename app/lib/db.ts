@@ -1,9 +1,17 @@
 // app/lib/db.ts
-
 import { PrismaClient } from '@prisma/client'
+import { Pool } from 'pg'
+import { PrismaPg } from '@prisma/adapter-pg'
+
+// 1. Setup the connection pool and adapter
+const connectionString = process.env.DATABASE_URL
+
+const pool = new Pool({ connectionString })
+const adapter = new PrismaPg(pool)
 
 const prismaClientSingleton = () => {
-  return new PrismaClient()
+  // 2. Pass the adapter to the PrismaClient constructor
+  return new PrismaClient({ adapter })
 }
 
 declare global {
@@ -15,6 +23,8 @@ const prisma = globalThis.prisma ?? prismaClientSingleton()
 export default prisma
 
 if (process.env.NODE_ENV !== 'production') globalThis.prisma = prisma
+
+// --- Your existing helper functions remain unchanged below ---
 
 // Helper function for getting/creating user data
 interface UserData {
@@ -34,12 +44,13 @@ export type DbUser = {
   themePreference?: string
   credits: number
   stripeCustomerId?: string | null
-  autoRenewOnCreditExhaust?: boolean
   creditsReminderThresholdSent?: boolean
+  lastPaygPurchaseAt?: Date | null
   Subscription?: {
     status: string
     interval: string
     planId: string
+    stripeSubscriptionId?: string
     currentPeriodEnd: number
   } | null
 }
@@ -58,14 +69,15 @@ export async function getData(userData?: UserData | string): Promise<DbUser | nu
           colorScheme: true,
           themePreference: true,
           credits: true,
-          autoRenewOnCreditExhaust: true,
           creditsReminderThresholdSent: true,
+          lastPaygPurchaseAt: true,
           stripeCustomerId: true,
           Subscription: {
             select: {
               status: true,
               interval: true,
               planId: true,
+              stripeSubscriptionId: true,
               currentPeriodEnd: true,
             },
           },
@@ -79,18 +91,18 @@ export async function getData(userData?: UserData | string): Promise<DbUser | nu
 
   // If UserData object is passed, ensure user exists or create
   if (userData) {
-    const selection = {
-      id: true,
-      email: true,
-      name: true,
-      createdAt: true,
-      colorScheme: true,
-      themePreference: true,
-      credits: true,
-      autoRenewOnCreditExhaust: true,
-      creditsReminderThresholdSent: true,
-      Subscription: true,
-    } as const
+      const selection = {
+        id: true,
+        email: true,
+        name: true,
+        createdAt: true,
+        colorScheme: true,
+        themePreference: true,
+        credits: true,
+        creditsReminderThresholdSent: true,
+        lastPaygPurchaseAt: true,
+        Subscription: true,
+      } as const
     try {
       const found = await prisma.user.findUnique({
         where: { email: userData.email },
@@ -122,8 +134,7 @@ export async function getData(userData?: UserData | string): Promise<DbUser | nu
           createdAt: undefined,
           colorScheme: undefined,
           themePreference: undefined,
-          credits: 0,
-          autoRenewOnCreditExhaust: undefined,
+          credits: 5,
           Subscription: undefined,
         }
       }

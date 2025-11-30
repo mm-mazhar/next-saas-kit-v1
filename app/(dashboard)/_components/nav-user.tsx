@@ -7,7 +7,7 @@ import {
   ChevronsUpDown,
   CreditCard,
   Settings,
-  Sparkles,
+  Sparkles
 } from 'lucide-react'
 
 import { LogoutButton } from '@/app/(dashboard)/_components/LogoutButton'
@@ -26,10 +26,10 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
   useSidebar,
-} from '@/components/ui/sidebar'
+} from '@/app/(dashboard)/_components/sidebar'
+import { PLAN_IDS, type PlanId } from '@/lib/constants'
 import Link from 'next/link'
 import * as React from 'react'
-import { PLAN_IDS, type PlanId } from '@/lib/constants'
 
 export function NavUser({
   user,
@@ -107,16 +107,16 @@ export function NavUser({
             <DropdownMenuGroup>
               <DropdownMenuItem asChild>
                 <Link
-                  href='/dashboard/billing'
+                  href='/#pricing'
                   className='flex items-center text-sm gap-2'
                 >
                   <Sparkles />
-                  {currentPlanId === PLAN_IDS.pro ? (
+                  {currentPlanId === PLAN_IDS.payg ? (
                     <>
-                      Pro, Upgrade to <span className="text-primary font-semibold">Pro Plus</span>
+                      PAYG, Upgrade to <span className="text-primary font-semibold">Pro</span>
                     </>
-                  ) : currentPlanId === PLAN_IDS.pro_plus ? (
-                    <span className="text-primary font-semibold">Pro Plus</span>
+                  ) : currentPlanId === PLAN_IDS.pro ? (
+                    <span className="text-primary font-semibold">Pro</span>
                   ) : (
                     <>
                       Free, Upgrade to <span className="text-primary font-semibold">Pro</span>

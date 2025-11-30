@@ -1,7 +1,10 @@
+// app/(marketing)/contact/page.tsx
+
 "use client"
 
 import { PageSection } from '@/components/page-section'
 import { useToast } from '@/components/ToastProvider'
+import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { ShineBorder } from '@/components/ui/shine-border'
 import {
@@ -25,8 +28,14 @@ export default function ContactPage() {
 
   return (
     <PageSection>
-      <div className='space-y-8'>
-        <div className='space-y-2'>
+      <div className='flex flex-col items-center space-y-8 px-4'>
+        <Badge
+                  variant="outline"
+                  className="border-primary mb-4 px-3 py-1 text-xs font-medium tracking-wider uppercase"
+                >
+                  Contact
+                </Badge>
+        <div className='flex flex-col items-center space-y-2'>
           <h1 className='text-3xl font-bold'>Contact Us</h1>
           <p className='text-muted-foreground'>
             Contact the support team at {NEXT_PUBLIC_SITE_NAME}.

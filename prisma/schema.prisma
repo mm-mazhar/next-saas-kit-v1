@@ -1,4 +1,4 @@
-// This is your Prisma schema file,
+// prisma/schema.prisma
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
 generator client {
@@ -6,9 +6,7 @@ generator client {
 }
 
 datasource db {
-  provider  = "postgresql"
-  url       = env("DATABASE_URL") 
-  directUrl = env("DIRECT_URL")
+  provider  = "postgresql"  
 }
 
 model User {
@@ -18,9 +16,10 @@ model User {
   stripeCustomerId String?       @unique
   colorScheme      String        @default("theme-orange")
   themePreference  String        @default("dark")
-  credits          Int           @default(0)
-  autoRenewOnCreditExhaust Boolean @default(false)
+  credits          Int           @default(5)
   creditsReminderThresholdSent Boolean @default(false)
+  lastPaygPurchaseAt DateTime?
+  lastFreeRefillAt DateTime      @default(now())
   Subscription     Subscription?
   createdAt        DateTime      @default(now())  // Add this
   updatedAt        DateTime      @updatedAt       // Add this
