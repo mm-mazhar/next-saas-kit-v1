@@ -6,7 +6,7 @@ export const PRODUCTION_URL = process.env.PRODUCTION_URL as string
 export const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL as string
 
 // ✅ COLOR SCHEME AND MODE
-export const DEFAULT_COLOR_SCHEME = `theme-orange` as string
+export const DEFAULT_COLOR_SCHEME = `theme-neutral` as string
 export const DEFAULT_THEME_MODE = `dark` as string
 
 // ✅ LOCALE

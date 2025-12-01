@@ -3,7 +3,7 @@
 import prisma from '@/app/lib/db'
 import { sendCancellationEmail, sendPaymentConfirmationEmail } from '@/app/lib/email'
 import { stripe } from '@/app/lib/stripe'
-import { PRICING_PLANS, PLAN_IDS } from '@/lib/constants'
+import { PLAN_IDS, PRICING_PLANS } from '@/lib/constants'
 import { headers } from 'next/headers'
 import Stripe from 'stripe'
 
@@ -210,7 +210,10 @@ export async function POST(req: Request) {
   // 2. INVOICE PAYMENT SUCCEEDED (Recurring Renewals)
   // ============================================================
   if (event.type === 'invoice.payment_succeeded') {
-    console.log('🔹 Invoice Payment Succeeded (Recurring Renewals):', event.data.object)
+    const inv = event.data.object as Stripe.Invoice
+    // console.log('🔹 Invoice Payment Succeeded (Recurring Renewals):', event.data.object)
+    // console.log(`🔹 Invoice Succeeded: ${inv.id} | Amount: ${inv.amount_paid}`)
+    console.log(`🔹 Invoice Payment Succeeded: ${inv.id} for Customer ${inv.customer}`)
     const invoice = event.data.object as Stripe.Invoice & {
       subscription?: string | Stripe.Subscription | null
       customer_email?: string | null
@@ -250,7 +253,7 @@ export async function POST(req: Request) {
           },
         })
       } catch {
-        console.log('⚠️ Could not update subscription (User might have deleted account)')
+        console.error('⚠️ Could not update subscription (User might have deleted account)')
       }
 
       // 1b. Add credits on successful renewal

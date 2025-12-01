@@ -51,16 +51,18 @@ export default async function SettingPage() {
     const name = formData.get('name') as string
     const colorScheme = formData.get('color') as string
 
-    await prisma.user.update({
-      where: {
-        id: user?.id,
-      },
-      data: {
-        name: name ?? undefined,
-        colorScheme: colorScheme ?? undefined,
-        // themePreference is updated via global theme toggles (header/topbar)
-      },
-    })
+    try {
+      await prisma.user.update({
+        where: { id: user?.id },
+        data: { name: name ?? undefined, colorScheme: colorScheme ?? undefined },
+      })
+    } catch {
+      await new Promise((r) => setTimeout(r, 300))
+      await prisma.user.update({
+        where: { id: user?.id },
+        data: { name: name ?? undefined, colorScheme: colorScheme ?? undefined },
+      })
+    }
 
     revalidatePath('/', 'layout')
   }
@@ -116,6 +118,7 @@ export default async function SettingPage() {
                   <SelectContent>
                     <SelectGroup>
                       <SelectLabel>Color</SelectLabel>
+                      <SelectItem value='theme-neutral'>Neutral</SelectItem>
                       <SelectItem value='theme-green'>Green</SelectItem>
                       <SelectItem value='theme-blue'>Blue</SelectItem>
                       <SelectItem value='theme-violet'>Violet</SelectItem>

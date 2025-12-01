@@ -162,9 +162,9 @@ export default async function HeroSection() {
                     <Link href='/get-started'><span className='text-nowrap'>Start Building</span></Link>
                   </Button>
                 )}
-                <Button key={2} asChild size='lg' variant='secondary' className='h-10.5 rounded-xl px-5'>
+                {/* <Button key={2} asChild size='lg' variant='secondary' className='h-10.5 rounded-xl px-5'>
                   <Link href='#'><span className='text-nowrap'>Request a demo</span></Link>
-                </Button>
+                </Button> */}
               </AnimatedGroup>
             </div>
 
