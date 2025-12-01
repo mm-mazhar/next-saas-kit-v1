@@ -3,12 +3,10 @@
 
 import { createClient } from '@/app/lib/supabase/server'
 import prisma, { getData } from '@/app/lib/db'
-import { revalidatePath } from 'next/cache'
 import { createClient as createSupabaseAdminClient } from '@supabase/supabase-js'
 import { stripe } from '@/app/lib/stripe'
 import { PRODUCTION_URL, LOCAL_SITE_URL } from '@/lib/constants'
 import { redirect } from 'next/navigation'
-import { PLAN_IDS, PRICING_PLANS } from '@/lib/constants'
 
 export async function updateThemePreference(
   theme: 'light' | 'dark' | 'system'

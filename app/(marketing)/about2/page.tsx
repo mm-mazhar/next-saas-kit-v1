@@ -2,6 +2,7 @@
 'use client'
 
 import { PageSection } from '@/components/page-section'
+import Image from 'next/image'
 
 export default function AboutPage() {
   return (
@@ -9,16 +10,19 @@ export default function AboutPage() {
       <div className='px-4'>
         <div className='flex flex-col items-center justify-center gap-10 md:flex-row'>
           <div className='relative rounded-2xl overflow-hidden shadow-2xl shadow-primary/40 shrink-0'>
-            <img
+            <Image
               className='max-w-md w-full object-cover rounded-2xl'
               src='https://images.unsplash.com/photo-1531497865144-0464ef8fb9a9?q=80&w=800&auto=format&fit=crop'
               alt='Team'
+              width={800}
+              height={533}
+              unoptimized
             />
             <div className='flex items-center gap-2 max-w-72 absolute bottom-8 left-8 bg-background p-4 rounded-xl'>
               <div className='flex -space-x-4 shrink-0'>
-                <img src='https://images.unsplash.com/photo-1633332755192-727a05c4013d?q=80&w=200' alt='' className='size-9 rounded-full border-[3px] border-background' />
-                <img src='https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=200' alt='' className='size-9 rounded-full border-[3px] border-background' />
-                <img src='https://images.unsplash.com/photo-1438761681033-6461ffad8d80?q=80&w=200&h=200&auto=format&fit=crop' alt='' className='size-9 rounded-full border-[3px] border-background' />
+                <Image src='https://images.unsplash.com/photo-1633332755192-727a05c4013d?q=80&w=200' alt='Avatar 1' className='size-9 rounded-full border-[3px] border-background' width={36} height={36} unoptimized />
+                <Image src='https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=200' alt='Avatar 2' className='size-9 rounded-full border-[3px] border-background' width={36} height={36} unoptimized />
+                <Image src='https://images.unsplash.com/photo-1438761681033-6461ffad8d80?q=80&w=200&h=200&auto=format&fit=crop' alt='Avatar 3' className='size-9 rounded-full border-[3px] border-background' width={36} height={36} unoptimized />
                 {/* <div className='flex items-center justify-center text-xs text-primary-foreground size-9 rounded-full border-[3px] border-background bg-primary'>
                   50+
                 </div> */}

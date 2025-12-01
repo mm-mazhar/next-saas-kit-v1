@@ -14,7 +14,6 @@ interface CardProps {
   glowEffect?: boolean;
   hoverScale?: number;
   interactive?: boolean;
-  showGridLines?: boolean;
   flat?: boolean;
 }
 
@@ -60,7 +59,6 @@ export function CardHoverEffect({
   glowEffect = false,
   hoverScale = 1.02,
   interactive = true,
-  showGridLines = true,
   flat = false,
 }: CardProps) {
   const variantConfig = VARIANTS[variant];

@@ -34,6 +34,7 @@ export default function PricingComponent({
   lastPaygPurchaseAt,
   proExhausted,
 }: PricingComponentProps) {
+  void proExhausted
   const isBillingFreeState =
     mode === 'billing' && (currentPlanId === null || currentPlanId === PLAN_IDS.free)
   const visiblePlans =

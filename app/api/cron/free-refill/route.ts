@@ -46,8 +46,9 @@ export async function GET() {
       headers: { 'Content-Type': 'application/json' }
     })
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Cron job failed:', error)
-    return new Response(JSON.stringify({ error: error.message }), { status: 500 })
+    const message = error instanceof Error ? error.message : String(error)
+    return new Response(JSON.stringify({ error: message }), { status: 500 })
   }
 }

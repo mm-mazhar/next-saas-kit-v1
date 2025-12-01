@@ -2,7 +2,7 @@
 
 import { ClientAppSidebar } from '@/app/(dashboard)/_components/ClientAppSidebar'
 import { TopBar } from '@/app/(dashboard)/_components/topbar'
-import prisma, { getData } from '@/app/lib/db'
+import { getData } from '@/app/lib/db'
 import { createClient } from '@/app/lib/supabase/server'
 import { SidebarProvider } from '@/app/(dashboard)/_components/sidebar'
 import { cookies } from 'next/headers'
