@@ -523,7 +523,7 @@ node -e "const { createClient } = require('@supabase/supabase-js'); const s = cr
 
 The easiest way to deploy your Next.js app is to use the Vercel Platform.
 
-1. Push your code to a Git repository (GitHub, GitLab, Bitbucket).
+1. Push your code to a Git repository (GitHub, GitLab, Bitbucket)
 2. Import your project into Vercel.
 3. Add all your environment variables from your .env file to the Vercel project settings.
    - nsure DATABASE_URL and DIRECT_URL are correct.
