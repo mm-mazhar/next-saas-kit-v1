@@ -1,14 +1,18 @@
 // app/lib/db.ts
+
+import { PrismaPg } from '@prisma/adapter-pg'
 import { PrismaClient } from '@prisma/client'
 import { Pool } from 'pg'
-import { PrismaPg } from '@prisma/adapter-pg'
 
 // 1. Setup the connection pool and adapter
 const connectionString = process.env.DATABASE_URL
+if (!connectionString) {
+  throw new Error('DATABASE_URL is not set')
+}
 
 const pool = new Pool({
   connectionString,
-  ssl: { rejectUnauthorized: false },
+  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : undefined,
   keepAlive: true,
 })
 const adapter = new PrismaPg(pool)
@@ -125,6 +129,24 @@ export async function getData(userData?: UserData | string): Promise<DbUser | nu
             id: userData.id,
             email: userData.email,
             name: fullName || null,
+            // Create default Personal Organization and Project
+            memberships: {
+              create: {
+                role: 'OWNER',
+                organization: {
+                  create: {
+                    name: 'Default Organization',
+                    slug: `default-organization-${userData.id.substring(0, 8)}`,
+                    projects: {
+                      create: {
+                        name: 'Default Project',
+                        slug: 'default-project',
+                      },
+                    },
+                  },
+                },
+              },
+            },
           },
           select: selection,
         })

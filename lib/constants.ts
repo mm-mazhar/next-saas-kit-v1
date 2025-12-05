@@ -149,6 +149,22 @@ export const PRICING_PLANS: PricingPlan[] = [
   },
 ]
 
-export const RENEWAL_REMINDER_DAYS_BEFORE = 30
+export const RENEWAL_REMINDER_DAYS_BEFORE = 32
 export const CREDIT_REMINDER_THRESHOLD = 10
 export const ENABLE_EMAILS = true
+
+// ✅ Multi-Tenancy Limits & Configuration
+export const LIMITS = {
+  MAX_ORGANIZATIONS_PER_USER: 5,
+  MAX_PROJECTS_PER_ORGANIZATION: 10,
+  MAX_MEMBERS_PER_ORGANIZATION: 5,
+  MAX_PENDING_INVITES_PER_ORG: 3
+} as const
+
+export const ROLES = {
+  OWNER: 'OWNER',
+  ADMIN: 'ADMIN',
+  MEMBER: 'MEMBER',
+} as const
+
+export type OrganizationRole = keyof typeof ROLES

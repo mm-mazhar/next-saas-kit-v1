@@ -3,37 +3,45 @@
 'use client'
 
 import {
-  Bell,
-  ChevronsUpDown,
-  CreditCard,
-  Settings,
-  Sparkles
+    Bell,
+    Building2,
+    ChevronsUpDown,
+    CreditCard,
+    Settings,
+    Sparkles
 } from 'lucide-react'
 
 import { LogoutButton } from '@/app/(dashboard)/_components/LogoutButton'
+import {
+    SidebarMenu,
+    SidebarMenuButton,
+    SidebarMenuItem,
+    useSidebar,
+} from '@/app/(dashboard)/_components/sidebar'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuGroup,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuGroup,
+    DropdownMenuItem,
+    DropdownMenuLabel,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger,
+    DropdownMenuSub,
+    DropdownMenuSubTrigger,
+    DropdownMenuSubContent,
 } from '@/components/ui/dropdown-menu'
-import {
-  SidebarMenu,
-  SidebarMenuButton,
-  SidebarMenuItem,
-  useSidebar,
-} from '@/app/(dashboard)/_components/sidebar'
-import { PLAN_IDS, type PlanId } from '@/lib/constants'
+import { CREDIT_REMINDER_THRESHOLD, PLAN_IDS, type PlanId } from '@/lib/constants'
 import Link from 'next/link'
 import * as React from 'react'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 
 export function NavUser({
   user,
   currentPlanId,
+  creditsUsed,
+  creditsTotal,
+  exhausted,
 }: {
   user: {
     name: string
@@ -41,6 +49,9 @@ export function NavUser({
     avatar: string
   }
   currentPlanId?: PlanId | null
+  creditsUsed?: number
+  creditsTotal?: number
+  exhausted?: boolean
 }) {
   const { isMobile } = useSidebar()
   const [mounted, setMounted] = React.useState(false)
@@ -71,7 +82,7 @@ export function NavUser({
           <DropdownMenuTrigger asChild>
             <SidebarMenuButton
               size='lg'
-              className='data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground focus:outline-none focus-visible:outline-none focus:ring-0 focus-visible:ring-0'
+              className='relative data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground focus:outline-none focus-visible:outline-none focus:ring-0 focus-visible:ring-0'
             >
               <Avatar className='h-8 w-8 rounded-lg'>
                 <AvatarImage src={user.avatar} alt={user.name} />
@@ -82,6 +93,15 @@ export function NavUser({
                 <span className='truncate text-xs'>{user.email}</span>
               </div>
               <ChevronsUpDown className='ml-auto size-4' />
+              {(() => {
+                const used = creditsUsed ?? 0
+                const total = creditsTotal ?? 0
+                const remaining = Math.max(total - used, 0)
+                const hasNotification = !!(exhausted || remaining <= CREDIT_REMINDER_THRESHOLD)
+                return hasNotification ? (
+                  <span className='absolute -top-0.5 -right-0.5 size-2 rounded-full bg-destructive' />
+                ) : null
+              })()}
             </SidebarMenuButton>
           </DropdownMenuTrigger>
           <DropdownMenuContent
@@ -127,15 +147,26 @@ export function NavUser({
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
             <DropdownMenuGroup>
-              <DropdownMenuItem asChild>
-                <Link
-                  href='/dashboard/settings'
-                  className='flex items-center gap-2'
-                >
+              <DropdownMenuSub>
+                <DropdownMenuSubTrigger className='gap-2'>
                   <Settings />
                   Settings
-                </Link>
-              </DropdownMenuItem>
+                </DropdownMenuSubTrigger>
+                <DropdownMenuSubContent>
+                  <DropdownMenuItem asChild>
+                    <Link href='/dashboard/settings' className='flex items-center gap-2'>
+                      <Settings />
+                      Profile
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link href='/dashboard/settings/organization' className='flex items-center gap-2'>
+                      <Building2 />
+                      Organization
+                    </Link>
+                  </DropdownMenuItem>
+                </DropdownMenuSubContent>
+              </DropdownMenuSub>
               <DropdownMenuItem asChild>
                 <Link
                   href='/dashboard/billing'
@@ -145,10 +176,27 @@ export function NavUser({
                   Billing
                 </Link>
               </DropdownMenuItem>
-              <DropdownMenuItem>
-                <Bell />
-                Notifications
-              </DropdownMenuItem>
+              {(() => {
+                const remaining = creditsUsed ?? 0
+                const hasNotification = !!(exhausted || remaining <= CREDIT_REMINDER_THRESHOLD)
+                const tooltipText = exhausted || remaining === 0 ? 'Purchase Credits' : 'Low Credits'
+                return (
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <DropdownMenuItem className='gap-2'>
+                        <span className='relative inline-flex h-5 w-5 items-center justify-center'>
+                          <Bell className='size-4' />
+                          {hasNotification ? (
+                            <span className='absolute -top-0.5 -right-0.5 size-2 rounded-full bg-destructive' />
+                          ) : null}
+                        </span>
+                        <span>Notifications</span>
+                      </DropdownMenuItem>
+                    </TooltipTrigger>
+                    <TooltipContent sideOffset={8}>{tooltipText}</TooltipContent>
+                  </Tooltip>
+                )
+              })()}
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
             <DropdownMenuItem asChild>

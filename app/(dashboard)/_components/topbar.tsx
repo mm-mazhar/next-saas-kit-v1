@@ -2,6 +2,7 @@
 
 'use client'
 
+import { SidebarTrigger } from '@/app/(dashboard)/_components/sidebar'
 import { Themetoggle } from '@/components/Themetoggle'
 import { ToastProvider } from '@/components/ToastProvider'
 import {
@@ -13,9 +14,10 @@ import {
   BreadcrumbSeparator,
 } from '@/components/ui/breadcrumb'
 import { Separator } from '@/components/ui/separator'
-import { SidebarTrigger } from '@/app/(dashboard)/_components/sidebar'
-import { PLAN_IDS, type PlanId } from '@/lib/constants'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
+import { CREDIT_REMINDER_THRESHOLD, type PlanId } from '@/lib/constants'
 import {
+  Bell,
   ChartNoAxesCombined,
   CreditCard,
   Database,
@@ -23,6 +25,7 @@ import {
   Home,
   Settings,
 } from 'lucide-react'
+import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import * as React from 'react'
 
@@ -106,30 +109,40 @@ export function TopBar({
       </div>
       <div className='flex items-center gap-2'>
         {usageInfo && (
-          <span className='inline-flex items-center h-9 px-1 rounded-md bg-muted text-primary font-medium text-sm border leading-none'>
+          <span className='inline-flex items-center h-8 px-1 rounded-md bg-primary text-primary-foreground font-medium text-sm border leading-none'>
             Credits: {usageInfo.creditsUsed ?? 0}
           </span>
         )}
         {usageInfo?.creditsUsed === 0 ? (
-          <span className='inline-flex items-center h-9 px-3 rounded-md bg-primary text-primary-foreground font-medium text-sm border border-primary leading-none'>
-            Renewal required
-          </span>
+          <Link href='/dashboard/billing' className='inline-flex items-center h-8 px-3 rounded-md bg-primary text-primary-foreground font-medium text-sm border border-primary leading-none'>
+            Need Credits or Upgrade
+          </Link>
         ) : null}
-        {usageInfo?.currentPlanId === PLAN_IDS.free ? (
-          <a
-            href='/dashboard/billing'
-            className='inline-flex items-center h-9 px-3 rounded-md bg-primary text-primary-foreground font-medium text-sm border border-primary leading-none'
-          >
-            Purchase Credits
-          </a>
-        ) : usageInfo?.currentPlanId ? (
-          <span className='inline-flex items-center h-9 px-2 rounded-md bg-muted text-primary font-medium text-sm border leading-none'>
-            {usageInfo.currentPlanId === PLAN_IDS.pro
-              ? 'Pro'
-              : usageInfo.currentPlanId === PLAN_IDS.payg
-              ? 'Pay As You Go'
-              : 'Free'}
-          </span>
+        {usageInfo ? (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              {(() => {
+                const remaining = usageInfo.creditsUsed ?? 0
+                const hasNotification = usageInfo.exhausted || remaining <= CREDIT_REMINDER_THRESHOLD
+                const tooltipText = remaining === 0 || usageInfo.exhausted ? 'Purchase Credits' : 'Low Credits'
+                return (
+                  <a
+                    href='/dashboard/billing'
+                    aria-label='Notifications'
+                    className={`inline-flex h-8 w-8 items-center justify-center rounded-md bg-primary text-primary-foreground font-medium text-sm border border-primary leading-none focus:outline-none focus-visible:outline-none focus:ring-0 focus-visible:ring-0${hasNotification ? ' relative after:content-[""] after:absolute after:-top-0.5 after:-right-0.5 after:size-2 after:rounded-full after:bg-destructive' : ''}`}
+                    data-tooltip-text={tooltipText}
+                  >
+                    <Bell className='size-4' />
+                  </a>
+                )
+              })()}
+            </TooltipTrigger>
+            {(() => {
+              const remaining = usageInfo.creditsUsed ?? 0
+              const tooltipText = remaining === 0 || usageInfo.exhausted ? 'Purchase Credits' : 'Low Credits'
+              return <TooltipContent sideOffset={8}>{tooltipText}</TooltipContent>
+            })()}
+          </Tooltip>
         ) : null}
         <ToastProvider>
           <Themetoggle />

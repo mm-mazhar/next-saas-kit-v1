@@ -42,6 +42,7 @@ export function EmailAuthForm() {
         value={email}
         onChange={(e) => setEmail(e.target.value)}
         type='email'
+        className='focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]'
       />
       <Button
         className='w-full'

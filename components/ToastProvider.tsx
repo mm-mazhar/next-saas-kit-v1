@@ -80,20 +80,17 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
       {children}
       {mounted && portalElRef.current
         ? createPortal(
-            <div className='fixed bottom-4 right-4 z-50 space-y-2'>
+            <div className='fixed bottom-4 right-4 z-50 flex flex-col items-end gap-2'>
               {toasts.map((t) => (
                 <div
                   key={t.id}
                   className={cn(
-                    'rounded-md border shadow-lg px-3 py-2 text-sm bg-popover text-popover-foreground',
-                    t.variant === 'success' && 'border-primary',
-                    t.variant === 'error' && 'border-destructive',
-                    t.variant === 'info' && 'border-ring'
+                    'rounded-md border border-border shadow-lg px-3 py-2 text-sm bg-foreground text-background'
                   )}
                 >
                   {t.title && <div className='font-medium'>{t.title}</div>}
                   {t.description && (
-                    <div className='text-muted-foreground'>{t.description}</div>
+                    <div className='opacity-80'>{t.description}</div>
                   )}
                 </div>
               ))}

@@ -1,13 +1,15 @@
 // app/(dashboard)/layout.tsx
 
 import { ClientAppSidebar } from '@/app/(dashboard)/_components/ClientAppSidebar'
+import { SidebarProvider } from '@/app/(dashboard)/_components/sidebar'
 import { TopBar } from '@/app/(dashboard)/_components/topbar'
 import { getData } from '@/app/lib/db'
 import { createClient } from '@/app/lib/supabase/server'
-import { SidebarProvider } from '@/app/(dashboard)/_components/sidebar'
-import { cookies } from 'next/headers'
 import { PLAN_IDS, PRICING_PLANS, type PlanId, type PricingPlan } from '@/lib/constants'
+import { ProjectService } from '@/lib/services/project-service'
+import { slugify } from '@/lib/utils'
 import { unstable_noStore as noStore } from 'next/cache'
+import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
 import { ReactNode } from 'react'
 
@@ -68,6 +70,43 @@ async function DashboardGroupLayout({ children }: { children: ReactNode }) {
   const normalized = sidebarCookie?.toLowerCase()
   const initialOpen = normalized === undefined ? true : (normalized === 'true' || normalized === 'expanded')
 
+  // Multi-tenancy: Fetch organizations
+  const { OrganizationService } = await import('@/lib/services/organization-service')
+  let organizations = await OrganizationService.getUserOrganizations(user.id)
+  if (organizations.length === 0) {
+    const defaultOrgName = 'Default Organization'
+    const newOrg = await OrganizationService.createOrganization(
+      user.id,
+      defaultOrgName,
+      slugify(defaultOrgName)
+    )
+    const cookieStoreForCreate = await cookies()
+    cookieStoreForCreate.set('current-org-id', newOrg.id)
+    await ProjectService.createProject(newOrg.id, 'Default Project', slugify('Default Project'))
+    organizations = [newOrg]
+  }
+  
+  const currentOrgId = cookieStore.get('current-org-id')?.value
+  let currentOrganization = organizations.find(org => org.id === currentOrgId)
+  
+  if (!currentOrganization && organizations.length > 0) {
+    currentOrganization = organizations[0]
+  }
+
+  const mappedOrgs = organizations.map(org => ({
+    id: org.id,
+    name: org.name,
+    slug: org.slug,
+    role: org.members[0]?.role || 'MEMBER'
+  }))
+
+  const mappedCurrentOrg = currentOrganization ? {
+    id: currentOrganization.id,
+    name: currentOrganization.name,
+    slug: currentOrganization.slug,
+    role: currentOrganization.members[0]?.role || 'MEMBER'
+  } : null
+
   return (
     <SidebarProvider defaultOpen={initialOpen}>
       <ClientAppSidebar
@@ -83,6 +122,11 @@ async function DashboardGroupLayout({ children }: { children: ReactNode }) {
             'https://github.com/shadcn.png',
         }}
         currentPlanId={subStatus === 'active' ? currentPlan : (paygEligible ? PLAN_IDS.payg : null)}
+        organizations={mappedOrgs}
+        currentOrganization={mappedCurrentOrg}
+        creditsUsed={creditsUsed}
+        creditsTotal={creditsTotal}
+        exhausted={exhausted}
       />
       <main className='w-full'>
         <TopBar

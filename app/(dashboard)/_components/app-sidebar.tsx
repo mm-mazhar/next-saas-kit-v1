@@ -7,17 +7,17 @@ import * as React from 'react'
 
 import { NavMain } from '@/app/(dashboard)/_components/nav-main'
 import { NavUser } from '@/app/(dashboard)/_components/nav-user'
-import { TeamSwitcher } from '@/app/(dashboard)/_components/team-switcher'
 import {
-  Sidebar,
-  SidebarContent,
-  SidebarFooter,
-  SidebarHeader,
-  SidebarRail,
+    Sidebar,
+    SidebarContent,
+    SidebarFooter,
+    SidebarHeader,
+    SidebarRail,
 } from '@/app/(dashboard)/_components/sidebar'
+import { TeamSwitcher } from '@/app/(dashboard)/_components/team-switcher'
+import { type PlanId } from '@/lib/constants'
 import { ChartNoAxesCombined, CreditCard, Settings } from 'lucide-react'
 import { usePathname } from 'next/navigation'
-import { type PlanId } from '@/lib/constants'
 
 const navItems = [
   { name: 'Dashboard', href: '/dashboard', icon: ChartNoAxesCombined },
@@ -45,10 +45,20 @@ const teams = [
 export function AppSidebar({
   user,
   currentPlanId,
+  organizations,
+  currentOrganization,
+  creditsUsed,
+  creditsTotal,
+  exhausted,
   ...props
 }: React.ComponentProps<typeof Sidebar> & {
   user?: { name: string; email: string; avatar: string }
   currentPlanId?: PlanId | null
+  organizations?: { id: string; name: string; slug: string; role: string }[]
+  currentOrganization?: { id: string; name: string; slug: string; role: string } | null
+  creditsUsed?: number
+  creditsTotal?: number
+  exhausted?: boolean
 }) {
   const pathname = usePathname()
   const mappedNavMain = navItems
@@ -73,13 +83,22 @@ export function AppSidebar({
   return (
     <Sidebar collapsible='icon' {...props}>
       <SidebarHeader>
-        <TeamSwitcher teams={teams} />
+        <TeamSwitcher
+          organizations={organizations || []}
+          currentOrganization={currentOrganization || null}
+        />
       </SidebarHeader>
       <SidebarContent>
         <NavMain items={mappedNavMain} />
       </SidebarContent>
       <SidebarFooter>
-        <NavUser user={finalUser} currentPlanId={currentPlanId} />
+        <NavUser
+          user={finalUser}
+          currentPlanId={currentPlanId}
+          creditsUsed={creditsUsed}
+          creditsTotal={creditsTotal}
+          exhausted={exhausted}
+        />
       </SidebarFooter>
       <SidebarRail />
     </Sidebar>

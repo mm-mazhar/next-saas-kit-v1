@@ -1,16 +1,76 @@
+// app/(dashboard)/dashboard/page.tsx
 
-export default function DashboardPage() {
-  return (
-    <>
-      <div className="flex flex-1 flex-col gap-4 p-4 pt-0">
-        <div className="grid auto-rows-min gap-4 md:grid-cols-3">
-          <div className="bg-muted/50 aspect-video rounded-xl" />
-          <div className="bg-muted/50 aspect-video rounded-xl" />
-          <div className="bg-muted/50 aspect-video rounded-xl" />
-        </div>
-        <div className="bg-muted/50 min-h-[100vh] flex-1 rounded-xl md:min-h-min" />
+import { CreateProjectDialog } from '@/app/(dashboard)/_components/create-project-dialog'
+import { ProjectActions } from '@/app/(dashboard)/_components/project-actions'
+import { createClient } from '@/app/lib/supabase/server'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { ProjectService } from '@/lib/services/project-service'
+import { Folder } from 'lucide-react'
+import { cookies } from 'next/headers'
+import { redirect } from 'next/navigation'
+
+export default async function DashboardPage() {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+
+  if (!user) {
+    return redirect('/get-started')
+  }
+
+  const cookieStore = await cookies()
+  const currentOrgId = cookieStore.get('current-org-id')?.value
+
+  if (!currentOrgId) {
+    return (
+      <div className='flex h-[50vh] flex-col items-center justify-center gap-4'>
+        <p className='text-muted-foreground'>Please select or create an organization to get started.</p>
       </div>
-    </>
+    )
+  }
+
+  const projects = await ProjectService.getOrganizationProjects(currentOrgId)
+
+  return (
+    <div className='flex flex-1 flex-col gap-4 p-4 pt-0'>
+      <div className='flex items-center justify-between'>
+        <h2 className='text-2xl font-bold tracking-tight'>Projects</h2>
+        <div>
+          <CreateProjectDialog orgId={currentOrgId} />
+        </div>
+      </div>
+
+      {projects.length === 0 ? (
+        <div className='flex min-h-[400px] flex-col items-center justify-center rounded-md border border-dashed p-8 text-center animate-in fade-in-50'>
+          <div className='mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-accent'>
+            <Folder className='h-6 w-6 text-foreground' />
+          </div>
+          <h3 className='mt-4 text-lg font-semibold'>No projects yet</h3>
+          <p className='mb-4 mt-2 text-sm text-muted-foreground max-w-sm'>
+            Create your first project to start building.
+          </p>
+          <CreateProjectDialog orgId={currentOrgId} />
+        </div>
+      ) : (
+        <div className='grid gap-4 md:grid-cols-2 lg:grid-cols-3'>
+          {projects.map((project) => (
+            <Card key={project.id} className='hover:bg-muted/50 transition-colors'>
+              <CardHeader className='flex flex-row items-center justify-between space-y-0 pb-2'>
+                <CardTitle className='text-sm font-medium'>
+                  {project.name}
+                </CardTitle>
+                <ProjectActions projectId={project.id} defaultName={project.name} />
+              </CardHeader>
+              <CardContent>
+                <div className='text-2xl font-bold'>{project.slug}</div>
+                <p className='text-xs text-muted-foreground'>
+                  Updated {new Date(project.updatedAt).toLocaleDateString()}
+                </p>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
+    </div>
   )
 }
 
