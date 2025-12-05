@@ -57,7 +57,7 @@ enum InviteStatus {
 
 model Organization {
   id          String   @id @default(cuid())
-  name        String
+  name        String   @db.VarChar(20)
   slug        String   @unique
   
   members     OrganizationMember[]
@@ -88,7 +88,7 @@ model OrganizationMember {
 
 model Project {
   id             String       @id @default(cuid())
-  name           String
+  name           String       @db.VarChar(20)
   slug           String
   organizationId String
   

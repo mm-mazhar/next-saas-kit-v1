@@ -22,6 +22,9 @@ export async function createProject(formData: FormData) {
   if (!name || !orgId) {
     return { success: false, error: 'All fields are required' }
   }
+  if (name.length > 20) {
+    return { success: false, error: 'Name must be 20 characters or fewer' }
+  }
 
   try {
     const project = await ProjectService.createProject(orgId, name, slug)
@@ -46,6 +49,9 @@ export async function updateProjectName(projectId: string, formData: FormData) {
 
   if (!name) {
     return { success: false, error: 'Name is required' }
+  }
+  if (name.length > 20) {
+    return { success: false, error: 'Name must be 20 characters or fewer' }
   }
 
   try {

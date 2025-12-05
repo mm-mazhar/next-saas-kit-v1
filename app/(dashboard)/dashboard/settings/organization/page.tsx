@@ -14,6 +14,7 @@ import {
 } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { OrgNameForm } from '@/app/(dashboard)/_components/org-name-form'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/app/(dashboard)/_components/ui/tabs'
 import { InvitationService } from '@/lib/services/invitation-service'
 import { OrganizationService } from '@/lib/services/organization-service'
@@ -77,23 +78,7 @@ export default async function OrganizationSettingsPage() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <form action={async (formData) => {
-                'use server'
-                const { updateOrganizationName } = await import('@/app/actions/organization')
-                await updateOrganizationName(org.id, formData)
-              }} className='space-y-4'>
-                <div className='grid gap-1'>
-                  <Label htmlFor="name">Name</Label>
-                  <Input 
-                    id="name" 
-                    name="name" 
-                    defaultValue={org.name} 
-                    className="max-w-md"
-                  />
-                </div>
-                
-                <Button type="submit">Save Changes</Button>
-              </form>
+              <OrgNameForm orgId={org.id} defaultName={org.name} />
             </CardContent>
           </Card>
         </TabsContent>

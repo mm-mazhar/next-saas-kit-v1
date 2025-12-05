@@ -68,10 +68,12 @@ export function CreateOrgDialog({
                 placeholder='Acme Inc.'
                 className='col-span-3 focus-visible:ring-0 focus-visible:ring-offset-0'
                 required
+                maxLength={20}
                 value={name}
                 onChange={handleNameChange}
               />
             </div>
+            <p className='col-span-4 text-xs text-muted-foreground'>Up to 20 characters</p>
             
             {error && <p className='text-red-500 text-sm'>{error}</p>}
           </div>
