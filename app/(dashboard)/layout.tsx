@@ -80,8 +80,6 @@ async function DashboardGroupLayout({ children }: { children: ReactNode }) {
       defaultOrgName,
       slugify(defaultOrgName)
     )
-    const cookieStoreForCreate = await cookies()
-    cookieStoreForCreate.set('current-org-id', newOrg.id)
     await ProjectService.createProject(newOrg.id, 'Default Project', slugify('Default Project'))
     organizations = [newOrg]
   }
@@ -94,11 +92,6 @@ async function DashboardGroupLayout({ children }: { children: ReactNode }) {
   }
 
   const effectiveOrgId = currentOrganization?.id
-  if (effectiveOrgId && (!currentOrgId || currentOrgId !== effectiveOrgId)) {
-    const cookieStoreForSwitch = await cookies()
-    cookieStoreForSwitch.set('current-org-id', effectiveOrgId)
-    return redirect('/dashboard')
-  }
 
   const mappedOrgs = organizations.map(org => ({
     id: org.id,

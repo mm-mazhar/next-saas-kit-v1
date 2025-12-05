@@ -30,16 +30,20 @@ export default async function OrganizationSettingsPage() {
 
   const cookieStore = await cookies()
   const currentOrgId = cookieStore.get('current-org-id')?.value
+  const organizations = await OrganizationService.getUserOrganizations(user.id)
+  const effectiveOrgId = (currentOrgId && organizations.some(o => o.id === currentOrgId))
+    ? currentOrgId
+    : (organizations[0]?.id ?? null)
 
-  if (!currentOrgId) {
+  if (!effectiveOrgId) {
     return (
       <div className='flex h-[50vh] items-center justify-center'>
-        <p className='text-muted-foreground'>Please select an organization first.</p>
+        <p className='text-muted-foreground'>No organization found.</p>
       </div>
     )
   }
 
-  const org = await OrganizationService.getOrganizationById(currentOrgId)
+  const org = await OrganizationService.getOrganizationById(effectiveOrgId)
   
   if (!org) {
     return (
@@ -49,7 +53,7 @@ export default async function OrganizationSettingsPage() {
     )
   }
 
-  const invites = await InvitationService.getOrganizationInvites(currentOrgId)
+  const invites = await InvitationService.getOrganizationInvites(effectiveOrgId)
 
   return (
     <div className='flex flex-1 flex-col gap-4 p-4 pt-0'>

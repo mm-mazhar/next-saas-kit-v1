@@ -4,6 +4,7 @@ import { CreateProjectDialog } from '@/app/(dashboard)/_components/create-projec
 import { ProjectActions } from '@/app/(dashboard)/_components/project-actions'
 import { createClient } from '@/app/lib/supabase/server'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { OrganizationService } from '@/lib/services/organization-service'
 import { ProjectService } from '@/lib/services/project-service'
 import { Folder } from 'lucide-react'
 import { cookies } from 'next/headers'
@@ -19,23 +20,27 @@ export default async function DashboardPage() {
 
   const cookieStore = await cookies()
   const currentOrgId = cookieStore.get('current-org-id')?.value
+  const organizations = await OrganizationService.getUserOrganizations(user.id)
+  const effectiveOrgId = (currentOrgId && organizations.some(o => o.id === currentOrgId))
+    ? currentOrgId
+    : (organizations[0]?.id ?? null)
 
-  if (!currentOrgId) {
+  if (!effectiveOrgId) {
     return (
       <div className='flex h-[50vh] flex-col items-center justify-center gap-4'>
-        <p className='text-muted-foreground'>Please select or create an organization to get started.</p>
+        <p className='text-muted-foreground'>No organization found.</p>
       </div>
     )
   }
 
-  const projects = await ProjectService.getOrganizationProjects(currentOrgId)
+  const projects = await ProjectService.getOrganizationProjects(effectiveOrgId)
 
   return (
     <div className='flex flex-1 flex-col gap-4 p-4 pt-0'>
       <div className='flex items-center justify-between'>
         <h2 className='text-2xl font-bold tracking-tight'>Projects</h2>
         <div>
-          <CreateProjectDialog orgId={currentOrgId} />
+          <CreateProjectDialog orgId={effectiveOrgId} />
         </div>
       </div>
 
@@ -48,7 +53,7 @@ export default async function DashboardPage() {
           <p className='mb-4 mt-2 text-sm text-muted-foreground max-w-sm'>
             Create your first project to start building.
           </p>
-          <CreateProjectDialog orgId={currentOrgId} />
+          <CreateProjectDialog orgId={effectiveOrgId} />
         </div>
       ) : (
         <div className='grid gap-4 md:grid-cols-2 lg:grid-cols-3'>
