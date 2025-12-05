@@ -93,6 +93,13 @@ async function DashboardGroupLayout({ children }: { children: ReactNode }) {
     currentOrganization = organizations[0]
   }
 
+  const effectiveOrgId = currentOrganization?.id
+  if (effectiveOrgId && (!currentOrgId || currentOrgId !== effectiveOrgId)) {
+    const cookieStoreForSwitch = await cookies()
+    cookieStoreForSwitch.set('current-org-id', effectiveOrgId)
+    return redirect('/dashboard')
+  }
+
   const mappedOrgs = organizations.map(org => ({
     id: org.id,
     name: org.name,

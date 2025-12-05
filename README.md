@@ -310,9 +310,21 @@ This section details the necessary settings in your Supabase Dashboard to config
   If you have no production users or can reset all users, you can clear existing data and enable RLS.
 
   ```sql
-  -- WARNING: This deletes ALL existing users and subscriptions!
-  TRUNCATE TABLE "Subscription" CASCADE;
-  TRUNCATE TABLE "User" CASCADE;
+  -- WARNING: This deletes ALL the rows in existing tables!
+  BEGIN;
+
+  TRUNCATE TABLE
+    public."OrganizationInvite",
+    public."Project",
+    public."OrganizationMember",
+    public."Subscription",
+    public."Organization",
+    public."User"
+  RESTART IDENTITY CASCADE;
+
+  TRUNCATE TABLE auth.users CASCADE;
+
+  COMMIT;
   ```
 
   Then proceed to enable RLS.

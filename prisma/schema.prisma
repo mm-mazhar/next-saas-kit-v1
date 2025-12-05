@@ -14,7 +14,7 @@ model User {
   name             String?
   email            String        @unique
   stripeCustomerId String?       @unique
-  colorScheme      String        @default("theme-orange")
+  colorScheme      String        @default("theme-neutral")
   themePreference  String        @default("dark")
   credits          Int           @default(5)
   creditsReminderThresholdSent Boolean @default(false)
