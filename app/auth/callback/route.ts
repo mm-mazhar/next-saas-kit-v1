@@ -34,13 +34,17 @@ export async function GET(request: Request) {
           const userName = user.user_metadata?.full_name || user.email?.split('@')[0] || 'User'
           const [firstName, ...lastNameParts] = userName.split(' ')
           const lastName = lastNameParts.join(' ')
-          await getData({
+          const dbUser = await getData({
             id: user.id,
             email: user.email as string,
             firstName,
             lastName,
             profileImage: (user.user_metadata?.avatar_url as string | undefined),
           })
+
+          if (!dbUser?.createdAt) {
+             console.error('[Auth Callback] Warning: User was not persisted to DB. Invite acceptance might fail.')
+          }
           
           // Check for invite token in URL or Cookie
           let inviteToken: string | null = null
@@ -96,13 +100,17 @@ export async function GET(request: Request) {
           const userName = user.user_metadata?.full_name || user.email?.split('@')[0] || 'User'
           const [firstName, ...lastNameParts] = userName.split(' ')
           const lastName = lastNameParts.join(' ')
-          await getData({
+          const dbUser = await getData({
             id: user.id,
             email: user.email as string,
             firstName,
             lastName,
             profileImage: (user.user_metadata?.avatar_url as string | undefined),
           })
+
+          if (!dbUser?.createdAt) {
+             console.error('[Auth Callback OAuth] Warning: User was not persisted to DB. Invite acceptance might fail.')
+          }
           // Regex to match /invite/TOKEN (allowing absolute URLs or relative paths)
           let inviteToken: string | null = null
           const inviteMatch = next.match(/\/invite\/([a-f0-9]{32,})/)

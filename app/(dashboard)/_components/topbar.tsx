@@ -4,7 +4,6 @@
 
 import { SidebarTrigger } from '@/app/(dashboard)/_components/sidebar'
 import { Themetoggle } from '@/components/Themetoggle'
-import { ToastProvider } from '@/components/ToastProvider'
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -87,7 +86,7 @@ export function TopBar({
   })
 
   return (
-    <header className='flex h-16 shrink-0 items-center justify-between px-4 border-b'>
+    <header className='flex h-16 shrink-0 items-center justify-between px-4 md:px-12 border-b'>
       <div className='flex items-center gap-2'>
         <SidebarTrigger className='-ml-1' />
         <Separator
@@ -144,9 +143,7 @@ export function TopBar({
             })()}
           </Tooltip>
         ) : null}
-        <ToastProvider>
-          <Themetoggle />
-        </ToastProvider>
+        <Themetoggle />
       </div>
     </header>
   )

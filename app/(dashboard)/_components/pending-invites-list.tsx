@@ -14,8 +14,9 @@ import * as React from 'react'
 type InviteRow = {
   id: string
   email: string
+  name?: string | null
   role: string
-  status: 'PENDING' | 'ACCEPTED' | 'DECLINED' | string
+  status: 'PENDING' | 'ACCEPTED' | 'REVOKED' | string
   expiresAt: string
   link: string
 }
@@ -29,7 +30,7 @@ export function PendingInvitesList({ invites }: { invites: InviteRow[] }) {
     switch (status) {
       case 'PENDING':
         return 'secondary'
-      case 'DECLINED':
+      case 'REVOKED':
         return 'outline'
       case 'ACCEPTED':
         return 'default'
@@ -39,7 +40,6 @@ export function PendingInvitesList({ invites }: { invites: InviteRow[] }) {
   }
 
   function displayStatus(status: string): string {
-    if (status === 'DECLINED') return 'REVOKED'
     return status
   }
 
@@ -52,7 +52,8 @@ export function PendingInvitesList({ invites }: { invites: InviteRow[] }) {
               <AvatarFallback>IN</AvatarFallback>
             </Avatar>
             <div>
-              <p className='text-sm font-medium leading-none'>{invite.email}</p>
+              <p className='text-sm font-medium leading-none'>{invite.name || invite.email}</p>
+              {invite.name && <p className='text-xs text-muted-foreground'>{invite.email}</p>}
               <p className='text-sm text-muted-foreground'>{invite.role}</p>
               <p className='text-xs text-muted-foreground flex items-center gap-2'>
                 <span>Link: {invite.link}</span>

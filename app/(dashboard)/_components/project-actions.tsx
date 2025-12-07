@@ -34,6 +34,7 @@ export function ProjectActions({ projectId, defaultName }: { projectId: string; 
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <button
+            suppressHydrationWarning
             aria-label='Project actions'
             className='text-muted-foreground hover:text-foreground flex items-center justify-center rounded-md p-1 focus:outline-none focus-visible:outline-none focus:ring-0 focus-visible:ring-0'
           >

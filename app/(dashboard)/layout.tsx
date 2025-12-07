@@ -73,15 +73,21 @@ async function DashboardGroupLayout({ children }: { children: ReactNode }) {
   // Multi-tenancy: Fetch organizations
   const { OrganizationService } = await import('@/lib/services/organization-service')
   let organizations = await OrganizationService.getUserOrganizations(user.id)
-  if (organizations.length === 0) {
+  
+  // Only attempt to create default organization if the user exists in DB (has createdAt)
+  if (organizations.length === 0 && userRow?.createdAt) {
     const defaultOrgName = 'Default Organization'
-    const newOrg = await OrganizationService.createOrganization(
-      user.id,
-      defaultOrgName,
-      slugify(defaultOrgName)
-    )
-    await ProjectService.createProject(newOrg.id, 'Default Project', slugify('Default Project'))
-    organizations = [newOrg]
+    try {
+      const newOrg = await OrganizationService.createOrganization(
+        user.id,
+         defaultOrgName,
+         slugify(`${defaultOrgName}-${user.id.substring(0, 8)}`)
+       )
+      await ProjectService.createProject(newOrg.id, 'Default Project', slugify('Default Project'))
+      organizations = [newOrg]
+    } catch (e) {
+      console.error('[Dashboard Layout] Failed to create default organization:', e)
+    }
   }
   
   const currentOrgId = cookieStore.get('current-org-id')?.value

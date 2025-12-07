@@ -106,14 +106,23 @@ export async function revokeInvite(inviteId: string) {
         const { OrganizationService } = await import('@/lib/services/organization-service')
         try {
           await OrganizationService.removeMember(invite.organizationId, userByEmail.id)
+          // If removeMember succeeds, the invite is deleted (as part of the transaction).
+          // We can return success immediately.
+          revalidatePath('/dashboard/settings/organization')
+          return { success: true }
         } catch (err) {
           const msg = err instanceof Error ? err.message : String(err)
-          return { success: false, error: msg }
+          // If the error is about the last owner, we must stop and return error
+          if (msg.includes('Cannot remove the last owner')) {
+            return { success: false, error: msg }
+          }
+          // Otherwise, if the member is not found (e.g. already removed), we proceed to revoke the invite
         }
       } else {
         return { success: false, error: 'Member not found for accepted invite' }
       }
-      await db.organizationInvite.update({ where: { id: inviteId }, data: { status: 'DECLINED' } })
+      // If member was not found, the invite might still exist. We mark it as REVOKED.
+      await db.organizationInvite.update({ where: { id: inviteId }, data: { status: 'REVOKED' } })
     } else {
       const { InvitationService } = await import('@/lib/services/invitation-service')
       await InvitationService.revokeInvite(inviteId)

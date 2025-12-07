@@ -49,14 +49,14 @@ export function NavMain({
             <SidebarMenuItem>
               <CollapsibleTrigger asChild>
                 <SidebarMenuButton asChild tooltip={item.title}>
-                  <Link href={item.url} className='flex items-center gap-2'>
+                  <Link href={item.url} className='flex items-center gap-2' suppressHydrationWarning>
                     {item.icon && <item.icon />}
                     <span>{item.title}</span>
                     <ChevronRight className='ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90' />
                   </Link>
                 </SidebarMenuButton>
               </CollapsibleTrigger>
-              <CollapsibleContent>
+              <CollapsibleContent suppressHydrationWarning>
                 <SidebarMenuSub>
                   {item.items?.map((subItem) => (
                     <SidebarMenuSubItem key={subItem.title}>

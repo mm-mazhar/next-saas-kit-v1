@@ -115,6 +115,9 @@ export class OrganizationService {
           userId,
         },
       },
+      include: {
+        user: true,
+      },
     })
 
     if (member?.role === ROLES.OWNER) {
@@ -130,13 +133,28 @@ export class OrganizationService {
       }
     }
 
-    return await prisma.organizationMember.delete({
-      where: {
-        organizationId_userId: {
-          organizationId: orgId,
-          userId,
+    return await prisma.$transaction(async (tx) => {
+      // 1. Delete the member
+      const deletedMember = await tx.organizationMember.delete({
+        where: {
+          organizationId_userId: {
+            organizationId: orgId,
+            userId,
+          },
         },
-      },
+      })
+
+      // 2. Delete associated invites (cleanup)
+      if (member?.user?.email) {
+        await tx.organizationInvite.deleteMany({
+          where: {
+            organizationId: orgId,
+            email: member.user.email,
+          },
+        })
+      }
+
+      return deletedMember
     })
   }
 }

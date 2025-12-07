@@ -5,17 +5,17 @@ import { createClient } from '@/app/lib/supabase/server'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
+    Card,
+    CardContent,
+    CardDescription,
+    CardHeader,
+    CardTitle,
 } from '@/components/ui/card'
 //
 import { OrgNameForm } from '@/app/(dashboard)/_components/org-name-form'
+import { PendingInvitesList } from '@/app/(dashboard)/_components/pending-invites-list'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/app/(dashboard)/_components/ui/tabs'
 import { InvitationService } from '@/lib/services/invitation-service'
-import { PendingInvitesList } from '@/app/(dashboard)/_components/pending-invites-list'
 import { OrganizationService } from '@/lib/services/organization-service'
 import { unstable_noStore as noStore } from 'next/cache'
 import { cookies } from 'next/headers'
@@ -36,7 +36,10 @@ export default async function OrganizationSettingsPage() {
   const cookieStore = await cookies()
   const currentOrgId = cookieStore.get('current-org-id')?.value
   const organizations = await OrganizationService.getUserOrganizations(user.id)
-  const effectiveOrgId = currentOrgId ?? (organizations[0]?.id ?? null)
+  
+  // Validate membership
+  const isMember = currentOrgId && organizations.some(org => org.id === currentOrgId)
+  const effectiveOrgId = isMember ? currentOrgId : (organizations[0]?.id ?? null)
 
   if (!effectiveOrgId) {
     return (
@@ -144,7 +147,7 @@ export default async function OrganizationSettingsPage() {
                           const { removeMember } = await import('@/app/actions/organization')
                           await removeMember(org.id, member.userId)
                         }}>
-                          <Button variant='outline' size='sm' type='submit'>Remove</Button>
+                          <Button variant='outline' size='sm' type='submit'>Revoke</Button>
                         </form>
                       ) : null
                     })()}
@@ -167,6 +170,7 @@ export default async function OrganizationSettingsPage() {
                   invites={invites.map((i) => ({
                     id: i.id,
                     email: i.email,
+                    name: i.invitee.name,
                     role: i.role,
                     status: i.status,
                     expiresAt: new Date(i.expiresAt).toISOString(),

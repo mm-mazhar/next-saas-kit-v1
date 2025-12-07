@@ -63,7 +63,7 @@ export class InvitationService {
   }
 
   static async getOrganizationInvites(organizationId: string) {
-    return await prisma.organizationInvite.findMany({
+    const invites = await prisma.organizationInvite.findMany({
       where: {
         organizationId,
       },
@@ -79,6 +79,21 @@ export class InvitationService {
         },
       },
     })
+
+    const emails = invites.map((i) => i.email)
+    const users = await prisma.user.findMany({
+      where: { email: { in: emails } },
+      select: { email: true, name: true },
+    })
+
+    const userMap = new Map(users.map((u) => [u.email, u.name]))
+
+    return invites.map((invite) => ({
+      ...invite,
+      invitee: {
+        name: userMap.get(invite.email) || null,
+      },
+    }))
   }
 
   static async acceptInvite(token: string, userId: string) {
@@ -165,7 +180,7 @@ export class InvitationService {
   static async revokeInvite(inviteId: string) {
     return await prisma.organizationInvite.update({
       where: { id: inviteId },
-      data: { status: 'DECLINED' }, // Or delete it? Better to keep record or mark as revoked/declined.
+      data: { status: 'REVOKED' }, // Or delete it? Better to keep record or mark as revoked/declined.
     })
   }
 

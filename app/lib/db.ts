@@ -111,12 +111,49 @@ export async function getData(userData?: UserData | string): Promise<DbUser | nu
         lastPaygPurchaseAt: true,
         Subscription: true,
       } as const
+
+    // 1. Try to find by ID first (Best match)
+    try {
+      const foundById = await prisma.user.findUnique({
+        where: { id: userData.id },
+        select: selection,
+      })
+      if (foundById) return foundById
+    } catch {}
+
+    // 2. If not found by ID, try finding by Email
     try {
       const found = await prisma.user.findUnique({
         where: { email: userData.email },
         select: selection,
       })
-      if (found) return found
+      
+      if (found) {
+        // Zombie Record Check: Email matches, but ID might not match.
+        // If the IDs don't match, we need to sync the DB ID to match the current Supabase ID (userData.id)
+        // to avoid Foreign Key violations when creating related records (like OrganizationMember).
+        if (found.id !== userData.id) {
+            console.log(`[DB] Syncing user ID for ${userData.email}: ${found.id} -> ${userData.id}`)
+            try {
+                const fullName = `${userData.firstName} ${userData.lastName}`.trim()
+                const updated = await prisma.user.update({
+                    where: { email: userData.email },
+                    data: { 
+                        id: userData.id, 
+                        name: fullName || found.name // Update name if provided
+                    },
+                    select: selection
+                })
+                return updated
+            } catch (updateError) {
+                 console.error('[DB] Failed to update user ID (Zombie Record):', updateError)
+                 // If update fails (e.g. strict FK constraints), we return the found user.
+                 // The caller might fail later, but we've done our best.
+                 return found
+            }
+        }
+        return found
+      }
     } catch {
       // swallow and attempt create path below (may also fail)
     }
@@ -151,7 +188,8 @@ export async function getData(userData?: UserData | string): Promise<DbUser | nu
           select: selection,
         })
         return created
-      } catch {
+      } catch (error) {
+        console.error('[DB] Failed to create user:', error)
         // if create fails (db down), return minimal object for UI
         return {
           id: userData.id,

@@ -55,7 +55,7 @@ export function InviteMemberDialog({ orgId }: { orgId: string }) {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button className='focus:outline-none focus-visible:outline-none focus:ring-0 focus-visible:ring-0'>
+        <Button className='focus:outline-none focus-visible:outline-none focus:ring-0 focus-visible:ring-0' suppressHydrationWarning>
           <Plus className='mr-2 h-4 w-4' />
           Invite Member
         </Button>

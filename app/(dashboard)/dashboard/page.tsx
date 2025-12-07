@@ -26,7 +26,10 @@ export default async function DashboardPage() {
   const cookieStore = await cookies()
   const currentOrgId = cookieStore.get('current-org-id')?.value
   const organizations = await OrganizationService.getUserOrganizations(user.id)
-  const effectiveOrgId = currentOrgId ?? (organizations[0]?.id ?? null)
+  
+  // Validate that the user is actually a member of the organization in the cookie
+  const isMember = currentOrgId && organizations.some(org => org.id === currentOrgId)
+  const effectiveOrgId = isMember ? currentOrgId : (organizations[0]?.id ?? null)
 
   if (!effectiveOrgId) {
     return (
