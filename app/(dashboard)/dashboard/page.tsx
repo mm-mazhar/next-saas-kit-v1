@@ -7,10 +7,15 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { OrganizationService } from '@/lib/services/organization-service'
 import { ProjectService } from '@/lib/services/project-service'
 import { Folder } from 'lucide-react'
+import { unstable_noStore as noStore } from 'next/cache'
 import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
 
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
+
 export default async function DashboardPage() {
+  noStore()
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
@@ -21,9 +26,7 @@ export default async function DashboardPage() {
   const cookieStore = await cookies()
   const currentOrgId = cookieStore.get('current-org-id')?.value
   const organizations = await OrganizationService.getUserOrganizations(user.id)
-  const effectiveOrgId = (currentOrgId && organizations.some(o => o.id === currentOrgId))
-    ? currentOrgId
-    : (organizations[0]?.id ?? null)
+  const effectiveOrgId = currentOrgId ?? (organizations[0]?.id ?? null)
 
   if (!effectiveOrgId) {
     return (

@@ -11,15 +11,17 @@ import { redirect } from 'next/navigation'
 export default async function LoginPage({
   searchParams,
 }: {
-  searchParams?: { next?: string }
+  searchParams: Promise<{ next?: string }>
 }) {
+  const { next } = await searchParams
+  console.log('[GetStarted Page] Received next param:', next)
   const supabase = await createClient()
   const {
     data: { user },
   } = await supabase.auth.getUser()
 
   if (user) {
-    redirect(searchParams?.next ?? '/dashboard')
+    redirect(next ?? '/dashboard')
   }
 
   return (
@@ -36,7 +38,7 @@ export default async function LoginPage({
         </div>
 
         <div className='space-y-4'>
-          <GoogleAuthButton />
+          <GoogleAuthButton next={next} />
 
           <div className='relative'>
             <div className='absolute inset-0 flex items-center'>
@@ -49,7 +51,7 @@ export default async function LoginPage({
             </div>
           </div>
 
-          <EmailAuthForm />
+          <EmailAuthForm next={next} />
         </div>
 
         <div className='text-center text-sm text-muted-foreground space-y-4'>

@@ -3,7 +3,6 @@
 import { InviteMemberDialog } from '@/app/(dashboard)/_components/invite-member-dialog'
 import { createClient } from '@/app/lib/supabase/server'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
   Card,
@@ -12,16 +11,21 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
+//
 import { OrgNameForm } from '@/app/(dashboard)/_components/org-name-form'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/app/(dashboard)/_components/ui/tabs'
 import { InvitationService } from '@/lib/services/invitation-service'
+import { PendingInvitesList } from '@/app/(dashboard)/_components/pending-invites-list'
 import { OrganizationService } from '@/lib/services/organization-service'
+import { unstable_noStore as noStore } from 'next/cache'
 import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
 
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
+
 export default async function OrganizationSettingsPage() {
+  noStore()
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
@@ -32,9 +36,7 @@ export default async function OrganizationSettingsPage() {
   const cookieStore = await cookies()
   const currentOrgId = cookieStore.get('current-org-id')?.value
   const organizations = await OrganizationService.getUserOrganizations(user.id)
-  const effectiveOrgId = (currentOrgId && organizations.some(o => o.id === currentOrgId))
-    ? currentOrgId
-    : (organizations[0]?.id ?? null)
+  const effectiveOrgId = currentOrgId ?? (organizations[0]?.id ?? null)
 
   if (!effectiveOrgId) {
     return (
@@ -81,6 +83,25 @@ export default async function OrganizationSettingsPage() {
               <OrgNameForm orgId={org.id} defaultName={org.name} />
             </CardContent>
           </Card>
+          <Card>
+            <CardHeader>
+              <CardTitle>Danger Zone</CardTitle>
+              <CardDescription>Delete the organization and all its projects.</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {org.slug.startsWith('default-organization') ? (
+                <p className='text-sm text-muted-foreground'>Default Organization cannot be deleted.</p>
+              ) : (
+                <form action={async () => {
+                  'use server'
+                  const { deleteOrganization } = await import('@/app/actions/organization')
+                  await deleteOrganization(org.id)
+                }}>
+                  <Button variant='destructive' type='submit'>Delete Organization</Button>
+                </form>
+              )}
+            </CardContent>
+          </Card>
         </TabsContent>
         <TabsContent value='members' className='space-y-4'>
           <Card>
@@ -114,6 +135,19 @@ export default async function OrganizationSettingsPage() {
                         </p>
                       </div>
                     </div>
+                    {(() => {
+                      const ownerCount = org.members.filter(m => m.role === 'OWNER').length
+                      const canRemove = member.role !== 'OWNER' || ownerCount > 1
+                      return canRemove ? (
+                        <form action={async () => {
+                          'use server'
+                          const { removeMember } = await import('@/app/actions/organization')
+                          await removeMember(org.id, member.userId)
+                        }}>
+                          <Button variant='outline' size='sm' type='submit'>Remove</Button>
+                        </form>
+                      ) : null
+                    })()}
                   </div>
                 ))}
               </div>
@@ -129,31 +163,16 @@ export default async function OrganizationSettingsPage() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <div className='space-y-4'>
-                  {invites.map((invite) => (
-                    <div
-                      key={invite.id}
-                      className='flex items-center justify-between space-x-4'
-                    >
-                      <div className='flex items-center space-x-4'>
-                        <Avatar>
-                          <AvatarFallback>IN</AvatarFallback>
-                        </Avatar>
-                        <div>
-                          <p className='text-sm font-medium leading-none'>
-                            {invite.email}
-                          </p>
-                          <p className='text-sm text-muted-foreground'>
-                            {invite.role} • Expires {new Date(invite.expiresAt).toLocaleDateString()}
-                          </p>
-                        </div>
-                      </div>
-                      <Badge variant={invite.status === 'PENDING' ? 'secondary' : 'outline'}>
-                        {invite.status}
-                      </Badge>
-                    </div>
-                  ))}
-                </div>
+                <PendingInvitesList
+                  invites={invites.map((i) => ({
+                    id: i.id,
+                    email: i.email,
+                    role: i.role,
+                    status: i.status,
+                    expiresAt: new Date(i.expiresAt).toISOString(),
+                    link: InvitationService.getInviteLink(i.token),
+                  }))}
+                />
               </CardContent>
             </Card>
           )}

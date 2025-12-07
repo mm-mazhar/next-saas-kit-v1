@@ -55,6 +55,7 @@ export function TeamSwitcher({
             <SidebarMenuButton
               size='lg'
               className='data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground'
+              suppressHydrationWarning
             >
               <div className='bg-sidebar-primary text-sidebar-primary-foreground flex aspect-square size-8 items-center justify-center rounded-lg'>
                 <Building2 className='size-4' />
@@ -89,6 +90,14 @@ export function TeamSwitcher({
               </DropdownMenuItem>
             ))}
             <DropdownMenuSeparator />
+            <DropdownMenuItem className='gap-2 p-2' onClick={() => setOpen(true)}>
+              <div className='flex size-6 items-center justify-center rounded-md border bg-transparent'>
+                <Plus className='size-4' />
+              </div>
+              <div className='text-muted-foreground font-medium'>Create Organization</div>
+            </DropdownMenuItem>
+            
+            <DropdownMenuSeparator />
             <DropdownMenuItem asChild>
               <Link href='/dashboard/settings/organization' className='gap-2 p-2 cursor-pointer'>
                 <div className='flex size-6 items-center justify-center rounded-md border bg-transparent'>
@@ -96,13 +105,6 @@ export function TeamSwitcher({
                 </div>
                 <div className='text-muted-foreground font-medium'>Organization Settings</div>
               </Link>
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem className='gap-2 p-2' onClick={() => setOpen(true)}>
-              <div className='flex size-6 items-center justify-center rounded-md border bg-transparent'>
-                <Plus className='size-4' />
-              </div>
-              <div className='text-muted-foreground font-medium'>Create Organization</div>
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

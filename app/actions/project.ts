@@ -63,3 +63,23 @@ export async function updateProjectName(projectId: string, formData: FormData) {
     return { success: false, error: message }
   }
 }
+
+export async function deleteProject(projectId: string) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+
+  if (!user) {
+    throw new Error('Unauthorized')
+  }
+
+  try {
+    // Fetch project to ensure it exists
+    const { ProjectService } = await import('@/lib/services/project-service')
+    await ProjectService.deleteProject(projectId)
+    revalidatePath('/dashboard')
+    return { success: true }
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error)
+    return { success: false, error: message }
+  }
+}

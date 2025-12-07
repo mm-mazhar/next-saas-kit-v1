@@ -89,6 +89,12 @@ async function DashboardGroupLayout({ children }: { children: ReactNode }) {
   
   if (!currentOrganization && organizations.length > 0) {
     currentOrganization = organizations[0]
+    try {
+      const id = currentOrganization.id
+      if (id) {
+        cookieStore.set('current-org-id', id)
+      }
+    } catch {}
   }
 
   const effectiveOrgId = currentOrganization?.id

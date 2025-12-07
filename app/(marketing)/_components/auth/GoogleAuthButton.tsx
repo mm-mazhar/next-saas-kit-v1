@@ -4,17 +4,23 @@
 
 import { createClient } from '@/app/lib/supabase/client'
 import { Button } from '@/components/ui/button'
-import { useState } from 'react'
 import { useSearchParams } from 'next/navigation'
+import { useState } from 'react'
 
-export function GoogleAuthButton() {
+export function GoogleAuthButton({ next }: { next?: string }) {
   const [isLoading, setIsLoading] = useState(false)
   const searchParams = useSearchParams()
-  const nextParam = searchParams.get('next') ?? '/dashboard'
+  const nextParam = next ?? searchParams.get('next') ?? '/dashboard'
 
   const handleGoogleLogin = async () => {
     setIsLoading(true)
     const supabase = createClient()
+
+    // Check if nextParam is an invite link and set a backup cookie
+    const inviteMatch = nextParam.match(/\/invite\/([a-f0-9]{32,})/)
+    if (inviteMatch) {
+      document.cookie = `invite_token=${inviteMatch[1]}; path=/; max-age=3600`
+    }
 
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
@@ -26,6 +32,7 @@ export function GoogleAuthButton() {
         },
       },
     })
+
 
     if (error) {
       console.error('Error signing in with Google:', error)

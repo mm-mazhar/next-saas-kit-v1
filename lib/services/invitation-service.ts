@@ -1,10 +1,23 @@
 // lib/services/invitation-service.ts
 
+import prisma from '@/app/lib/db'
 import { randomBytes } from 'crypto'
-import prisma from '../../app/lib/db'
-import { LIMITS, OrganizationRole, ROLES } from '../constants'
+import { INVITE_EXPIRATION_MS, LIMITS, LOCAL_SITE_URL, OrganizationRole, PRODUCTION_URL, ROLES, SITE_URL } from '../constants'
 
 export class InvitationService {
+  static resolveOrigin() {
+    const env = process.env.NODE_ENV
+    if (env === 'development') {
+      return LOCAL_SITE_URL || SITE_URL || 'http://localhost:3000'
+    }
+    const vercelUrl = process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : ''
+    return PRODUCTION_URL || SITE_URL || vercelUrl || ''
+  }
+
+  static getInviteLink(token: string) {
+    const origin = InvitationService.resolveOrigin()
+    return origin ? new URL(`/invite/${token}`, origin).href : `/invite/${token}`
+  }
   static async createInvite(inviterId: string, organizationId: string, email: string, role: OrganizationRole = ROLES.MEMBER) {
     // 1. Check Limits
     const pendingInvites = await prisma.organizationInvite.count({
@@ -34,7 +47,7 @@ export class InvitationService {
 
     // 3. Create Invite
     const token = randomBytes(32).toString('hex')
-    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) // 7 days
+    const expiresAt = new Date(Date.now() + INVITE_EXPIRATION_MS)
 
     return await prisma.organizationInvite.create({
       data: {
@@ -45,6 +58,7 @@ export class InvitationService {
         token,
         expiresAt,
       },
+      include: { inviter: true, organization: true },
     })
   }
 
@@ -88,6 +102,38 @@ export class InvitationService {
       throw new Error('Invite has expired.')
     }
 
+    const userRow = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { email: true },
+    })
+
+    if (!userRow) {
+      throw new Error('User not found.')
+    }
+
+    const inviteEmail = String(invite.email || '').trim().toLowerCase()
+    const userEmail = String(userRow.email || '').trim().toLowerCase()
+    if (!inviteEmail || inviteEmail !== userEmail) {
+      throw new Error('Invite does not belong to the current user.')
+    }
+
+    const existingMember = await prisma.organizationMember.findUnique({
+      where: {
+        organizationId_userId: {
+          organizationId: invite.organizationId,
+          userId,
+        },
+      },
+    })
+
+    if (existingMember) {
+      await prisma.organizationInvite.update({
+        where: { id: invite.id },
+        data: { status: 'ACCEPTED' },
+      })
+      return existingMember
+    }
+
     // Transaction to add member and update invite
     return await prisma.$transaction(async (tx) => {
       // Check member limit again inside transaction just in case
@@ -120,6 +166,16 @@ export class InvitationService {
     return await prisma.organizationInvite.update({
       where: { id: inviteId },
       data: { status: 'DECLINED' }, // Or delete it? Better to keep record or mark as revoked/declined.
+    })
+  }
+
+  static async reinvite(inviteId: string) {
+    const token = randomBytes(32).toString('hex')
+    const expiresAt = new Date(Date.now() + INVITE_EXPIRATION_MS)
+    return await prisma.organizationInvite.update({
+      where: { id: inviteId },
+      data: { token, expiresAt, status: 'PENDING' },
+      include: { inviter: true, organization: true },
     })
   }
 }

@@ -3,7 +3,7 @@
 'use client'
 
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/app/(dashboard)/_components/ui/dialog'
-import { updateProjectName } from '@/app/actions/project'
+import { deleteProject, updateProjectName } from '@/app/actions/project'
 import { Button } from '@/components/ui/button'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { Input } from '@/components/ui/input'
@@ -14,6 +14,7 @@ import * as React from 'react'
 
 export function ProjectActions({ projectId, defaultName }: { projectId: string; defaultName: string }) {
   const [openRename, setOpenRename] = React.useState(false)
+  const [openDelete, setOpenDelete] = React.useState(false)
   const [loading, setLoading] = React.useState(false)
   const router = useRouter()
 
@@ -43,6 +44,9 @@ export function ProjectActions({ projectId, defaultName }: { projectId: string; 
           <DropdownMenuItem className='gap-2' onSelect={() => { setOpenRename(true) }}>
             Rename
           </DropdownMenuItem>
+          <DropdownMenuItem className='gap-2 text-destructive' onSelect={() => { setOpenDelete(true) }}>
+            Delete
+          </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
 
@@ -62,6 +66,33 @@ export function ProjectActions({ projectId, defaultName }: { projectId: string; 
             <DialogFooter>
               <Button type='submit' size='sm' disabled={loading} className='focus:outline-none focus-visible:outline-none focus:ring-0 focus-visible:ring-0'>
                 {loading ? 'Saving...' : 'Save'}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={openDelete} onOpenChange={setOpenDelete}>
+        <DialogContent className='sm:max-w-[425px]'>
+          <DialogHeader>
+            <DialogTitle>Delete Project</DialogTitle>
+            <DialogDescription>This action cannot be undone.</DialogDescription>
+          </DialogHeader>
+          <form
+            onSubmit={async (e) => {
+              e.preventDefault()
+              setLoading(true)
+              const res = await deleteProject(projectId)
+              if (res?.success) {
+                setOpenDelete(false)
+                router.refresh()
+              }
+              setLoading(false)
+            }}
+          >
+            <DialogFooter>
+              <Button type='submit' variant='destructive' size='sm' disabled={loading}>
+                {loading ? 'Deleting...' : 'Delete'}
               </Button>
             </DialogFooter>
           </form>

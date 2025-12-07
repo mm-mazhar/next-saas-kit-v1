@@ -4,22 +4,36 @@
 import { createClient } from '@/app/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { useState } from 'react'
 import { useSearchParams } from 'next/navigation'
+import { useState } from 'react'
 
-export function EmailAuthForm() {
+export function EmailAuthForm({ next }: { next?: string }) {
   const [email, setEmail] = useState('')
   const [loading, setLoading] = useState(false)
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
   const [infoMsg, setInfoMsg] = useState<string | null>(null)
   const supabase = createClient()
   const searchParams = useSearchParams()
-  const nextParam = searchParams.get('next') ?? '/dashboard'
+  const nextParam = next ?? searchParams.get('next') ?? '/dashboard'
+  
+  // Debug log
+  console.log('[EmailAuthForm] next prop:', next)
+  console.log('[EmailAuthForm] searchParams next:', searchParams.get('next'))
+  console.log('[EmailAuthForm] effective nextParam:', nextParam)
 
   const handleMagicLink = async () => {
     setLoading(true)
     setErrorMsg(null)
     setInfoMsg(null)
+
+    // Check if nextParam is an invite link and set a backup cookie
+    const inviteMatch = nextParam.match(/\/invite\/([a-f0-9]{32,})/)
+    if (inviteMatch) {
+      // Set a cookie that expires in 1 hour
+      document.cookie = `invite_token=${inviteMatch[1]}; path=/; max-age=3600`
+      console.log('[EmailAuthForm] Set backup invite_token cookie:', inviteMatch[1])
+    }
+
     const { error } = await supabase.auth.signInWithOtp({
       email,
       options: {
@@ -55,7 +69,7 @@ export function EmailAuthForm() {
         <p className='text-sm text-destructive text-center mt-2'>{errorMsg}</p>
       )}
       {infoMsg && (
-        <p className='text-sm text-muted-foreground text-center mt-2'>{infoMsg}</p>
+        <p className='text-sm text-muted-foreground text-center mt-6'>{infoMsg}</p>
       )}
     </div>
   )
