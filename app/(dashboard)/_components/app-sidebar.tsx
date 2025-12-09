@@ -2,17 +2,16 @@
 
 'use client'
 
-import { AudioWaveform, Command, GalleryVerticalEnd } from 'lucide-react'
 import * as React from 'react'
 
 import { NavMain } from '@/app/(dashboard)/_components/nav-main'
 import { NavUser } from '@/app/(dashboard)/_components/nav-user'
 import {
-    Sidebar,
-    SidebarContent,
-    SidebarFooter,
-    SidebarHeader,
-    SidebarRail,
+  Sidebar,
+  SidebarContent,
+  SidebarFooter,
+  SidebarHeader,
+  SidebarRail,
 } from '@/app/(dashboard)/_components/sidebar'
 import { TeamSwitcher } from '@/app/(dashboard)/_components/team-switcher'
 import { type PlanId } from '@/lib/constants'
@@ -24,23 +23,7 @@ const navItems = [
   { name: 'Settings', href: '/dashboard/settings', icon: Settings },
   { name: 'Billing', href: '/dashboard/billing', icon: CreditCard },
 ]
-const teams = [
-  {
-    name: 'Acme Inc',
-    logo: GalleryVerticalEnd,
-    plan: 'Enterprise',
-  },
-  {
-    name: 'Acme Corp.',
-    logo: AudioWaveform,
-    plan: 'Startup',
-  },
-  {
-    name: 'Evil Corp.',
-    logo: Command,
-    plan: 'Free',
-  },
-]
+
 
 export function AppSidebar({
   user,

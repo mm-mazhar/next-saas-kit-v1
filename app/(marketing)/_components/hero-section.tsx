@@ -26,7 +26,7 @@ import Link from 'next/link'
 // import PrismaLogo from 'public/companies/prisma.png'
 // import { ChevronRight } from 'lucide-react'
 
-import prisma, { getData } from '@/app/lib/db'
+import prisma from '@/app/lib/db'
 import { createClient } from '@/app/lib/supabase/server'
 import {
     APP_DESCRIPTION,
@@ -55,7 +55,7 @@ export default async function HeroSection() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
-  const dbUser = user ? await getData(user.id) : null
+
 
   // Get Organization Billing Data
   let orgBilling = null

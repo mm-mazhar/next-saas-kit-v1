@@ -257,7 +257,7 @@ export async function deleteOrganization(orgId: string) {
     // Filter out deleted? Service might still return them if not filtered.
     // We should assume Service filters deletedAt: null.
     // If not, we filter here just in case for nextOrg.
-    const activeOrgs = userOrgs.filter((o: any) => !o.deletedAt)
+    const activeOrgs = userOrgs.filter((o) => !o.deletedAt)
     const nextOrg = activeOrgs[0]?.id
     
     if (nextOrg) {

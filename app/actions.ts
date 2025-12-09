@@ -3,7 +3,7 @@
 'use server'
 
 import { createClient } from '@/app/lib/supabase/server'
-import prisma, { getData } from '@/app/lib/db'
+import prisma from '@/app/lib/db'
 import { createClient as createSupabaseAdminClient } from '@supabase/supabase-js'
 import { stripe } from '@/app/lib/stripe'
 import { PRODUCTION_URL, LOCAL_SITE_URL } from '@/lib/constants'
@@ -55,7 +55,7 @@ export async function createCustomerPortal() {
   if (!user) {
     return
   }
-  const dbUser = await getData(user.id)
+
   
   const membership = await prisma.organizationMember.findFirst({
     where: { userId: user.id },
