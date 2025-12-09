@@ -39,7 +39,7 @@ export default async function DashboardPage() {
     )
   }
 
-  const projects = await ProjectService.getOrganizationProjects(effectiveOrgId)
+  const projects = await ProjectService.getOrganizationProjects(user.id, effectiveOrgId)
 
   return (
     <div className='flex flex-1 flex-col gap-4 p-4 pt-0'>

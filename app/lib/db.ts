@@ -50,17 +50,6 @@ export type DbUser = {
   createdAt?: Date
   colorScheme?: string
   themePreference?: string
-  credits: number
-  stripeCustomerId?: string | null
-  creditsReminderThresholdSent?: boolean
-  lastPaygPurchaseAt?: Date | null
-  Subscription?: {
-    status: string
-    interval: string
-    planId: string
-    stripeSubscriptionId?: string
-    currentPeriodEnd: number
-  } | null
 }
 
 export async function getData(userData?: UserData | string): Promise<DbUser | null> {
@@ -76,19 +65,6 @@ export async function getData(userData?: UserData | string): Promise<DbUser | nu
           createdAt: true,
           colorScheme: true,
           themePreference: true,
-          credits: true,
-          creditsReminderThresholdSent: true,
-          lastPaygPurchaseAt: true,
-          stripeCustomerId: true,
-          Subscription: {
-            select: {
-              status: true,
-              interval: true,
-              planId: true,
-              stripeSubscriptionId: true,
-              currentPeriodEnd: true,
-            },
-          },
         },
       })
       return user
@@ -106,10 +82,6 @@ export async function getData(userData?: UserData | string): Promise<DbUser | nu
         createdAt: true,
         colorScheme: true,
         themePreference: true,
-        credits: true,
-        creditsReminderThresholdSent: true,
-        lastPaygPurchaseAt: true,
-        Subscription: true,
       } as const
 
     // 1. Try to find by ID first (Best match)
@@ -178,6 +150,7 @@ export async function getData(userData?: UserData | string): Promise<DbUser | nu
                       create: {
                         name: 'Default Project',
                         slug: 'default-project',
+                        // organizationId automatically handled by nesting
                       },
                     },
                   },
@@ -198,8 +171,7 @@ export async function getData(userData?: UserData | string): Promise<DbUser | nu
           createdAt: undefined,
           colorScheme: undefined,
           themePreference: undefined,
-          credits: 5,
-          Subscription: undefined,
+          // Subscription: undefined, // Removed
         }
       }
     }

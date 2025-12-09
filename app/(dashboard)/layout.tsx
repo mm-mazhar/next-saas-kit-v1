@@ -40,36 +40,8 @@ async function DashboardGroupLayout({ children }: { children: ReactNode }) {
     profileImage: user.user_metadata?.avatar_url,
   })
 
-  const resolvePlanId = async (
-    planIdFromDb?: string | null
-  ): Promise<PlanId | null> => {
-    if (!planIdFromDb) return null
-    if (planIdFromDb === PLAN_IDS.free) return PLAN_IDS.free
-    const matched = PRICING_PLANS.find(
-      (p: PricingPlan) => p.stripePriceId === planIdFromDb
-    )
-    return matched?.id ?? null
-  }
-
-  const currentPlan = await resolvePlanId(userRow?.Subscription?.planId)
-  const subStatus = userRow?.Subscription?.status
-  const creditsUsed = (userRow?.credits as number | undefined) ?? 0
-  const paygCredits = PRICING_PLANS.find((p) => p.id === PLAN_IDS.payg)?.credits ?? 0
-  const paygEligible = !!userRow?.lastPaygPurchaseAt && creditsUsed < paygCredits
-  const effectivePlan: PlanId = subStatus === 'active' ? (currentPlan ?? PLAN_IDS.free) : paygEligible ? PLAN_IDS.payg : PLAN_IDS.free
-  const creditsTotal = PRICING_PLANS.find((p) => p.id === effectivePlan)?.credits ?? 0
-  const exhausted = (effectivePlan !== PLAN_IDS.free) && (creditsUsed >= creditsTotal)
-  const renewalDate =
-    userRow?.Subscription?.currentPeriodEnd ??
-    (userRow?.createdAt
-      ? Math.floor(userRow.createdAt.getTime() / 1000) + 30 * 24 * 60 * 60
-      : null)
-
   const cookieStore = await cookies()
-  const sidebarCookie = cookieStore.get('sidebar_state')?.value
-  const normalized = sidebarCookie?.toLowerCase()
-  const initialOpen = normalized === undefined ? true : (normalized === 'true' || normalized === 'expanded')
-
+  const initialOpen = cookieStore.get('sidebar_state')?.value === 'true'
   // Multi-tenancy: Fetch organizations
   const { OrganizationService } = await import('@/lib/services/organization-service')
   let organizations = await OrganizationService.getUserOrganizations(user.id)
@@ -83,7 +55,7 @@ async function DashboardGroupLayout({ children }: { children: ReactNode }) {
          defaultOrgName,
          slugify(`${defaultOrgName}-${user.id.substring(0, 8)}`)
        )
-      await ProjectService.createProject(newOrg.id, 'Default Project', slugify('Default Project'))
+      await ProjectService.createProject(user.id, newOrg.id, 'Default Project', slugify('Default Project'))
       organizations = [newOrg]
     } catch (e) {
       console.error('[Dashboard Layout] Failed to create default organization:', e)
@@ -104,6 +76,41 @@ async function DashboardGroupLayout({ children }: { children: ReactNode }) {
   }
 
   const effectiveOrgId = currentOrganization?.id
+
+  // Fetch full billing details for current org
+  const { default: prisma } = await import('@/app/lib/db')
+  let orgBilling = null
+  if (effectiveOrgId) {
+      orgBilling = await prisma.organization.findUnique({
+          where: { id: effectiveOrgId },
+          include: { subscription: true }
+      })
+  }
+
+  const resolvePlanId = async (
+    planIdFromDb?: string | null
+  ): Promise<PlanId | null> => {
+    if (!planIdFromDb) return null
+    if (planIdFromDb === PLAN_IDS.free) return PLAN_IDS.free
+    const matched = PRICING_PLANS.find(
+      (p: PricingPlan) => p.stripePriceId === planIdFromDb
+    )
+    return matched?.id ?? null
+  }
+
+  const currentPlan = await resolvePlanId(orgBilling?.subscription?.planId)
+  const subStatus = orgBilling?.subscription?.status
+  const creditsUsed = (orgBilling?.credits as number | undefined) ?? 0
+  const paygCredits = PRICING_PLANS.find((p) => p.id === PLAN_IDS.payg)?.credits ?? 0
+  const paygEligible = !!orgBilling?.lastPaygPurchaseAt && creditsUsed < paygCredits
+  const effectivePlan: PlanId = subStatus === 'active' ? (currentPlan ?? PLAN_IDS.free) : paygEligible ? PLAN_IDS.payg : PLAN_IDS.free
+  const creditsTotal = PRICING_PLANS.find((p) => p.id === effectivePlan)?.credits ?? 0
+  const exhausted = (effectivePlan !== PLAN_IDS.free) && (creditsUsed >= creditsTotal)
+  const renewalDate =
+    orgBilling?.subscription?.currentPeriodEnd ??
+    (orgBilling?.createdAt
+      ? Math.floor(orgBilling.createdAt.getTime() / 1000) + 30 * 24 * 60 * 60
+      : null)
 
   const mappedOrgs = organizations.map(org => ({
     id: org.id,

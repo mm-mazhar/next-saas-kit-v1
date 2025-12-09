@@ -26,15 +26,15 @@ import {
     DropdownMenuItem,
     DropdownMenuLabel,
     DropdownMenuSeparator,
-    DropdownMenuTrigger,
     DropdownMenuSub,
-    DropdownMenuSubTrigger,
     DropdownMenuSubContent,
+    DropdownMenuSubTrigger,
+    DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { CREDIT_REMINDER_THRESHOLD, PLAN_IDS, type PlanId } from '@/lib/constants'
 import Link from 'next/link'
 import * as React from 'react'
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 
 export function NavUser({
   user,
@@ -42,6 +42,7 @@ export function NavUser({
   creditsUsed,
   creditsTotal,
   exhausted,
+  role,
 }: {
   user: {
     name: string
@@ -52,10 +53,13 @@ export function NavUser({
   creditsUsed?: number
   creditsTotal?: number
   exhausted?: boolean
+  role?: string
 }) {
   const { isMobile } = useSidebar()
   const [mounted, setMounted] = React.useState(false)
   React.useEffect(() => setMounted(true), [])
+  
+  const isPrivileged = role === 'OWNER' || role === 'ADMIN'
 
   if (!mounted) {
     return (
@@ -125,6 +129,7 @@ export function NavUser({
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
             <DropdownMenuGroup>
+              {isPrivileged && (
               <DropdownMenuItem asChild>
                 <Link
                   href='/#pricing'
@@ -144,6 +149,7 @@ export function NavUser({
                   )}
                 </Link>
               </DropdownMenuItem>
+              )}
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
             <DropdownMenuGroup>
@@ -159,14 +165,17 @@ export function NavUser({
                       Profile
                     </Link>
                   </DropdownMenuItem>
+                  {isPrivileged && (
                   <DropdownMenuItem asChild>
                     <Link href='/dashboard/settings/organization' className='flex items-center gap-2'>
                       <Building2 />
                       Organization
                     </Link>
                   </DropdownMenuItem>
+                  )}
                 </DropdownMenuSubContent>
               </DropdownMenuSub>
+              {isPrivileged && (
               <DropdownMenuItem asChild>
                 <Link
                   href='/dashboard/billing'
@@ -176,6 +185,7 @@ export function NavUser({
                   Billing
                 </Link>
               </DropdownMenuItem>
+              )}
               {(() => {
                 const remaining = creditsUsed ?? 0
                 const hasNotification = !!(exhausted || remaining <= CREDIT_REMINDER_THRESHOLD)

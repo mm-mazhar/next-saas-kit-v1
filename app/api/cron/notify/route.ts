@@ -16,6 +16,7 @@ export async function GET() {
   const thresholdDays = Number(RENEWAL_REMINDER_DAYS_BEFORE)
   const upper = now + thresholdDays * 24 * 60 * 60
 
+  // 1. Find Subscriptions ending soon
   const subs = await prisma.subscription.findMany({
     where: {
       status: 'active',
@@ -26,7 +27,18 @@ export async function GET() {
       planId: true,
       currentPeriodEnd: true,
       periodEndReminderSent: true,
-      user: { select: { email: true, name: true, credits: true, creditsReminderThresholdSent: true } },
+      // Fetch Organization and Owner
+      organization: { 
+          select: { 
+              name: true, 
+              credits: true, 
+              members: {
+                  where: { role: 'OWNER' },
+                  take: 1,
+                  select: { user: { select: { email: true, name: true } } }
+              }
+          } 
+      },
     },
   })
 
@@ -34,7 +46,8 @@ export async function GET() {
   const details: { email: string; daysLeft?: number; reason: 'days' | 'credits' }[] = []
   const alreadySent = new Set<string>()
 
-  await prisma.user.updateMany({
+  // 2. Reset threshold for organizations with enough credits
+  await prisma.organization.updateMany({
     where: {
       creditsReminderThresholdSent: true,
       credits: { gt: CREDIT_REMINDER_THRESHOLD },
@@ -42,20 +55,24 @@ export async function GET() {
     data: { creditsReminderThresholdSent: false },
   })
 
+  // Process Subscription Reminders
   for (const s of subs) {
-    const to = s.user?.email || null
+    const owner = s.organization?.members[0]?.user
+    const to = owner?.email || null
     if (!to) continue
+
     const daysLeft = Math.ceil((s.currentPeriodEnd - now) / (24 * 60 * 60))
     if (s.periodEndReminderSent) continue
-    const remaining = typeof s.user?.credits === 'number' ? s.user.credits : undefined
+    const remaining = typeof s.organization?.credits === 'number' ? s.organization.credits : undefined
+    
     try {
       await sendRenewalReminderEmail({
         to,
-        name: s.user?.name ?? null,
+        name: owner?.name ?? s.organization?.name ?? null, 
         planTitle: PRICING_PLANS.find((p) => p.stripePriceId === s.planId)?.title ?? null,
         periodEnd: s.currentPeriodEnd,
         creditsRemaining: remaining,
-        portalUrl: null,
+        portalUrl: null, // Could generate a link to billing page if we had orgId
       })
       sent++
       await prisma.subscription.update({
@@ -63,32 +80,45 @@ export async function GET() {
         data: { periodEndReminderSent: true },
       })
       alreadySent.add(to)
-      details.push({ email: to, daysLeft, reason: 'days' })
+      details.push({ email: to, daysLeft: daysLeft, reason: 'days' })
     } catch {}
   }
 
   let creditCandidates = 0
 
-  const lowCreditsUsers = await prisma.user.findMany({
+  // 3. Find Low Credit Organizations
+  const lowCreditsOrgs = await prisma.organization.findMany({
     where: {
       creditsReminderThresholdSent: false,
       credits: { lte: CREDIT_REMINDER_THRESHOLD },
     },
-    select: { id: true, email: true, name: true, credits: true },
+    select: { 
+        id: true, 
+        name: true, 
+        credits: true,
+        members: {
+            where: { role: 'OWNER' },
+            take: 1,
+            select: { user: { select: { email: true, name: true } } }
+        }
+    },
   })
 
-  for (const u of lowCreditsUsers) {
-    const to = u.email || null
+  for (const o of lowCreditsOrgs) {
+    const owner = o.members[0]?.user
+    const to = owner?.email || null
+
     if (!to || alreadySent.has(to)) continue
-    const creditsRemaining = u.credits ?? 0
+    
+    const creditsRemaining = o.credits ?? 0
     creditCandidates++
     try {
       await sendLowCreditsEmail({
         to,
-        name: u.name ?? null,
+        name: owner?.name ?? o.name ?? null,
         creditsRemaining,
       })
-      await prisma.user.update({ where: { id: u.id }, data: { creditsReminderThresholdSent: true } })
+      await prisma.organization.update({ where: { id: o.id }, data: { creditsReminderThresholdSent: true } })
       alreadySent.add(to)
       details.push({ email: to, reason: 'credits' })
     } catch {}

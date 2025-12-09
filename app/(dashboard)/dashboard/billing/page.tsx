@@ -1,19 +1,21 @@
 // app/(dashboard)/dashboard/billing/page.tsx
 
-import prisma, { getData } from '@/app/lib/db'
+import prisma from '@/app/lib/db'
 import { getStripeSession, stripe } from '@/app/lib/stripe'
 import { createClient } from '@/app/lib/supabase/server'
 import PricingComponent from '@/components/PricingComponent'
 import { Button } from '@/components/ui/button'
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
+    Card,
+    CardContent,
+    CardDescription,
+    CardHeader,
+    CardTitle,
 } from '@/components/ui/card'
+import { requireOrgRole } from '@/lib/auth/guards'
 import { LOCAL_SITE_URL, PLAN_IDS, PRICING_PLANS, PRODUCTION_URL, type PlanId, type PricingPlan } from '@/lib/constants'
 import { unstable_noStore as noStore } from 'next/cache'
+import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
 
 export const dynamic = 'force-dynamic'
@@ -32,14 +34,33 @@ export default async function BillingPage() {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return redirect('/get-started')
 
-  const dbUser = await getData(user.id)
+  const cookieStore = await cookies()
+  const currentOrgId = cookieStore.get('current-org-id')?.value
+
+  if (!currentOrgId) {
+      return redirect('/dashboard')
+  }
+
+  // Security Check: Only ADMIN/OWNER can access billing
+  try {
+      await requireOrgRole(currentOrgId, user.id, 'ADMIN')
+  } catch {
+      return redirect('/dashboard')
+  }
+
+  const org = await prisma.organization.findUnique({
+      where: { id: currentOrgId },
+      include: { subscription: true }
+  })
+
+  if (!org) return redirect('/dashboard')
 
   const data = {
-    status: dbUser?.Subscription?.status ?? 'inactive',
-    planId: dbUser?.Subscription?.planId ?? null,
+    status: org.subscription?.status ?? 'inactive',
+    planId: org.subscription?.planId ?? null,
     stripeSubscriptionId: null as string | null,
-    currentPeriodEnd: dbUser?.Subscription?.currentPeriodEnd ?? null,
-    user: dbUser,
+    currentPeriodEnd: org.subscription?.currentPeriodEnd ?? null,
+    org: org,
   }
 
   async function createSubscriptionAction(formData: FormData) {
@@ -47,13 +68,27 @@ export default async function BillingPage() {
     const planId = formData.get('planId') as PlanId
     const priceId = PRICING_PLANS.find((p) => p.id === planId)?.stripePriceId
     if (!priceId) return
+
+    // Re-verify context in action
+    const cStore = await cookies()
+    const orgId = cStore.get('current-org-id')?.value
+    const sb = await createClient()
+    const { data: { user: u } } = await sb.auth.getUser()
+    
+    if (!u || !orgId) return
+
+    await requireOrgRole(orgId, u.id, 'ADMIN') // Enforce Role
+
+    const currentOrg = await prisma.organization.findUnique({ where: { id: orgId } })
+
     const origin = process.env.NODE_ENV === 'production' ? PRODUCTION_URL : LOCAL_SITE_URL
     const mode = planId === PLAN_IDS.payg ? 'payment' : 'subscription'
     const url = await getStripeSession({
       priceId,
       domainUrl: origin,
-      customerId: dbUser?.stripeCustomerId as string | undefined,
-      userId: dbUser?.id,
+      customerId: currentOrg?.stripeCustomerId as string | undefined,
+      organizationId: orgId, // Bind to Org
+      userId: u.id,
       mode,
     })
     return redirect(url)
@@ -61,20 +96,21 @@ export default async function BillingPage() {
 
   async function handleFreePlanSubscription() {
     'use server'
-    const supabase2 = await createClient()
-    const {
-      data: { user: sUser },
-    } = await supabase2.auth.getUser()
-    if (!sUser) {
-      return redirect('/get-started')
-    }
+    const cStore = await cookies()
+    const orgId = cStore.get('current-org-id')?.value
+    const sb = await createClient()
+    const { data: { user: u } } = await sb.auth.getUser()
+    
+    if (!u || !orgId) return redirect('/dashboard')
+    
+    await requireOrgRole(orgId, u.id, 'ADMIN')
+
     const existing = await prisma.subscription.findUnique({
-      where: { userId: sUser.id },
-      select: { userId: true },
+      where: { organizationId: orgId },
     })
     if (existing) {
       await prisma.subscription.update({
-        where: { userId: sUser.id },
+        where: { organizationId: orgId },
         data: { planId: PLAN_IDS.free, status: 'active' },
       })
     }
@@ -83,8 +119,19 @@ export default async function BillingPage() {
 
   async function createCustomerPortal() {
     'use server'
+    const cStore = await cookies()
+    const orgId = cStore.get('current-org-id')?.value
+    const sb = await createClient()
+    const { data: { user: u } } = await sb.auth.getUser()
+    if (!u || !orgId) return
+
+    await requireOrgRole(orgId, u.id, 'ADMIN')
+    const currentOrg = await prisma.organization.findUnique({ where: { id: orgId } })
+
+    if (!currentOrg?.stripeCustomerId) return
+
     const session = await stripe.billingPortal.sessions.create({
-      customer: dbUser?.stripeCustomerId as string,
+      customer: currentOrg.stripeCustomerId,
       return_url: process.env.NODE_ENV === 'production' ? PRODUCTION_URL : `${LOCAL_SITE_URL}/dashboard`,
     })
     return redirect(session.url)
@@ -93,10 +140,10 @@ export default async function BillingPage() {
   const resolvedCurrent = await resolvePlanId(data.planId)
   const proCredits = PRICING_PLANS.find((p) => p.id === PLAN_IDS.pro)?.credits ?? 0
   const proExhausted = (data.status === 'active' && resolvedCurrent === PLAN_IDS.pro)
-    ? ((data.user?.credits ?? 0) >= proCredits)
+    ? ((data.org.credits ?? 0) >= proCredits)
     : false
-  const hasPayg = !!data.user?.lastPaygPurchaseAt
-  const raw = data.user?.lastPaygPurchaseAt
+  const hasPayg = !!data.org.lastPaygPurchaseAt
+  const raw = data.org.lastPaygPurchaseAt
   const d = typeof raw === 'string' || typeof raw === 'number' ? new Date(raw) : raw instanceof Date ? raw : null
   const dateText = d ? d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : ''
   const isSubActive = data.status === 'active'
@@ -149,7 +196,7 @@ export default async function BillingPage() {
 
         <PricingComponent
           currentPlanId={isSubActive ? resolvedCurrent : (hasPayg ? PLAN_IDS.payg : null)}
-          lastPaygPurchaseAt={data.user?.lastPaygPurchaseAt ?? null}
+          lastPaygPurchaseAt={data.org.lastPaygPurchaseAt ?? null}
           onSubscribeAction={createSubscriptionAction}
           onFreeAction={handleFreePlanSubscription}
           proExhausted={proExhausted}

@@ -26,17 +26,17 @@ import Link from 'next/link'
 // import PrismaLogo from 'public/companies/prisma.png'
 // import { ChevronRight } from 'lucide-react'
 
-import { getData } from '@/app/lib/db'
+import prisma, { getData } from '@/app/lib/db'
 import { createClient } from '@/app/lib/supabase/server'
 import {
-  APP_DESCRIPTION,
-  APP_DESCRIPTION_LONG,
-  APP_SLOGAN,
-  PLAN_IDS,
-  PRICE_HEADING,
-  PRICING_PLANS,
-  type PlanId,
-  type PricingPlan,
+    APP_DESCRIPTION,
+    APP_DESCRIPTION_LONG,
+    APP_SLOGAN,
+    PLAN_IDS,
+    PRICE_HEADING,
+    PRICING_PLANS,
+    type PlanId,
+    type PricingPlan,
 } from '@/lib/constants'
 
 const transitionVariants = {
@@ -56,11 +56,27 @@ export default async function HeroSection() {
   const { data: { user } } = await supabase.auth.getUser()
 
   const dbUser = user ? await getData(user.id) : null
-  const subStatus = dbUser?.Subscription?.status ?? null
-  const rawPlanId = dbUser?.Subscription?.planId ?? null
-  const creditsUsed = dbUser?.credits ?? 0
+
+  // Get Organization Billing Data
+  let orgBilling = null
+  if (user) {
+    const membership = await prisma.organizationMember.findFirst({
+      where: { userId: user.id },
+      include: { 
+        organization: { 
+          include: { subscription: true } 
+        } 
+      },
+      orderBy: { createdAt: 'asc' }
+    })
+    orgBilling = membership?.organization
+  }
+
+  const subStatus = orgBilling?.subscription?.status ?? null
+  const rawPlanId = orgBilling?.subscription?.planId ?? null
+  const creditsUsed = orgBilling?.credits ?? 0
   const paygCredits = PRICING_PLANS.find((p) => p.id === PLAN_IDS.payg)?.credits ?? 0
-  const paygEligible = !!dbUser?.lastPaygPurchaseAt && creditsUsed < paygCredits
+  const paygEligible = !!orgBilling?.lastPaygPurchaseAt && creditsUsed < paygCredits
   const currentPlanId: PlanId | null = (() => {
     if (subStatus === 'active') {
       if (!rawPlanId) return PLAN_IDS.free
@@ -207,7 +223,7 @@ export default async function HeroSection() {
               currentPlanId={currentPlanId}
               isAuthenticated={!!user}
               mode='marketing'
-              lastPaygPurchaseAt={dbUser?.lastPaygPurchaseAt ?? null}
+              lastPaygPurchaseAt={orgBilling?.lastPaygPurchaseAt ?? null}
               proExhausted={proExhausted}
             />
           </PageSection>

@@ -12,6 +12,25 @@ type PeriodFields = {
   current_period_end?: number
 }
 
+// Helper to find organization owner email if session email is missing
+async function getOrgOwnerEmail(orgId: string): Promise<string | null> {
+    try {
+        const org = await prisma.organization.findUnique({
+            where: { id: orgId },
+            include: {
+                members: {
+                    where: { role: 'OWNER' },
+                    include: { user: true },
+                    take: 1
+                }
+            }
+        })
+        return org?.members[0]?.user.email || null
+    } catch {
+        return null
+    }
+}
+
 export async function POST(req: Request) {
   const body = await req.text()
   const signature = (await headers()).get('stripe-signature') as string
@@ -33,34 +52,44 @@ export async function POST(req: Request) {
   // ============================================================
   if (event.type === 'checkout.session.completed') {
     const session = event.data.object as Stripe.Checkout.Session
+    
+    // Attempt to identify the Organization
+    const customerId = String(session.customer || '')
+    const refId = (session.client_reference_id as string | null) || (typeof session.metadata?.organizationId === 'string' ? session.metadata.organizationId : null)
+
+    let org = refId ? await prisma.organization.findUnique({ where: { id: refId }, select: { id: true, stripeCustomerId: true } }) : null
+    
+    if (!org && customerId) {
+       org = await prisma.organization.findUnique({ where: { stripeCustomerId: customerId }, select: { id: true, stripeCustomerId: true } })
+    }
+
+    if (!org) {
+        // Fallback: If we can't find the Org, we can't credit it.
+        // This might happen if someone pays without an Org context? Should be rare with our enforcement.
+        console.error('❌ Could not find Organization for session:', session.id)
+        return new Response(null, { status: 200 })
+    }
+
+    // A. PAY AS YOU GO (One-time payment)
     if (session.mode === 'payment') {
-      const customerId = String(session.customer || '')
-      const refId = (session.client_reference_id as string | null) || (typeof session.metadata?.userId === 'string' ? session.metadata.userId : null)
-      let user = refId ? await prisma.user.findUnique({ where: { id: refId }, select: { id: true, stripeCustomerId: true } }) : null
-      if (!user && customerId) {
-        user = await prisma.user.findUnique({ where: { stripeCustomerId: customerId }, select: { id: true, stripeCustomerId: true } })
-      }
-      if (!user) {
-        const candidateEmail = (session.customer_details?.email as string | undefined) || (session.customer_email as string | undefined)
-        if (candidateEmail) {
-          user = await prisma.user.findUnique({ where: { email: candidateEmail }, select: { id: true, stripeCustomerId: true } })
-        }
-      }
-      if (user) {
-        try {
+      try {
           const paygCredits = PRICING_PLANS.find((p) => p.id === PLAN_IDS.payg)?.credits ?? 50
-          await prisma.user.update({
-            where: { id: user.id },
+          await prisma.organization.update({
+            where: { id: org.id },
             data: {
               credits: { increment: paygCredits },
               creditsReminderThresholdSent: false,
               lastPaygPurchaseAt: new Date((session.created || Math.floor(Date.now()/1000)) * 1000),
-              stripeCustomerId: user.stripeCustomerId ? user.stripeCustomerId : (customerId || undefined),
+              // Ensure stripe ID is linked
+              stripeCustomerId: org.stripeCustomerId ? org.stripeCustomerId : (customerId || undefined),
             },
           })
-        } catch {}
+      } catch (e) {
+          console.error('Error updating PAYG credits:', e)
       }
-      const to = (session.customer_details?.email as string | undefined) || (session.customer_email as string | undefined)
+      
+      const to = (session.customer_details?.email as string | undefined) || (session.customer_email as string | undefined) || await getOrgOwnerEmail(org.id) || ''
+      
       const amountTotal = typeof session.amount_total === 'number' ? session.amount_total : 0
       const currency = (session.currency as string | undefined) || 'usd'
       let invoiceUrl = ''
@@ -76,13 +105,13 @@ export async function POST(req: Request) {
           invoiceNumber = (invObj.number as string | null) || null
         }
       }
+      
       let finalCredits: number | null = null
-      if (user && user.id) {
-        try {
-          const fresh = await prisma.user.findUnique({ where: { id: user.id }, select: { credits: true } })
-          finalCredits = typeof fresh?.credits === 'number' ? fresh.credits : null
-        } catch {}
-      }
+      try {
+          const fresh = await prisma.organization.findUnique({ where: { id: org.id }, select: { credits: true } })
+          finalCredits = fresh?.credits ?? null
+      } catch {}
+
       if (to) {
         try {
           await sendPaymentConfirmationEmail({
@@ -99,32 +128,13 @@ export async function POST(req: Request) {
       }
       return new Response(null, { status: 200 })
     }
-    const subscriptionId = session.subscription as string
-    const customerId = String(session.customer)
 
-    // A. Sync Database (robust linking)
-    let user = await prisma.user.findUnique({ where: { stripeCustomerId: customerId } })
-    if (!user) {
-      let candidateEmail = (session.customer_details?.email as string | undefined) || (session.customer_email as string | undefined)
-      if (!candidateEmail) {
-        try {
-          const cust = await stripe.customers.retrieve(customerId)
-          if (!('deleted' in cust)) {
-            const c = cust as Stripe.Customer
-            candidateEmail = (typeof c.email === 'string' ? c.email : undefined)
-          }
-        } catch {}
-      }
-      if (candidateEmail) {
-        const byEmail = await prisma.user.findUnique({ where: { email: candidateEmail } })
-        if (byEmail) {
-          await prisma.user.update({ where: { id: byEmail.id }, data: { stripeCustomerId: customerId } })
-          user = byEmail
-        }
-      }
-      if (!user) {
-        return new Response(null, { status: 200 })
-      }
+    // B. SUBSCRIPTION (Pro Plan, etc.)
+    const subscriptionId = session.subscription as string
+
+    // Sync Database
+    if (!org.stripeCustomerId && customerId) {
+        await prisma.organization.update({ where: { id: org.id }, data: { stripeCustomerId: customerId } })
     }
 
     const subscription = (await stripe.subscriptions.retrieve(
@@ -137,7 +147,7 @@ export async function POST(req: Request) {
       p.current_period_end ?? Math.floor(Date.now() / 1000) + 30 * 24 * 60 * 60
 
     await prisma.subscription.upsert({
-      where: { userId: user.id },
+      where: { organizationId: org.id }, // Use organizationId unique logic
       update: {
         stripeSubscriptionId: subscription.id,
         currentPeriodStart: currentStart,
@@ -151,7 +161,7 @@ export async function POST(req: Request) {
       },
       create: {
         stripeSubscriptionId: subscription.id,
-        userId: user.id,
+        organizationId: org.id,
         currentPeriodStart: currentStart,
         currentPeriodEnd: currentEnd,
         status: subscription.status,
@@ -162,13 +172,20 @@ export async function POST(req: Request) {
         periodEndReminderSent: false,
       },
     })
-    console.log('✅ Subscription synced to DB')
+    console.log('✅ Organization Subscription synced to DB')
 
     try {
       const proCredits = PRICING_PLANS.find((p) => p.id === PLAN_IDS.pro)?.credits ?? 100
-      await prisma.user.update({ where: { id: user.id }, data: { credits: { increment: proCredits }, creditsReminderThresholdSent: false } })
+      await prisma.organization.update({ 
+          where: { id: org.id }, 
+          data: { 
+              credits: { increment: proCredits }, 
+              creditsReminderThresholdSent: false 
+          } 
+      })
     } catch {}
-    const to2 = (session.customer_details?.email as string | undefined) || (session.customer_email as string | undefined)
+
+    const to2 = (session.customer_details?.email as string | undefined) || (session.customer_email as string | undefined) || await getOrgOwnerEmail(org.id) || ''
     const amount2 = typeof session.amount_total === 'number' ? session.amount_total : 0
     const currency2 = (session.currency as string | undefined) || 'usd'
     let invUrl2 = ''
@@ -186,9 +203,10 @@ export async function POST(req: Request) {
     }
     let finalCredits2: number | null = null
     try {
-      const freshUser = await prisma.user.findUnique({ where: { id: user.id }, select: { credits: true } })
-      finalCredits2 = typeof freshUser?.credits === 'number' ? freshUser.credits : null
+      const freshOrg = await prisma.organization.findUnique({ where: { id: org.id }, select: { credits: true } })
+      finalCredits2 = freshOrg?.credits ?? null
     } catch {}
+    
     if (to2) {
       try {
         await sendPaymentConfirmationEmail({
@@ -211,26 +229,18 @@ export async function POST(req: Request) {
   // ============================================================
   if (event.type === 'invoice.payment_succeeded') {
     const inv = event.data.object as Stripe.Invoice
-    // console.log('🔹 Invoice Payment Succeeded (Recurring Renewals):', event.data.object)
-    // console.log(`🔹 Invoice Succeeded: ${inv.id} | Amount: ${inv.amount_paid}`)
     console.log(`🔹 Invoice Payment Succeeded: ${inv.id} for Customer ${inv.customer}`)
+    
     const invoice = event.data.object as Stripe.Invoice & {
       subscription?: string | Stripe.Subscription | null
-      customer_email?: string | null
-      hosted_invoice_url?: string | null
-      number?: string | null
     }
     
-    // CRITICAL FIX: Ignore 'subscription_create' events here because 
-    // we already handled them in checkout.session.completed above.
     if (invoice.billing_reason === 'subscription_create') {
        console.log('🔹 Skipping invoice event (handled by checkout session)')
        return new Response(null, { status: 200 })
     }
 
     if (invoice.subscription) {
-       // This logic now only runs for Month 2, Month 3, etc.
-       // where subscription ID is guaranteed to exist.
       const subscriptionId = typeof invoice.subscription === 'string' 
           ? invoice.subscription 
           : (invoice.subscription as Stripe.Subscription).id;
@@ -253,30 +263,28 @@ export async function POST(req: Request) {
           },
         })
       } catch {
-        console.error('⚠️ Could not update subscription (User might have deleted account)')
+        console.error('⚠️ Could not update subscription (Organization might have deleted account)')
       }
 
-      // 1b. Add credits on successful renewal
+      // 1b. Add credits on successful renewal -> TO ORGANIZATION
       try {
         const custId = String(subscription.customer || '')
         if (custId) {
           const proCredits = PRICING_PLANS.find((p) => p.id === PLAN_IDS.pro)?.credits ?? 100
-          await prisma.user.update({
+          await prisma.organization.update({
             where: { stripeCustomerId: custId },
             data: { credits: { increment: proCredits }, creditsReminderThresholdSent: false },
           })
         }
       } catch {}
-
-      // Email sending disabled
     }
   }
 
-  // Email sending disabled
-
+  // ============================================================
+  // 3. SUBSCRIPTION UPDATED / DELETED
+  // ============================================================
   if (event.type === 'customer.subscription.updated') {
     const sub = event.data.object as Stripe.Subscription
-    console.log('🔹 Subscription Updated:', { id: sub.id, cancel_at_period_end: sub.cancel_at_period_end })
     const fresh = (await stripe.subscriptions.retrieve(sub.id)) as Stripe.Subscription
     try {
       const sp = fresh as unknown as PeriodFields
@@ -292,21 +300,29 @@ export async function POST(req: Request) {
         },
       })
     } catch {}
+    
     const scheduled = !!fresh.cancel_at_period_end || !!fresh.cancel_at
     const immediateCanceled = fresh.status === 'canceled'
+    
     if (scheduled && !immediateCanceled) {
       try {
-        const customerId = String(fresh.customer || '')
-        const user = await prisma.user.findUnique({ where: { stripeCustomerId: customerId }, select: { email: true, name: true, credits: true } })
-        if (user?.email) {
-          await sendCancellationEmail({
-            to: user.email,
-            name: user.name ?? null,
-            planTitle: 'Pro',
-            effectiveDate: typeof fresh.cancel_at === 'number' ? fresh.cancel_at : ((fresh as unknown as PeriodFields).current_period_end as number | undefined),
-            final: false,
-            creditsRemaining: typeof user.credits === 'number' ? user.credits : null,
-          })
+        // Fetch Org Owner to notify
+        const subRecord = await prisma.subscription.findUnique({ 
+            where: { stripeSubscriptionId: fresh.id },
+            include: { organization: true } 
+        })
+        if (subRecord?.organization) {
+             const ownerEmail = await getOrgOwnerEmail(subRecord.organization.id)
+             if (ownerEmail) {
+                await sendCancellationEmail({
+                    to: ownerEmail,
+                    name: subRecord.organization.name,
+                    planTitle: 'Pro',
+                    effectiveDate: typeof fresh.cancel_at === 'number' ? fresh.cancel_at : ((fresh as unknown as PeriodFields).current_period_end as number | undefined),
+                    final: false,
+                    creditsRemaining: subRecord.organization.credits,
+                })
+             }
         }
       } catch {}
     }
@@ -314,12 +330,8 @@ export async function POST(req: Request) {
 
   if (event.type === 'customer.subscription.deleted') {
     const sub = event.data.object as Stripe.Subscription
-    console.log('🔹 Subscription Deleted:', { id: sub.id })
     const customerId = String(sub.customer || '')
-    const user = await prisma.user.findUnique({
-      where: { stripeCustomerId: customerId },
-      select: { email: true, name: true, credits: true },
-    })
+    
     try {
       await prisma.subscription.update({
         where: { stripeSubscriptionId: sub.id },
@@ -329,20 +341,28 @@ export async function POST(req: Request) {
         },
       })
     } catch {}
-    if (user?.email) {
-      try {
-        await sendCancellationEmail({
-          to: user.email,
-          name: user.name ?? null,
-          planTitle: 'Pro',
-          effectiveDate: (sub as unknown as PeriodFields).current_period_end ?? undefined,
-          final: true,
-          creditsRemaining: typeof user.credits === 'number' ? user.credits : null,
+
+    // Notify
+    try {
+        const org = await prisma.organization.findUnique({
+            where: { stripeCustomerId: customerId },
+            select: { id: true, name: true, credits: true }
         })
-      } catch {}
-    }
+        if (org) {
+            const ownerEmail = await getOrgOwnerEmail(org.id)
+            if (ownerEmail) {
+                 await sendCancellationEmail({
+                    to: ownerEmail,
+                    name: org.name,
+                    planTitle: 'Pro',
+                    effectiveDate: (sub as unknown as PeriodFields).current_period_end ?? undefined,
+                    final: true,
+                    creditsRemaining: org.credits,
+                 })
+            }
+        }
+    } catch {}
   }
 
   return new Response(null, { status: 200 })
 }
-

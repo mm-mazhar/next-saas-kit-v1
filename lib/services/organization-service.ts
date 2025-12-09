@@ -35,6 +35,7 @@ export class OrganizationService {
   static async getUserOrganizations(userId: string) {
     return await prisma.organization.findMany({
       where: {
+        deletedAt: null, // Filter out soft-deleted orgs
         members: {
           some: {
             userId,
@@ -52,7 +53,7 @@ export class OrganizationService {
   }
 
   static async getOrganizationBySlug(slug: string) {
-    return await prisma.organization.findUnique({
+    const org = await prisma.organization.findUnique({
       where: { slug },
       include: {
         members: {
@@ -62,15 +63,20 @@ export class OrganizationService {
         },
       },
     })
+    // Filter out if soft-deleted
+    if (org?.deletedAt) return null
+    return org
   }
 
   static async getOrganizationById(id: string) {
-    return await prisma.organization.findUnique({
+    const org = await prisma.organization.findUnique({
       where: { id },
       include: {
         members: true,
       },
     })
+    if (org?.deletedAt) return null
+    return org
   }
 
   static async updateOrganization(orgId: string, data: { name?: string; slug?: string }) {
@@ -81,9 +87,10 @@ export class OrganizationService {
   }
 
   static async deleteOrganization(orgId: string) {
-    // Cascade delete is handled by Prisma schema, but we might want extra checks here
-    return await prisma.organization.delete({
+    // Soft Delete: Set deletedAt
+    return await prisma.organization.update({
       where: { id: orgId },
+      data: { deletedAt: new Date() }
     })
   }
 

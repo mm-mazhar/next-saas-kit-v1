@@ -2,12 +2,18 @@
 
 'use server'
 
+import prisma from '@/app/lib/db'
 import { createClient } from '@/app/lib/supabase/server'
+import { requireOrgRole } from '@/lib/auth/guards'
+import { LIMITS } from '@/lib/constants'
 import { OrganizationService } from '@/lib/services/organization-service'
 import { slugify } from '@/lib/utils'
 import { revalidatePath } from 'next/cache'
 import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
+
+// Note: LIMITS imports might need verification if LIMITS is not exported or different name.
+// Assuming LIMITS exists as per Service usage.
 
 export async function createOrganization(formData: FormData) {
   const supabase = await createClient()
@@ -15,6 +21,14 @@ export async function createOrganization(formData: FormData) {
 
   if (!user) {
     throw new Error('Unauthorized')
+  }
+
+  // Limit Check
+  const orgCount = await prisma.organizationMember.count({
+      where: { userId: user.id, role: 'OWNER' }
+  })
+  if (orgCount >= (LIMITS?.MAX_ORGANIZATIONS_PER_USER ?? 5)) {
+      return { success: false, error: 'Maximum organizations limit reached' }
   }
 
   const name = formData.get('name') as string
@@ -62,6 +76,26 @@ export async function inviteMember(formData: FormData) {
     return { success: false, error: 'All fields are required' }
   }
 
+  // Security
+  await requireOrgRole(orgId, user.id, 'ADMIN')
+
+  // Abuse Prevention: Rate Limit
+  const lastInvite = await prisma.organizationInvite.findFirst({
+      where: { inviterId: user.id },
+      orderBy: { createdAt: 'desc' }
+  })
+  if (lastInvite && (Date.now() - lastInvite.createdAt.getTime() < 60000)) {
+      return { success: false, error: 'Please wait 1 minute before sending another invite.' }
+  }
+
+  // Abuse Prevention: Max Pending
+  const pendingCount = await prisma.organizationInvite.count({
+      where: { organizationId: orgId, status: 'PENDING' }
+  })
+  if (pendingCount >= (LIMITS?.MAX_PENDING_INVITES_PER_ORG ?? 5)) {
+      return { success: false, error: 'Too many pending invites.' }
+  }
+
   try {
     const { InvitationService } = await import('@/lib/services/invitation-service')
     const created = await InvitationService.createInvite(user.id, orgId, email, role)
@@ -92,37 +126,35 @@ export async function revokeInvite(inviteId: string) {
   }
 
   try {
-    const db = (await import('@/app/lib/db')).default
-    const invite = await db.organizationInvite.findUnique({
+    const invite = await prisma.organizationInvite.findUnique({
       where: { id: inviteId },
       select: { status: true, email: true, organizationId: true },
     })
     if (!invite) {
       return { success: false, error: 'Invite not found' }
     }
+
+    // Security
+    await requireOrgRole(invite.organizationId, user.id, 'ADMIN')
+
     if (invite.status === 'ACCEPTED') {
-      const userByEmail = await db.user.findUnique({ where: { email: invite.email }, select: { id: true } })
+      const userByEmail = await prisma.user.findUnique({ where: { email: invite.email }, select: { id: true } })
       if (userByEmail?.id) {
         const { OrganizationService } = await import('@/lib/services/organization-service')
         try {
           await OrganizationService.removeMember(invite.organizationId, userByEmail.id)
-          // If removeMember succeeds, the invite is deleted (as part of the transaction).
-          // We can return success immediately.
           revalidatePath('/dashboard/settings/organization')
           return { success: true }
         } catch (err) {
           const msg = err instanceof Error ? err.message : String(err)
-          // If the error is about the last owner, we must stop and return error
           if (msg.includes('Cannot remove the last owner')) {
             return { success: false, error: msg }
           }
-          // Otherwise, if the member is not found (e.g. already removed), we proceed to revoke the invite
         }
       } else {
         return { success: false, error: 'Member not found for accepted invite' }
       }
-      // If member was not found, the invite might still exist. We mark it as REVOKED.
-      await db.organizationInvite.update({ where: { id: inviteId }, data: { status: 'REVOKED' } })
+      await prisma.organizationInvite.update({ where: { id: inviteId }, data: { status: 'REVOKED' } })
     } else {
       const { InvitationService } = await import('@/lib/services/invitation-service')
       await InvitationService.revokeInvite(inviteId)
@@ -144,14 +176,18 @@ export async function resendInvite(inviteId: string) {
   }
 
   try {
-    const { InvitationService } = await import('@/lib/services/invitation-service')
-    const invite = await (await import('@/app/lib/db')).default.organizationInvite.findUnique({
+    const invite = await prisma.organizationInvite.findUnique({
       where: { id: inviteId },
       include: { inviter: true, organization: true },
     })
     if (!invite) {
       return { success: false, error: 'Invite not found' }
     }
+    
+    // Security
+    await requireOrgRole(invite.organizationId, user.id, 'ADMIN')
+
+    const { InvitationService } = await import('@/lib/services/invitation-service')
     const updated = await InvitationService.reinvite(inviteId)
     const link = InvitationService.getInviteLink(updated.token)
     const { sendInviteEmail } = await import('@/app/lib/email')
@@ -179,6 +215,9 @@ export async function removeMember(orgId: string, userId: string) {
     throw new Error('Unauthorized')
   }
 
+  // Security
+  await requireOrgRole(orgId, user.id, 'ADMIN')
+
   try {
     const { OrganizationService } = await import('@/lib/services/organization-service')
     await OrganizationService.removeMember(orgId, userId)
@@ -198,8 +237,10 @@ export async function deleteOrganization(orgId: string) {
     throw new Error('Unauthorized')
   }
 
+  // Security
+  await requireOrgRole(orgId, user.id, 'OWNER')
+
   try {
-    const { OrganizationService } = await import('@/lib/services/organization-service')
     const org = await OrganizationService.getOrganizationById(orgId)
     if (!org) {
       return { success: false, error: 'Organization not found' }
@@ -207,10 +248,18 @@ export async function deleteOrganization(orgId: string) {
     if (org.slug?.startsWith('default-organization')) {
       return { success: false, error: 'Default Organization cannot be deleted' }
     }
+    
+    // Soft Delete (via Service)
     await OrganizationService.deleteOrganization(orgId)
+
     const cookieStore = await cookies()
     const userOrgs = await OrganizationService.getUserOrganizations(user.id)
-    const nextOrg = userOrgs[0]?.id
+    // Filter out deleted? Service might still return them if not filtered.
+    // We should assume Service filters deletedAt: null.
+    // If not, we filter here just in case for nextOrg.
+    const activeOrgs = userOrgs.filter((o: any) => !o.deletedAt)
+    const nextOrg = activeOrgs[0]?.id
+    
     if (nextOrg) {
       cookieStore.set('current-org-id', nextOrg)
     } else {
@@ -231,6 +280,9 @@ export async function updateOrganizationName(orgId: string, formData: FormData) 
   if (!user) {
     throw new Error('Unauthorized')
   }
+  
+  // Security
+  await requireOrgRole(orgId, user.id, 'ADMIN')
 
   const name = formData.get('name') as string
   const slug = (formData.get('slug') as string) || slugify(name)
@@ -271,6 +323,14 @@ export async function updateOrganizationNameAction(
   if (!name || !orgId) {
     return { success: false, error: 'Name is required' }
   }
+
+  // Security
+  try {
+      await requireOrgRole(orgId, user.id, 'ADMIN')
+  } catch {
+      return { success: false, error: 'Unauthorized' }
+  }
+
   if (name.length > 20) {
     return { success: false, error: 'Name must be 20 characters or fewer' }
   }

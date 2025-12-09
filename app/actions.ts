@@ -56,7 +56,14 @@ export async function createCustomerPortal() {
     return
   }
   const dbUser = await getData(user.id)
-  const customerId = dbUser?.stripeCustomerId as string | undefined
+  
+  const membership = await prisma.organizationMember.findFirst({
+    where: { userId: user.id },
+    include: { organization: true },
+    orderBy: { createdAt: 'asc' }
+  })
+  const customerId = membership?.organization?.stripeCustomerId
+  
   if (!customerId) {
     return
   }

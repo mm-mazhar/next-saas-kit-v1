@@ -98,6 +98,7 @@ export function AppSidebar({
           creditsUsed={creditsUsed}
           creditsTotal={creditsTotal}
           exhausted={exhausted}
+          role={currentOrganization?.role}
         />
       </SidebarFooter>
       <SidebarRail />

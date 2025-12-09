@@ -1,7 +1,7 @@
 // app/api/cron/free-refill/route.ts
 
 // ⬇️ FIXED IMPORT PATH: matches your project structure
-import prisma from '@/app/lib/db' 
+import prisma from '@/app/lib/db'
 import { headers } from 'next/headers'
 
 export async function GET() {
@@ -15,32 +15,34 @@ export async function GET() {
 
   try {
     // Logic: 
-    // 1. User is NOT on a Pro subscription (Subscription is null or not active).
-    // 2. User has < 5 credits.
+    // 1. Organization is NOT on a Pro subscription (Subscription is null or not active).
+    // 2. Organization has < 5 credits.
     // 3. One month has passed since last refill (or since creation if never refilled).
     
+    // Postgres specific update with join logic
+    // We target Organization table.
     const result = await prisma.$executeRaw`
-      UPDATE "User"
+      UPDATE "Organization"
       SET 
         "credits" = 5,
         "lastFreeRefillAt" = NOW()
-      FROM "User" u
-      LEFT JOIN "Subscription" s ON s."userId" = u.id
+      FROM "Organization" o
+      LEFT JOIN "Subscription" s ON s."organizationId" = o.id
       WHERE 
-        "User".id = u.id
+        "Organization".id = o.id
         AND (s.status IS NULL OR s.status != 'active')
-        AND u.credits < 5
+        AND o.credits < 5
         AND (
-          u."lastFreeRefillAt" < NOW() - INTERVAL '1 month'
+          o."lastFreeRefillAt" < NOW() - INTERVAL '1 month'
           OR 
-          (u."lastFreeRefillAt" IS NULL AND u."createdAt" < NOW() - INTERVAL '1 month')
+          (o."lastFreeRefillAt" IS NULL AND o."createdAt" < NOW() - INTERVAL '1 month')
         )
     `
 
     // Use JSON.stringify for safety with BigInts (if any return from raw queries)
     return new Response(JSON.stringify({ 
       success: true, 
-      usersRefilled: Number(result) 
+      orgsRefilled: Number(result) 
     }), {
       status: 200,
       headers: { 'Content-Type': 'application/json' }

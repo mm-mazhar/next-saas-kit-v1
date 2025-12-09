@@ -35,7 +35,7 @@ async function main() {
   console.log('✅ Owner Membership verified')
 
   // 3. Create Project
-  const project = await ProjectService.createProject(org.id, 'Alpha Project', `alpha-${Date.now()}`)
+  const project = await ProjectService.createProject(user.id, org.id, 'Alpha Project', `alpha-${Date.now()}`)
   console.log(`✅ Created Project: ${project.name}`)
 
   // 4. Invite Member

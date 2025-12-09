@@ -2,7 +2,9 @@
 
 'use server'
 
+import prisma from '@/app/lib/db'
 import { createClient } from '@/app/lib/supabase/server'
+import { requireOrgRole } from '@/lib/auth/guards'
 import { ProjectService } from '@/lib/services/project-service'
 import { slugify } from '@/lib/utils'
 import { revalidatePath } from 'next/cache'
@@ -27,7 +29,8 @@ export async function createProject(formData: FormData) {
   }
 
   try {
-    const project = await ProjectService.createProject(orgId, name, slug)
+    // Service checks membership
+    const project = await ProjectService.createProject(user.id, orgId, name, slug)
     revalidatePath('/dashboard')
     return { success: true, projectId: project.id }
   } catch (error) {
@@ -55,7 +58,7 @@ export async function updateProjectName(projectId: string, formData: FormData) {
   }
 
   try {
-    await ProjectService.updateProject(projectId, { name, slug })
+    await ProjectService.updateProject(user.id, projectId, { name, slug })
     revalidatePath('/dashboard')
     return { success: true }
   } catch (error) {
@@ -73,9 +76,15 @@ export async function deleteProject(projectId: string) {
   }
 
   try {
-    // Fetch project to ensure it exists
-    const { ProjectService } = await import('@/lib/services/project-service')
-    await ProjectService.deleteProject(projectId)
+    // 1. Fetch OrgId for RBAC
+    const project = await prisma.project.findUnique({ where: { id: projectId }, select: { organizationId: true } })
+    if (!project) return { success: false, error: 'Project not found' }
+
+    // 2. Enforce Role (Admin/Owner only for delete)
+    await requireOrgRole(project.organizationId, user.id, 'ADMIN')
+
+    // 3. Delete
+    await ProjectService.deleteProject(user.id, projectId)
     revalidatePath('/dashboard')
     return { success: true }
   } catch (error) {

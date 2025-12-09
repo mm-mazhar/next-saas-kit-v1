@@ -13,12 +13,14 @@ export const getStripeSession = async ({
   domainUrl,
   customerId,
   userId,
+  organizationId,
   mode = 'subscription',
 }: {
   priceId: string
   domainUrl: string
   customerId?: string
   userId?: string
+  organizationId?: string
   mode?: 'subscription' | 'payment'
 }) => {
   const payload: Stripe.Checkout.SessionCreateParams = {
@@ -42,9 +44,14 @@ export const getStripeSession = async ({
     payload.customer_creation = 'always'
   }
 
-  if (userId) {
-    payload.client_reference_id = userId
-    payload.metadata = { ...(payload.metadata || {}), userId }
+  if (organizationId || userId) {
+    // Prefer organizationId for client_reference_id if available, as we are moving to Org billing
+    payload.client_reference_id = organizationId || userId
+    payload.metadata = { 
+      ...(payload.metadata || {}), 
+      userId: userId || '',
+      organizationId: organizationId || ''
+    }
   }
 
   const session = await stripe.checkout.sessions.create(payload)
