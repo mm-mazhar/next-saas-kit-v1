@@ -54,6 +54,60 @@ export async function createOrganization(formData: FormData) {
   }
 }
 
+export async function updateMemberRoleAction(formData: FormData) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+
+  if (!user) {
+    return { success: false, error: 'Unauthorized' }
+  }
+
+  const orgId = formData.get('orgId') as string
+  const targetUserId = formData.get('targetUserId') as string
+  const newRole = formData.get('newRole') as import('@/lib/constants').OrganizationRole
+
+  if (!orgId || !targetUserId || !newRole) {
+    return { success: false, error: 'Missing required fields' }
+  }
+
+  try {
+    // 1. Check if caller is at least ADMIN
+    await requireOrgRole(orgId, user.id, 'ADMIN')
+
+    // 2. Fetch details for finer permission checks
+    const callerMember = await prisma.organizationMember.findUnique({
+      where: { organizationId_userId: { organizationId: orgId, userId: user.id } }
+    })
+    
+    const targetMember = await prisma.organizationMember.findUnique({
+      where: { organizationId_userId: { organizationId: orgId, userId: targetUserId } }
+    })
+
+    if (!callerMember || !targetMember) {
+      return { success: false, error: 'Member not found' }
+    }
+
+    // 3. Target Logic: Cannot modify OWNER
+    if (targetMember.role === 'OWNER') {
+        return { success: false, error: 'Cannot modify an Owner role' }
+    }
+    
+    // 4. New Role Logic: Cannot set to OWNER (use transfer for that)
+    if (newRole === 'OWNER') {
+        return { success: false, error: 'Cannot promote to Owner directly. Use ownership transfer.' }
+    }
+
+    const { OrganizationService } = await import('@/lib/services/organization-service')
+    await OrganizationService.updateMemberRole(orgId, targetUserId, newRole)
+
+    revalidatePath('/dashboard/settings/organization')
+    return { success: true }
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error)
+    return { success: false, error: message }
+  }
+}
+
 export async function switchOrganization(orgId: string) {
   const cookieStore = await cookies()
   cookieStore.set('current-org-id', orgId)

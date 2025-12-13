@@ -1,6 +1,8 @@
 // app/(dashboard)/dashboard/settings/organization/page.tsx
 
+import { MemberRoleSelect } from '@/app/(dashboard)/_components/member-role-select'
 import { InviteMemberDialog } from '@/app/(dashboard)/_components/invite-member-dialog'
+import { DeleteOrgButton } from '@/app/(dashboard)/_components/delete-org-button'
 import { createClient } from '@/app/lib/supabase/server'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
@@ -70,6 +72,8 @@ export default async function OrganizationSettingsPage() {
     )
   }
 
+  const currentUserMembership = org.members.find(m => m.userId === user.id)
+
   const invites = await InvitationService.getOrganizationInvites(effectiveOrgId)
 
   return (
@@ -104,15 +108,25 @@ export default async function OrganizationSettingsPage() {
             </CardHeader>
             <CardContent>
               {org.slug.startsWith('default-organization') ? (
-                <p className='text-sm text-muted-foreground'>Default Organization cannot be deleted.</p>
+                <p className='text-sm text-muted-foreground'>
+                  Default Organization cannot be deleted.
+                </p>
               ) : (
-                <form action={async () => {
-                  'use server'
-                  const { deleteOrganization } = await import('@/app/actions/organization')
-                  await deleteOrganization(org.id)
-                }}>
-                  <Button variant='destructive' type='submit'>Delete Organization</Button>
-                </form>
+                <>
+                  {org.members.find((m) => m.userId === user.id)?.role ===
+                  'OWNER' ? (
+                    <DeleteOrgButton orgId={org.id} orgName={org.name} />
+                  ) : (
+                    <div className='flex flex-col gap-2'>
+                      <Button variant='destructive' disabled className='w-fit'>
+                        Delete Organization
+                      </Button>
+                      <p className='text-[0.8rem] text-muted-foreground'>
+                        Only owners can delete the organization.
+                      </p>
+                    </div>
+                  )}
+                </>
               )}
             </CardContent>
           </Card>
@@ -149,9 +163,15 @@ export default async function OrganizationSettingsPage() {
                             {member.user.email}
                           </p>
                         )}
-                        <p className='text-xs text-muted-foreground'>
-                          {member.role}
-                        </p>
+                        <div className='mt-1'>
+                          <MemberRoleSelect
+                            memberId={member.userId}
+                            initialRole={member.role}
+                            currentUserId={user.id}
+                            currentUserRole={currentUserMembership?.role ?? 'MEMBER'}
+                            orgId={org.id}
+                          />
+                        </div>
                       </div>
                     </div>
                     {/* Revoke button removed */}

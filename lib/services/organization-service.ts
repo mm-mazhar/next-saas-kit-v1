@@ -15,16 +15,25 @@ export class OrganizationService {
     }
 
     // 2. Prevent Infinite Credit Loophole
-    // Check if user is already an OWNER of any other active organization
-    const existingOwnedOrgs = await prisma.organizationMember.count({
+    // Check if user is already an OWNER of any existing active Organization that is marked as Primary.
+    const existingPrimaryOrgCount = await prisma.organizationMember.count({
       where: { 
         userId, 
         role: ROLES.OWNER,
-        organization: { deletedAt: null }
+        organization: { 
+          isPrimary: true, 
+          deletedAt: null 
+        }
       }
     })
 
-    const initialCredits = existingOwnedOrgs === 0 ? 5 : 0
+    let isPrimary = false
+    let initialCredits = 0
+
+    if (existingPrimaryOrgCount === 0) {
+      isPrimary = true
+      initialCredits = 5
+    }
 
     // 3. Create Org and Membership
     return await prisma.organization.create({
@@ -32,6 +41,7 @@ export class OrganizationService {
         name,
         slug,
         credits: initialCredits,
+        isPrimary,
         members: {
           create: {
             userId,
@@ -182,6 +192,20 @@ export class OrganizationService {
       }
 
       return deletedMember
+    })
+  }
+
+  static async updateMemberRole(orgId: string, userId: string, newRole: OrganizationRole) {
+    return await prisma.organizationMember.update({
+      where: {
+        organizationId_userId: {
+          organizationId: orgId,
+          userId,
+        },
+      },
+      data: {
+        role: newRole,
+      },
     })
   }
 }

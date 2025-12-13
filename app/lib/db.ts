@@ -139,6 +139,7 @@ export async function getData(userData?: UserData | string): Promise<DbUser | nu
                   create: {
                     name: 'Default Organization',
                     slug: `default-organization-${userData.id.substring(0, 8)}`,
+                    isPrimary: true,
                     projects: {
                       create: {
                         name: 'Default Project',

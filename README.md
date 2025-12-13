@@ -701,19 +701,20 @@ curl -H "Authorization: Bearer <CRON_SECRET>" http://localhost:3000/api/cron/not
 #### **TEST Reminder Emails: 2-Day Renewal Reminder / Credits Exhaustion Reminder Email**
 
 - 2‑day renewal reminder:
-  - Ensure a user’s subscription is active and currentPeriodEnd is exactly 2 days ahead.
-  - Invoke: curl -H "Authorization: Bearer <CRON_SECRET>" http://localhost:3000/api/cron/notify
+  - Ensure a user’s subscription is active and `currentPeriodEnd` is exactly 2 days ahead.
+  - Invoke: `curl -H "Authorization: Bearer <CRON_SECRET>" http://localhost:3000/api/cron/notify`
   - Expect details to include { reason: 'days', daysLeft: 2 } .
+
 - Credits Exhaustion reminder:
 
-  - Set user credits to CREDIT_REMINDER_THRESHOLD - 1 and creditsReminderThresholdSent to false .
+  - Set user credits to `CREDIT_REMINDER_THRESHOLD - 1` and `creditsReminderThresholdSent` to false .
   - Invoke endpoint; expect details entry {"totalCandidates":0,"creditCandidates":1,"sent":0,"details":[{"email":",<email>","reason":"credits"}]} .
   - It flips creditsReminderThresholdSent to true after sending.
 
-- Free Plan:
+#### **TEST Daily Maintenance:**
 
-  - curl -H "Authorization: Bearer <CRON_SECRET>" http://localhost:3000/api/cron/free-refill
-  - Expect details to include {"success":true,"usersRefilled":1} .
+  - Invoke: `curl -H "Authorization: Bearer <CRON_SECRET>" http://localhost:3000/api/cron/daily-maintenance`
+  - Expect details to include {"success":true,"orgsRefilled":0,"orgsCleanedUp":1} .
 
 - `vercel.json` for setting up cron jobs in vercel
 
@@ -721,7 +722,7 @@ curl -H "Authorization: Bearer <CRON_SECRET>" http://localhost:3000/api/cron/not
     {
       "crons": [
         {
-          "path": "/api/cron/free-refill",
+          "path": "/api/cron/daily-maintenance",
           "schedule": "0 0 * * *"
         },
         {

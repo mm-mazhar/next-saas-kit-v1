@@ -32,6 +32,7 @@ export async function GET() {
         "Organization".id = o.id
         AND (s.status IS NULL OR s.status != 'active')
         AND o.credits < 5
+        AND o."isPrimary" = true
         AND (
           o."lastFreeRefillAt" < NOW() - INTERVAL '1 month'
           OR 
