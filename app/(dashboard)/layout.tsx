@@ -108,7 +108,6 @@ async function DashboardGroupLayout({ children }: { children: ReactNode }) {
   // 'exhausted' should be true only if balance <= 0.
   // The old logic (creditsUsed >= creditsTotal) was treating 'credits' as 'consumed', which was wrong.
   
-  const paygCredits = PRICING_PLANS.find((p) => p.id === PLAN_IDS.payg)?.credits ?? 0
   // paygEligible: user bought PAYG and still has some credits? 
   // Old logic: creditsUsed < paygCredits. If creditsUsed is balance, this means "Balance < 50".
   // Maybe they meant "If I bought PAYG, I am eligible".

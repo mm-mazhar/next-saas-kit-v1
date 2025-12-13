@@ -40,7 +40,6 @@ export function NavUser({
   user,
   currentPlanId,
   creditsUsed,
-  creditsTotal,
   exhausted,
   role,
 }: {

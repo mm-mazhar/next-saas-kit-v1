@@ -22,7 +22,7 @@ import {
   DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu'
 // import { CreateOrgDialog } from './create-org-dialog'
-import { CreateOrgDialog } from '@/app/(dashboard)/_components/create-org-dialog.tsx'
+import { CreateOrgDialog } from '@/app/(dashboard)/_components/create-org-dialog'
 
 export function TeamSwitcher({
   organizations,
