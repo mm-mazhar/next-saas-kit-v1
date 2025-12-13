@@ -14,11 +14,24 @@ export class OrganizationService {
       throw new Error(`Limit reached: You can only create up to ${LIMITS.MAX_ORGANIZATIONS_PER_USER} organizations.`)
     }
 
-    // 2. Create Org and Membership
+    // 2. Prevent Infinite Credit Loophole
+    // Check if user is already an OWNER of any other active organization
+    const existingOwnedOrgs = await prisma.organizationMember.count({
+      where: { 
+        userId, 
+        role: ROLES.OWNER,
+        organization: { deletedAt: null }
+      }
+    })
+
+    const initialCredits = existingOwnedOrgs === 0 ? 5 : 0
+
+    // 3. Create Org and Membership
     return await prisma.organization.create({
       data: {
         name,
         slug,
+        credits: initialCredits,
         members: {
           create: {
             userId,

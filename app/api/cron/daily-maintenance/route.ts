@@ -1,4 +1,4 @@
-// app/api/cron/free-refill/route.ts
+// app/api/cron/daily-maintenance/route.ts
 
 // ⬇️ FIXED IMPORT PATH: matches your project structure
 import prisma from '@/app/lib/db'
@@ -39,10 +39,18 @@ export async function GET() {
         )
     `
 
+
+
+    // Action B (Cleanup): Run a new SQL query to Hard Delete any organizations where deletedAt is older than 30 days.
+    const cleanupResult = await prisma.$executeRaw`
+      DELETE FROM "Organization" WHERE "deletedAt" < NOW() - INTERVAL '30 days'
+    `
+
     // Use JSON.stringify for safety with BigInts (if any return from raw queries)
     return new Response(JSON.stringify({ 
       success: true, 
-      orgsRefilled: Number(result) 
+      orgsRefilled: Number(result),
+      orgsCleanedUp: Number(cleanupResult)
     }), {
       status: 200,
       headers: { 'Content-Type': 'application/json' }

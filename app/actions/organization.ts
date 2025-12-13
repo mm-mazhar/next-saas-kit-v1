@@ -3,6 +3,7 @@
 'use server'
 
 import prisma from '@/app/lib/db'
+import { stripe } from '@/app/lib/stripe'
 import { createClient } from '@/app/lib/supabase/server'
 import { requireOrgRole } from '@/lib/auth/guards'
 import { LIMITS } from '@/lib/constants'
@@ -272,12 +273,33 @@ export async function deleteOrganization(orgId: string) {
   await requireOrgRole(orgId, user.id, 'OWNER')
 
   try {
-    const org = await OrganizationService.getOrganizationById(orgId)
-    if (!org) {
+    // 1. Fetch Org with Subscription details (Replace Service call with direct Prisma check for Subscription)
+    const org = await prisma.organization.findUnique({
+      where: { id: orgId },
+      include: { subscription: true }
+    })
+
+    if (!org || org.deletedAt) {
       return { success: false, error: 'Organization not found' }
     }
     if (org.slug?.startsWith('default-organization')) {
       return { success: false, error: 'Default Organization cannot be deleted' }
+    }
+
+    // 2. Stripe Cancellation Check
+    if (org.subscription?.stripeSubscriptionId) {
+      // Check if subscription is active or implying active (not canceled)
+      // The requirement says "If a stripeSubscriptionId exists... immediately cancel"
+      // We'll wrap in try/catch to handle errors gracefully
+      try {
+        await stripe.subscriptions.cancel(org.subscription.stripeSubscriptionId)
+      } catch (err) {
+        // If it's already canceled, Stripe might throw. We can check error code or just log and proceed if critical?
+        // Requirement says: "if Stripe fails, do not delete the Org, return an error to the user"
+        console.error('Stripe cancellation failed:', err)
+        const msg = err instanceof Error ? err.message : 'Stripe cancellation failed'
+        return { success: false, error: `Failed to cancel subscription: ${msg}` }
+      }
     }
     
     // Soft Delete (via Service)
