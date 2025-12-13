@@ -184,6 +184,12 @@ export class InvitationService {
     })
   }
 
+  static async deleteInvite(inviteId: string) {
+    return await prisma.organizationInvite.delete({
+      where: { id: inviteId },
+    })
+  }
+
   static async reinvite(inviteId: string) {
     const token = randomBytes(32).toString('hex')
     const expiresAt = new Date(Date.now() + INVITE_EXPIRATION_MS)

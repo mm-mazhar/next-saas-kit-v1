@@ -98,18 +98,27 @@ export function NavUser({
               </div>
               <ChevronsUpDown className='ml-auto size-4' />
               {(() => {
-                const used = creditsUsed ?? 0
-                const total = creditsTotal ?? 0
-                const remaining = Math.max(total - used, 0)
-                const hasNotification = !!(exhausted || remaining <= CREDIT_REMINDER_THRESHOLD)
-                return hasNotification ? (
+                const remaining = creditsUsed ?? 0
+                // Notification Logic:
+                // 1. If exhausted: YES
+                // 2. If Pro plan (or any non-PAYG/non-Free plan): Only if remaining <= CREDIT_REMINDER_THRESHOLD (10)
+                // 3. If Free/PAYG: Maybe different logic? For now assume threshold applies universally,
+                //    BUT user complained they have 250 credits and still see red dot.
+                //    This means remaining (250) <= 10 is false.
+                //    So why is it showing? Maybe exhausted is true?
+                
+                // Let's debug by simplifying:
+                // Only show if exhausted OR (remaining <= threshold AND remaining >= 0)
+                const showNotification = exhausted || (remaining <= CREDIT_REMINDER_THRESHOLD)
+                
+                return showNotification ? (
                   <span className='absolute -top-0.5 -right-0.5 size-2 rounded-full bg-destructive' />
                 ) : null
               })()}
             </SidebarMenuButton>
           </DropdownMenuTrigger>
           <DropdownMenuContent
-            className='w-(--radix-dropdown-menu-trigger-width) min-w-56 rounded-lg'
+            className='w-[--radix-dropdown-menu-trigger-width] min-w-56 rounded-lg'
             side={isMobile ? 'bottom' : 'right'}
             align='end'
             sideOffset={4}
@@ -189,7 +198,12 @@ export function NavUser({
               {(() => {
                 const remaining = creditsUsed ?? 0
                 const hasNotification = !!(exhausted || remaining <= CREDIT_REMINDER_THRESHOLD)
-                const tooltipText = exhausted || remaining === 0 ? 'Purchase Credits' : 'Low Credits'
+                let tooltipText = `Credits: ${remaining}`
+                if (exhausted || remaining === 0) {
+                  tooltipText = 'Buy Credits'
+                } else if (remaining <= CREDIT_REMINDER_THRESHOLD) {
+                  tooltipText = 'Low Credits'
+                }
                 return (
                   <Tooltip>
                     <TooltipTrigger asChild>

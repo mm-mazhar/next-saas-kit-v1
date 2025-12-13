@@ -57,10 +57,10 @@ export async function POST(req: Request) {
     const customerId = String(session.customer || '')
     const refId = (session.client_reference_id as string | null) || (typeof session.metadata?.organizationId === 'string' ? session.metadata.organizationId : null)
 
-    let org = refId ? await prisma.organization.findUnique({ where: { id: refId }, select: { id: true, stripeCustomerId: true } }) : null
+    let org = refId ? await prisma.organization.findUnique({ where: { id: refId }, select: { id: true, stripeCustomerId: true, lastPaygPurchaseAt: true } }) : null
     
     if (!org && customerId) {
-       org = await prisma.organization.findUnique({ where: { stripeCustomerId: customerId }, select: { id: true, stripeCustomerId: true } })
+       org = await prisma.organization.findUnique({ where: { stripeCustomerId: customerId }, select: { id: true, stripeCustomerId: true, lastPaygPurchaseAt: true } })
     }
 
     if (!org) {
@@ -72,6 +72,12 @@ export async function POST(req: Request) {
 
     // A. PAY AS YOU GO (One-time payment)
     if (session.mode === 'payment') {
+      const sessionCreatedDate = new Date((session.created || Math.floor(Date.now() / 1000)) * 1000)
+      if (org.lastPaygPurchaseAt && org.lastPaygPurchaseAt.getTime() === sessionCreatedDate.getTime()) {
+        console.log(`🔹 Skipping duplicate PAYG event for session ${session.id}`)
+        return new Response(null, { status: 200 })
+      }
+
       try {
           const paygCredits = PRICING_PLANS.find((p) => p.id === PLAN_IDS.payg)?.credits ?? 50
           await prisma.organization.update({

@@ -2,6 +2,7 @@
 
 'use server'
 
+import { revalidatePath } from 'next/cache'
 import { createClient } from '@/app/lib/supabase/server'
 import prisma from '@/app/lib/db'
 import { createClient as createSupabaseAdminClient } from '@supabase/supabase-js'
@@ -75,6 +76,10 @@ export async function createCustomerPortal() {
         : `${LOCAL_SITE_URL}/dashboard`,
   })
   return redirect(session.url)
+}
+
+export async function revalidateDashboard() {
+  revalidatePath('/dashboard', 'layout')
 }
 
 // Removed auto-renew logic

@@ -7,6 +7,7 @@ import { Card } from '@/components/ui/card'
 import { Check } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { useEffect, useRef, useState } from 'react'
+import { revalidateDashboard } from '@/app/actions'
 
 export default function SuccessRoute() {
   const router = useRouter()
@@ -15,8 +16,9 @@ export default function SuccessRoute() {
 
   useEffect(() => {
     const tick = setInterval(() => setSeconds((s) => (s > 0 ? s - 1 : 0)), 1000)
-    timerRef.current = setTimeout(() => {
-      router.replace(`/dashboard?t=${Date.now()}`)
+    timerRef.current = setTimeout(async () => {
+      await revalidateDashboard()
+      router.replace('/dashboard')
     }, 10_000)
 
     return () => {
@@ -25,9 +27,10 @@ export default function SuccessRoute() {
     }
   }, [router])
 
-  const goNow = () => {
+  const goNow = async () => {
     if (timerRef.current) clearTimeout(timerRef.current)
-    router.push(`/dashboard?t=${Date.now()}`)
+    await revalidateDashboard()
+    router.push('/dashboard')
   }
 
   return (

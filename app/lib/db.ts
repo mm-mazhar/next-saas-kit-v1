@@ -1,25 +1,18 @@
 // app/lib/db.ts
 
-import { PrismaPg } from '@prisma/adapter-pg'
 import { PrismaClient } from '@prisma/client'
 import { Pool } from 'pg'
+import { PrismaPg } from '@prisma/adapter-pg'
 
-// 1. Setup the connection pool and adapter
 const connectionString = process.env.DATABASE_URL
-if (!connectionString) {
-  throw new Error('DATABASE_URL is not set')
-}
-
-const pool = new Pool({
-  connectionString,
-  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : undefined,
-  keepAlive: true,
-})
-const adapter = new PrismaPg(pool)
 
 const prismaClientSingleton = () => {
-  // 2. Pass the adapter to the PrismaClient constructor
-  return new PrismaClient({ adapter })
+  const pool = new Pool({ connectionString })
+  const adapter = new PrismaPg(pool)
+  return new PrismaClient({
+    adapter,
+    log: process.env.NODE_ENV === 'development' ? ['error', 'warn'] : ['error'],
+  })
 }
 
 declare global {

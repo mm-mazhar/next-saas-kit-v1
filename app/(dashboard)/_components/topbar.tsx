@@ -114,7 +114,7 @@ export function TopBar({
         )}
         {usageInfo?.creditsUsed === 0 ? (
           <Link href='/dashboard/billing' className='inline-flex items-center h-8 px-3 rounded-md bg-primary text-primary-foreground font-medium text-sm border border-primary leading-none'>
-            Need Credits or Upgrade
+            Buy Credits or Upgrade to Pro
           </Link>
         ) : null}
         {usageInfo ? (
@@ -122,13 +122,18 @@ export function TopBar({
             <TooltipTrigger asChild>
               {(() => {
                 const remaining = usageInfo.creditsUsed ?? 0
-                const hasNotification = usageInfo.exhausted || remaining <= CREDIT_REMINDER_THRESHOLD
-                const tooltipText = remaining === 0 || usageInfo.exhausted ? 'Purchase Credits' : 'Low Credits'
+                const showNotification = usageInfo.exhausted || (remaining <= CREDIT_REMINDER_THRESHOLD)
+                let tooltipText = `Credits: ${remaining}`
+                if (usageInfo.exhausted || remaining === 0) {
+                  tooltipText = 'Buy Credits'
+                } else if (remaining <= CREDIT_REMINDER_THRESHOLD) {
+                  tooltipText = 'Low Credits'
+                }
                 return (
                   <a
                     href='/dashboard/billing'
                     aria-label='Notifications'
-                    className={`inline-flex h-8 w-8 items-center justify-center rounded-md bg-primary text-primary-foreground font-medium text-sm border border-primary leading-none focus:outline-none focus-visible:outline-none focus:ring-0 focus-visible:ring-0${hasNotification ? ' relative after:content-[""] after:absolute after:-top-0.5 after:-right-0.5 after:size-2 after:rounded-full after:bg-destructive' : ''}`}
+                    className={`inline-flex h-8 w-8 items-center justify-center rounded-md bg-primary text-primary-foreground font-medium text-sm border border-primary leading-none focus:outline-none focus-visible:outline-none focus:ring-0 focus-visible:ring-0${showNotification ? ' relative after:content-[""] after:absolute after:-top-0.5 after:-right-0.5 after:size-2 after:rounded-full after:bg-destructive' : ''}`}
                     data-tooltip-text={tooltipText}
                   >
                     <Bell className='size-4' />
@@ -138,7 +143,12 @@ export function TopBar({
             </TooltipTrigger>
             {(() => {
               const remaining = usageInfo.creditsUsed ?? 0
-              const tooltipText = remaining === 0 || usageInfo.exhausted ? 'Purchase Credits' : 'Low Credits'
+              let tooltipText = `Credits: ${remaining}`
+              if (usageInfo.exhausted || remaining === 0) {
+                tooltipText = 'Buy Credits'
+              } else if (remaining <= CREDIT_REMINDER_THRESHOLD) {
+                tooltipText = 'Low Credits'
+              }
               return <TooltipContent sideOffset={8}>{tooltipText}</TooltipContent>
             })()}
           </Tooltip>

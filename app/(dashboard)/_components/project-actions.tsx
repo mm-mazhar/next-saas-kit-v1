@@ -12,7 +12,7 @@ import { MoreVertical } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import * as React from 'react'
 
-export function ProjectActions({ projectId, defaultName }: { projectId: string; defaultName: string }) {
+export function ProjectActions({ projectId, defaultName, userRole }: { projectId: string; defaultName: string; userRole?: string }) {
   const [openRename, setOpenRename] = React.useState(false)
   const [openDelete, setOpenDelete] = React.useState(false)
   const [loading, setLoading] = React.useState(false)
@@ -45,9 +45,11 @@ export function ProjectActions({ projectId, defaultName }: { projectId: string; 
           <DropdownMenuItem className='gap-2' onSelect={() => { setOpenRename(true) }}>
             Rename
           </DropdownMenuItem>
-          <DropdownMenuItem className='gap-2 text-destructive' onSelect={() => { setOpenDelete(true) }}>
-            Delete
-          </DropdownMenuItem>
+          {(userRole === 'ADMIN' || userRole === 'OWNER') && (
+            <DropdownMenuItem className='gap-2 text-destructive' onSelect={() => { setOpenDelete(true) }}>
+              Delete
+            </DropdownMenuItem>
+          )}
         </DropdownMenuContent>
       </DropdownMenu>
 

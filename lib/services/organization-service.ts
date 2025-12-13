@@ -72,7 +72,11 @@ export class OrganizationService {
     const org = await prisma.organization.findUnique({
       where: { id },
       include: {
-        members: true,
+        members: {
+          include: {
+            user: true,
+          },
+        },
       },
     })
     if (org?.deletedAt) return null
@@ -151,13 +155,16 @@ export class OrganizationService {
         },
       })
 
-      // 2. Delete associated invites (cleanup)
+      // 2. Update associated invites to REVOKED instead of deleting
       if (member?.user?.email) {
-        await tx.organizationInvite.deleteMany({
+        await tx.organizationInvite.updateMany({
           where: {
             organizationId: orgId,
             email: member.user.email,
           },
+          data: {
+            status: 'REVOKED'
+          }
         })
       }
 

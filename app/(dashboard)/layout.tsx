@@ -2,6 +2,7 @@
 
 import { ClientAppSidebar } from '@/app/(dashboard)/_components/ClientAppSidebar'
 import { SidebarProvider } from '@/app/(dashboard)/_components/sidebar'
+import { ToastProvider } from '@/components/ToastProvider'
 import { TopBar } from '@/app/(dashboard)/_components/topbar'
 import { getData } from '@/app/lib/db'
 import { createClient } from '@/app/lib/supabase/server'
@@ -100,12 +101,24 @@ async function DashboardGroupLayout({ children }: { children: ReactNode }) {
 
   const currentPlan = await resolvePlanId(orgBilling?.subscription?.planId)
   const subStatus = orgBilling?.subscription?.status
-  const creditsUsed = (orgBilling?.credits as number | undefined) ?? 0
+  const creditsRemaining = (orgBilling?.credits as number | undefined) ?? 0
+  
+  // Logic fix: 
+  // 'credits' in DB = Remaining Credits (Balance).
+  // 'exhausted' should be true only if balance <= 0.
+  // The old logic (creditsUsed >= creditsTotal) was treating 'credits' as 'consumed', which was wrong.
+  
   const paygCredits = PRICING_PLANS.find((p) => p.id === PLAN_IDS.payg)?.credits ?? 0
-  const paygEligible = !!orgBilling?.lastPaygPurchaseAt && creditsUsed < paygCredits
+  // paygEligible: user bought PAYG and still has some credits? 
+  // Old logic: creditsUsed < paygCredits. If creditsUsed is balance, this means "Balance < 50".
+  // Maybe they meant "If I bought PAYG, I am eligible".
+  // Let's just assume if lastPaygPurchaseAt exists, they are PAYG eligible unless overridden by Sub.
+  const paygEligible = !!orgBilling?.lastPaygPurchaseAt
+  
   const effectivePlan: PlanId = subStatus === 'active' ? (currentPlan ?? PLAN_IDS.free) : paygEligible ? PLAN_IDS.payg : PLAN_IDS.free
   const creditsTotal = PRICING_PLANS.find((p) => p.id === effectivePlan)?.credits ?? 0
-  const exhausted = (effectivePlan !== PLAN_IDS.free) && (creditsUsed >= creditsTotal)
+  
+  const exhausted = creditsRemaining <= 0
   const renewalDate =
     orgBilling?.subscription?.currentPeriodEnd ??
     (orgBilling?.createdAt
@@ -127,41 +140,43 @@ async function DashboardGroupLayout({ children }: { children: ReactNode }) {
   } : null
 
   return (
-    <SidebarProvider defaultOpen={initialOpen}>
-      <ClientAppSidebar
-        user={{
-          name:
-            (userRow?.name as string) ||
-            (user.user_metadata?.full_name as string) ||
-            (user.email as string) ||
-            'User',
-          email: (userRow?.email as string) || (user.email as string),
-          avatar:
-            (user.user_metadata?.avatar_url as string) ||
-            'https://github.com/shadcn.png',
-        }}
-        currentPlanId={subStatus === 'active' ? currentPlan : (paygEligible ? PLAN_IDS.payg : null)}
-        organizations={mappedOrgs}
-        currentOrganization={mappedCurrentOrg}
-        creditsUsed={creditsUsed}
-        creditsTotal={creditsTotal}
-        exhausted={exhausted}
-      />
-      <main className='w-full'>
-        <TopBar
-          usageInfo={{
-            creditsUsed,
-            creditsTotal,
-            renewalDate,
-            currentPlanId: effectivePlan,
-            exhausted,
+    <ToastProvider>
+      <SidebarProvider defaultOpen={initialOpen}>
+        <ClientAppSidebar
+          user={{
+            name:
+              (userRow?.name as string) ||
+              (user.user_metadata?.full_name as string) ||
+              (user.email as string) ||
+              'User',
+            email: (userRow?.email as string) || (user.email as string),
+            avatar:
+              (user.user_metadata?.avatar_url as string) ||
+              'https://github.com/shadcn.png',
           }}
+          currentPlanId={subStatus === 'active' ? currentPlan : (paygEligible ? PLAN_IDS.payg : null)}
+          organizations={mappedOrgs}
+          currentOrganization={mappedCurrentOrg}
+          creditsUsed={creditsRemaining}
+          creditsTotal={creditsTotal}
+          exhausted={exhausted}
         />
-        <div className='px-4 md:px-8 pt-2 md:pt-4 pb-4 md:pb-8'>
-          {children}
-        </div>
-      </main>
-    </SidebarProvider>
+        <main className='w-full'>
+          <TopBar
+            usageInfo={{
+              creditsUsed: creditsRemaining,
+              creditsTotal,
+              renewalDate,
+              currentPlanId: effectivePlan,
+              exhausted,
+            }}
+          />
+          <div className='px-4 md:px-8 pt-2 md:pt-4 pb-4 md:pb-8'>
+            {children}
+          </div>
+        </main>
+      </SidebarProvider>
+    </ToastProvider>
   )
 }
 

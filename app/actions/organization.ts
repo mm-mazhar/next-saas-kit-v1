@@ -117,6 +117,37 @@ export async function inviteMember(formData: FormData) {
   }
 }
 
+export async function deleteInvite(inviteId: string) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+
+  if (!user) {
+    throw new Error('Unauthorized')
+  }
+
+  try {
+    const invite = await prisma.organizationInvite.findUnique({
+      where: { id: inviteId },
+      select: { organizationId: true },
+    })
+    if (!invite) {
+      return { success: false, error: 'Invite not found' }
+    }
+
+    // Security
+    await requireOrgRole(invite.organizationId, user.id, 'ADMIN')
+
+    const { InvitationService } = await import('@/lib/services/invitation-service')
+    await InvitationService.deleteInvite(inviteId)
+    
+    revalidatePath('/dashboard/settings/organization')
+    return { success: true }
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error)
+    return { success: false, error: message }
+  }
+}
+
 export async function revokeInvite(inviteId: string) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -143,6 +174,7 @@ export async function revokeInvite(inviteId: string) {
         const { OrganizationService } = await import('@/lib/services/organization-service')
         try {
           await OrganizationService.removeMember(invite.organizationId, userByEmail.id)
+          await prisma.organizationInvite.update({ where: { id: inviteId }, data: { status: 'REVOKED' } })
           revalidatePath('/dashboard/settings/organization')
           return { success: true }
         } catch (err) {
@@ -154,7 +186,6 @@ export async function revokeInvite(inviteId: string) {
       } else {
         return { success: false, error: 'Member not found for accepted invite' }
       }
-      await prisma.organizationInvite.update({ where: { id: inviteId }, data: { status: 'REVOKED' } })
     } else {
       const { InvitationService } = await import('@/lib/services/invitation-service')
       await InvitationService.revokeInvite(inviteId)

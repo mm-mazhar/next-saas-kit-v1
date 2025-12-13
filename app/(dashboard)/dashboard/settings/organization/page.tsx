@@ -23,6 +23,7 @@ import { redirect } from 'next/navigation'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
+import { requireOrgRole } from '@/lib/auth/guards'
 
 export default async function OrganizationSettingsPage() {
   noStore()
@@ -48,6 +49,16 @@ export default async function OrganizationSettingsPage() {
       </div>
     )
   }
+
+  // 👇 ADD THIS BLOCK 👇
+  // SECURITY GUARD: Only ADMIN or OWNER can access this page.
+  // If the user is a MEMBER, this will throw/redirect.
+  try {
+    await requireOrgRole(effectiveOrgId, user.id, 'ADMIN')
+  } catch {
+    return redirect('/dashboard')
+  }
+  // 👆 END BLOCK 👆
 
   const org = await OrganizationService.getOrganizationById(effectiveOrgId)
   
@@ -131,14 +142,20 @@ export default async function OrganizationSettingsPage() {
                       </Avatar>
                       <div>
                         <p className='text-sm font-medium leading-none'>
-                          User ID: {member.userId.substring(0, 8)}...
+                          {member.user?.name || member.user?.email || `User ID: ${member.userId.substring(0, 8)}...`}
                         </p>
-                        <p className='text-sm text-muted-foreground'>
+                        {member.user?.name && (
+                          <p className='text-xs text-muted-foreground'>
+                            {member.user.email}
+                          </p>
+                        )}
+                        <p className='text-xs text-muted-foreground'>
                           {member.role}
                         </p>
                       </div>
                     </div>
-                    {(() => {
+                    {/* Revoke button removed */}
+                    {/* {(() => {
                       const ownerCount = org.members.filter(m => m.role === 'OWNER').length
                       const canRemove = member.role !== 'OWNER' || ownerCount > 1
                       return canRemove ? (
@@ -150,7 +167,7 @@ export default async function OrganizationSettingsPage() {
                           <Button variant='outline' size='sm' type='submit'>Revoke</Button>
                         </form>
                       ) : null
-                    })()}
+                    })()} */}
                   </div>
                 ))}
               </div>
@@ -160,9 +177,9 @@ export default async function OrganizationSettingsPage() {
           {invites.length > 0 && (
             <Card>
               <CardHeader>
-                <CardTitle>Pending Invites</CardTitle>
+                <CardTitle>Invites</CardTitle>
                 <CardDescription>
-                  Invitations that have been sent but not yet accepted.
+                  Invitations that have been sent.
                 </CardDescription>
               </CardHeader>
               <CardContent>

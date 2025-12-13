@@ -31,6 +31,9 @@ export default async function DashboardPage() {
   const isMember = currentOrgId && organizations.some(org => org.id === currentOrgId)
   const effectiveOrgId = isMember ? currentOrgId : (organizations[0]?.id ?? null)
 
+  const effectiveOrg = effectiveOrgId ? organizations.find(o => o.id === effectiveOrgId) : null
+  const userRole = effectiveOrg?.members[0]?.role
+
   if (!effectiveOrgId) {
     return (
       <div className='flex h-[50vh] flex-col items-center justify-center gap-4'>
@@ -69,7 +72,7 @@ export default async function DashboardPage() {
                 <CardTitle className='text-sm font-medium'>
                   {project.name}
                 </CardTitle>
-                <ProjectActions projectId={project.id} defaultName={project.name} />
+                <ProjectActions projectId={project.id} defaultName={project.name} userRole={userRole} />
               </CardHeader>
               <CardContent>
                 <div className='text-2xl font-bold'>{project.slug}</div>

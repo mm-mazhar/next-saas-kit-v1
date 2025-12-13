@@ -2,7 +2,7 @@
 
 'use client'
 
-import { resendInvite, revokeInvite } from '@/app/actions/organization'
+import { resendInvite, revokeInvite, deleteInvite } from '@/app/actions/organization'
 import { useToast } from '@/components/ToastProvider'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
@@ -24,7 +24,7 @@ type InviteRow = {
 export function PendingInvitesList({ invites }: { invites: InviteRow[] }) {
   const router = useRouter()
   const { show } = useToast()
-  const [loading, setLoading] = React.useState<{ id: string | null; action: 'revoke' | 'resend' | null }>({ id: null, action: null })
+  const [loading, setLoading] = React.useState<{ id: string | null; action: 'revoke' | 'resend' | 'delete' | null }>({ id: null, action: null })
 
   function statusVariant(status: string): React.ComponentProps<typeof Badge>['variant'] {
     switch (status) {
@@ -104,6 +104,30 @@ export function PendingInvitesList({ invites }: { invites: InviteRow[] }) {
             >
               {loading.id === invite.id && loading.action === 'revoke' ? 'Revoking...' : 'Revoke'}
             </Button>
+            {invite.status === 'REVOKED' && (
+              <Button
+                variant='outline'
+                size='sm'
+                className='focus:outline-none focus-visible:outline-none focus:ring-0 focus-visible:ring-0 focus-visible:ring-offset-0 text-red-500 hover:text-red-600'
+                disabled={loading.id === invite.id}
+                onClick={async () => {
+                  setLoading({ id: invite.id, action: 'delete' })
+                  try {
+                    const res = await deleteInvite(invite.id)
+                    if (res?.success) {
+                      show({ title: 'Invite removed', description: 'Invite removed from list', duration: 2500 })
+                      router.refresh()
+                    } else {
+                      show({ title: 'Error', description: res?.error || 'Failed to remove invite', duration: 3000 })
+                    }
+                  } finally {
+                    setLoading({ id: null, action: null })
+                  }
+                }}
+              >
+                {loading.id === invite.id && loading.action === 'delete' ? 'Removing...' : 'Remove from list'}
+              </Button>
+            )}
             <Button
               variant='secondary'
               size='sm'
