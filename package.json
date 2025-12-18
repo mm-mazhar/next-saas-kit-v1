@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "next dev --turbopack",
     "dev:supabase": "next dev --turbopack",
+    "prebuild": "node scripts/update-domains.mjs",
     "build": "prisma generate && prisma migrate deploy && next build --turbopack",
     "start": "next start",
     "lint": "eslint"

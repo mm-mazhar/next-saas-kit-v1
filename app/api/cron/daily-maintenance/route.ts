@@ -1,6 +1,5 @@
 // app/api/cron/daily-maintenance/route.ts
 
-// ⬇️ FIXED IMPORT PATH: matches your project structure
 import prisma from '@/app/lib/db'
 import { headers } from 'next/headers'
 
@@ -30,6 +29,7 @@ export async function GET() {
       LEFT JOIN "Subscription" s ON s."organizationId" = o.id
       WHERE 
         "Organization".id = o.id
+        AND o."deletedAt" IS NULL
         AND (s.status IS NULL OR s.status != 'active')
         AND o.credits < 5
         AND o."isPrimary" = true
@@ -42,9 +42,9 @@ export async function GET() {
 
 
 
-    // Action B (Cleanup): Run a new SQL query to Hard Delete any organizations where deletedAt is older than 30 days.
+    // Action B (Cleanup): Run a new SQL query to Hard Delete any organizations where deletedAt is 30+ days old.
     const cleanupResult = await prisma.$executeRaw`
-      DELETE FROM "Organization" WHERE "deletedAt" < NOW() - INTERVAL '30 days'
+      DELETE FROM "Organization" WHERE "deletedAt" <= NOW() - INTERVAL '30 days'
     `
 
     // Use JSON.stringify for safety with BigInts (if any return from raw queries)

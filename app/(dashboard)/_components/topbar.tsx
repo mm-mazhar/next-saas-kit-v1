@@ -12,6 +12,7 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from '@/components/ui/breadcrumb'
+import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { CREDIT_REMINDER_THRESHOLD, type PlanId } from '@/lib/constants'
@@ -30,6 +31,7 @@ import * as React from 'react'
 
 export function TopBar({
   usageInfo,
+  subscriptionStatus,
 }: {
   usageInfo?: {
     creditsUsed: number
@@ -38,6 +40,7 @@ export function TopBar({
     currentPlanId?: PlanId | null
     exhausted?: boolean
   }
+  subscriptionStatus?: string | null
 }) {
   const pathname = usePathname()
   const parts = pathname.split('/').filter(Boolean)
@@ -107,6 +110,11 @@ export function TopBar({
         </Breadcrumb>
       </div>
       <div className='flex items-center gap-2'>
+        {subscriptionStatus && (
+          <Badge className='h-8 px-3 text-sm font-medium leading-none'>
+            {subscriptionStatus === 'active' ? 'Pro' : `Pro: ${subscriptionStatus}`}
+          </Badge>
+        )}
         {usageInfo && (
           <span className='inline-flex items-center h-8 px-1 rounded-md bg-primary text-primary-foreground font-medium text-sm border leading-none'>
             Credits: {usageInfo.creditsUsed ?? 0}

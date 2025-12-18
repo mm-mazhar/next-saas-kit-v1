@@ -55,11 +55,6 @@ export default async function LoginPage({
         </div>
 
         <div className='text-center text-sm text-muted-foreground space-y-4'>
-          <p>
-            <Link href='/' className='text-xs hover:text-primary underline'>
-              Back to Home
-            </Link>
-          </p>
           <p className='text-xs'>
             By signing up, you agree to our
             <Link href='/terms' className='underline hover:text-primary ml-1'>

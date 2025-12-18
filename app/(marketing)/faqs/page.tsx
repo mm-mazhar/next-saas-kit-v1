@@ -13,120 +13,130 @@ interface FaqItem {
   id: string;
   question: string;
   answer: string;
-  category: 'general' | 'pricing' | 'technical';
+  category: 'general' | 'pricing' | 'technical' | 'roles';
 }
 
 const faqItems: FaqItem[] = [
+  // --- GENERAL ---
   {
     id: '1',
-    question: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit.',
+    question: 'What is Next SaaS Kit?',
     answer:
-      'Lorem ipsum dolor sit, amet consectetur adipisicing elit. Quam similique odio fuga voluptas aliquid doloribus eveniet, et rerum ea ducimus.',
+      'Next SaaS Kit is a comprehensive boilerplate for building multi-tenant SaaS applications. It comes pre-configured with Authentication, Organization management, Billing (Stripe), and Role-Based Access Control.',
     category: 'general',
   },
   {
     id: '2',
-    question: 'Lorem ipsum dolor sit amet, consectetur?',
+    question: 'Can I create multiple organizations?',
     answer:
-      'Lorem ipsum dolor sit, amet consectetur adipisicing elit. Quam similique odio fuga voluptas aliquid doloribus eveniet, et rerum ea ducimus.',
+      'Yes! You can create multiple organizations (workspaces) under a single user account. Each organization has its own billing, credits, projects, and team members.',
     category: 'general',
   },
   {
     id: '3',
-    question: 'How often are new components added?',
+    question: 'How do I switch between organizations?',
     answer:
-      'We regularly add new components to the library. Our goal is to provide a comprehensive set of components for all common UI patterns and website sections.',
+      'You can switch between your organizations using the Team Switcher in the top-left corner of the dashboard sidebar. Your active context (billing and projects) will update immediately.',
     category: 'general',
   },
 
+  // --- TECHNICAL ---
   {
     id: '4',
-    question: 'Lorem ipsum dolor sit amet, consectetur?',
+    question: 'Is my data isolated from other organizations?',
     answer:
-      "Lorem ipsum dolor sit, amet consectetur adipisicing elit. Quam similique odio fuga voluptas aliquid doloribus eveniet, et rerum ea ducimus.",
-    category: 'general',
+      "Yes. Data is strictly scoped to the Organization ID. Even if you belong to multiple organizations, you can only see projects and data belonging to the organization you are currently viewing.",
+    category: 'technical',
   },
   {
     id: '5',
-    question: 'Lorem ipsum dolor sit amet, consectetur?',
+    question: 'How do I invite my team?',
     answer:
-      "Lorem ipsum dolor sit, amet consectetur adipisicing elit. Quam similique odio fuga voluptas aliquid doloribus eveniet, et rerum ea ducimus.",
+      "Go to Settings > Organization > Members. Click 'Invite Member' and enter their email. You can choose to invite them as an Admin or a regular Member.",
     category: 'technical',
   },
-  {
-    id: '6',
-    question: 'Lorem ipsum dolor sit amet, consectetur?',
-    answer:
-      'Lorem ipsum dolor sit, amet consectetur adipisicing elit. Quam similique odio fuga voluptas aliquid doloribus eveniet, et rerum ea ducimus.',
-    category: 'technical',
-  },
-  {
-    id: '7',
-    question: 'Lorem ipsum dolor sit amet, consectetur??',
-    answer:
-      "Lorem ipsum dolor sit, amet consectetur adipisicing elit. Quam similique odio fuga voluptas aliquid doloribus eveniet, et rerum ea ducimus.",
-    category: 'technical',
-  },
-  
-  {
-    id: '8',
-    question: 'Lorem ipsum dolor sit amet, consectetur??',
-    answer:
-      'Lorem ipsum dolor sit, amet consectetur adipisicing elit. Quam similique odio fuga voluptas aliquid doloribus eveniet, et rerum ea ducimus.',
-    category: 'technical',
-  },
+
+  // --- PRICING (Updated for Organization-based Billing) ---
   {
     id: '9',
     question: 'How does the Free Plan credit system work?',
     answer:
-      'On the Free plan, you receive a monthly allowance of 5 credits. This resets every month on the anniversary of the day you joined. Think of it as a "top-up"—if you have used your credits, we refill them to 5. If you haven\'t used them, they do not roll over to the next month.',
+      'Your Primary Organization receives a monthly allowance of 5 credits for free. These credits are shared among all members of that organization. This allowance resets monthly on the anniversary of your organization creation.',
     category: 'pricing',
   },
   {
     id: '10',
-    question: 'I purchased a "Pay As You Go" pack. Do these credits expire?',
+    question: 'Who pays for the credits, the User or the Organization?',
     answer:
-      'No. Unlike the free monthly allowance, any credits you purchase via "Pay As You Go" or receive through a "Pro" subscription are yours to keep. They roll over indefinitely until you use them.',
+      'Billing is attached to the Organization, not the User. This means if you buy a "Pay As You Go" pack or subscribe to Pro, those credits belong to the Organization "wallet". Any member of the team can use them to create projects.',
     category: 'pricing',
   },
   {
     id: '11',
-    question: 'I have 20 credits left from a pack I bought. Will I still get my 5 free credits this month?',
+    question: 'Do "Pay As You Go" credits expire?',
     answer:
-      'No. The monthly free credits are designed as a "safety net" to ensure you can always use the platform. If your balance is already higher than 5 (due to a purchase or subscription), we do not add the free allowance on top of it.',
+      'No. Credits purchased via "Pay As You Go" packs do not expire. They roll over indefinitely until your team uses them.',
     category: 'pricing',
   },
   {
     id: '12',
-    question: 'If I upgrade to the Pro Plan, what happens to my current credits?',
+    question: 'If I upgrade to the Pro Plan, does my whole team get access?',
     answer:
-      'You keep them! Any credits you currently have (whether free or purchased) will carry over. When you subscribe to Pro, we simply add 100 new credits to your existing balance immediately.',
+      'Yes! The subscription applies to the entire Organization. Once you upgrade an Organization to Pro, all members (Owners, Admins, and Members) gain access to Pro features and the 100 shared monthly credits.',
     category: 'pricing',
   },
   {
     id: '13',
-    question: 'What happens if I run out of credits before my next billing cycle?',
+    question: 'What happens if I create a second Organization?',
     answer:
-      'You have two options:\
-        You can wait for your next monthly refill (or billing date).\
-        1. You can purchase a "Pay As You Go" pack (e.g., 50 credits for $5) to continue 2. working immediately. You do not need to upgrade your subscription to buy extra credits.',
+      'Secondary organizations start with 0 credits. To use them, you must purchase credits or upgrade that specific organization to Pro. This allows you to keep billing separate for different clients or projects.',
     category: 'pricing',
   },
   {
     id: '14',
-    question: 'If I cancel my Pro subscription, do I lose my credits?',
+    question: 'If I delete an Organization, what happens to my subscription?',
     answer:
-      'No. You retain all the credits you paid for. Once your subscription ends, you will simply return to the Free tier rules: you will use your remaining credits until they run out. Once they drop below 5, the monthly free top-up logic will resume.',
+      'For your safety, our system automatically cancels any active Stripe subscription associated with an Organization the moment you delete it.',
     category: 'pricing',
   },
 
+  // --- ROLES & ACCESS (New Category) ---
+  {
+    id: '15',
+    question: 'What permissions does an Owner have?',
+    answer:
+      'The Owner has full control. They can manage billing, invite/remove users, change roles, rename the organization, and delete the organization. An organization must always have at least one Owner.',
+    category: 'roles',
+  },
+  {
+    id: '16',
+    question: 'What can an Admin do?',
+    answer:
+      'Admins can manage the team (invite and remove members) and manage Billing/Subscriptions. However, Admins cannot delete the Organization or remove the Owner.',
+    category: 'roles',
+  },
+  {
+    id: '17',
+    question: 'What can a Member do?',
+    answer:
+      'Members are regular users. They can create and edit Projects and consume the organization\'s credits. They cannot see the Billing page, invite users, or change organization settings.',
+    category: 'roles',
+  },
+  {
+    id: '18',
+    question: 'Can I change a member\'s role after inviting them?',
+    answer:
+      'Yes. Owners and Admins can promote or demote members via the Organization Settings page. However, an Admin cannot demote an Owner.',
+    category: 'roles',
+  },
 ];
 
 const categories = [
   { id: 'all', label: 'All' },
   { id: 'general', label: 'General' },
-  { id: 'technical', label: 'Technical' },
   { id: 'pricing', label: 'Pricing' },
+  { id: 'roles', label: 'Roles & Access' },
+  { id: 'technical', label: 'Technical' },
 ];
 
 export default function Faq2() {
@@ -156,28 +166,27 @@ export default function Faq2() {
             Frequently Asked Questions
           </h1>
 
-          <p className="text-muted-foreground max-w-2xl text-center">
-            Find answers to common questions about MVPBlocks and how to use our
-            components to build your next project.
+          <p className="mb-6 text-muted-foreground max-w-2xl text-center">
+            Everything you need to know about our platform, billing, and team management.
           </p>
-        </div>
 
-        {/* Category Tabs */}
-        <div className="mb-10 flex flex-wrap justify-center gap-2">
-          {categories.map((category) => (
-            <button
-              key={category.id}
-              onClick={() => setActiveCategory(category.id)}
-              className={cn(
-                'rounded-full px-4 py-2 text-sm font-medium transition-all',
-                activeCategory === category.id
-                  ? 'bg-primary text-primary-foreground'
-                  : 'bg-secondary text-secondary-foreground hover:bg-secondary/80',
-              )}
-            >
-              {category.label}
-            </button>
-          ))}
+          {/* Category Tabs */}
+          <div className="mb-10 flex flex-wrap justify-center gap-2">
+            {categories.map((category) => (
+              <button
+                key={category.id}
+                onClick={() => setActiveCategory(category.id)}
+                className={cn(
+                  'rounded-full px-4 py-2 text-sm font-medium transition-all',
+                  activeCategory === category.id
+                    ? 'bg-primary text-primary-foreground'
+                    : 'bg-secondary text-secondary-foreground hover:bg-secondary/80',
+                )}
+              >
+                {category.label}
+              </button>
+            ))}
+          </div>
         </div>
 
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
@@ -243,7 +252,7 @@ export default function Faq2() {
             Can&apos;t find what you&apos;re looking for?
           </p>
           <a
-            href="#"
+            href="/contact"
             className="border-primary text-foreground hover:bg-primary hover:text-primary-foreground inline-flex items-center justify-center rounded-lg border-2 px-6 py-3 font-medium transition-colors"
           >
             Contact Support

@@ -7,7 +7,13 @@ export class OrganizationService {
   static async createOrganization(userId: string, name: string, slug: string) {
     // 1. Check Limits
     const userOrgCount = await prisma.organizationMember.count({
-      where: { userId, role: ROLES.OWNER },
+      where: {
+        userId,
+        role: ROLES.OWNER,
+        organization: {
+          deletedAt: null,
+        },
+      },
     })
 
     if (userOrgCount >= LIMITS.MAX_ORGANIZATIONS_PER_USER) {

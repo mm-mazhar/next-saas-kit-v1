@@ -1,41 +1,52 @@
+// app/(dashboard)/_components/delete-org-button.tsx
+
 'use client'
 
-import * as React from 'react'
-import { useRouter } from 'next/navigation'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/app/(dashboard)/_components/ui/dialog'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/app/(dashboard)/_components/ui/select'
+import { deleteOrganization } from '@/app/actions/organization'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { deleteOrganization } from '@/app/actions/organization'
 import { AlertTriangle } from 'lucide-react'
+import { useRouter } from 'next/navigation'
+import * as React from 'react'
 
 interface DeleteOrgButtonProps {
   orgId: string
   orgName: string
+  credits: number
+  transferTargets: { id: string; name: string }[]
 }
 
-export function DeleteOrgButton({ orgId, orgName }: DeleteOrgButtonProps) {
+export function DeleteOrgButton({ orgId, orgName, credits, transferTargets }: DeleteOrgButtonProps) {
   const [open, setOpen] = React.useState(false)
   const [loading, setLoading] = React.useState(false)
   const [confirmName, setConfirmName] = React.useState('')
   const [error, setError] = React.useState('')
+  const [transferOrgId, setTransferOrgId] = React.useState<string | null>(null)
   const router = useRouter()
+
+  const hasCreditsToTransfer = credits > 0
+  const hasTransferTargets = transferTargets.length > 0
+  const canTransferCredits = hasCreditsToTransfer && hasTransferTargets
 
   const handleDelete = async () => {
     if (confirmName !== `delete ${orgName}`) return
+    if (canTransferCredits && !transferOrgId) return
     
     setLoading(true)
     setError('')
     
     try {
-      const res = await deleteOrganization(orgId)
+      const res = await deleteOrganization(orgId, transferOrgId || undefined)
       if (res.success) {
         setOpen(false)
         router.refresh()
       } else {
         setError(res.error || 'Failed to delete organization')
       }
-    } catch (e) {
+    } catch {
       setError('An unexpected error occurred')
     } finally {
       setLoading(false)
@@ -63,13 +74,46 @@ export function DeleteOrgButton({ orgId, orgName }: DeleteOrgButtonProps) {
           <div className="rounded-md bg-destructive/10 p-4 text-sm text-destructive">
             <p className="font-medium mb-1">Warning: Serious consequences</p>
             <ul className="list-disc pl-5 space-y-1">
-              <li>You will lose any remaining credits immediately.</li>
+              <li>
+                {canTransferCredits
+                  ? `You must transfer ${credits} credits to another organization you own before deleting.`
+                  : 'You will lose any remaining credits immediately.'}
+              </li>
               <li>All projects within this organization will be deleted.</li>
               <li>Your active subscription will be canceled immediately.</li>
             </ul>
           </div>
 
-          <div className="space-y-2">
+          {canTransferCredits && (
+            <div className="space-y-2">
+              <Label htmlFor="transfer-org">
+                Transfer {credits} credits to...
+              </Label>
+              <Select
+                value={transferOrgId || ''}
+                onValueChange={(value) => setTransferOrgId(value)}
+              >
+                <SelectTrigger id="transfer-org" className="w-full">
+                  <SelectValue placeholder="Select organization" />
+                </SelectTrigger>
+                <SelectContent>
+                  {transferTargets.map((org) => (
+                    <SelectItem key={org.id} value={org.id}>
+                      {org.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">
+                Select an organization to receive your remaining credits.
+              </p>
+            </div>
+          )}
+
+          {error && <p className="text-sm text-destructive font-medium">{error}</p>}
+        </div>
+        
+        <div className="space-y-2">
             <Label htmlFor="confirm-delete">
               To confirm, type <span className="font-mono font-bold select-all">delete {orgName}</span> below:
             </Label>
@@ -82,9 +126,6 @@ export function DeleteOrgButton({ orgId, orgName }: DeleteOrgButtonProps) {
             />
           </div>
 
-          {error && <p className="text-sm text-destructive font-medium">{error}</p>}
-        </div>
-
         <DialogFooter>
           <Button
             variant="outline"
@@ -96,7 +137,11 @@ export function DeleteOrgButton({ orgId, orgName }: DeleteOrgButtonProps) {
           <Button
             variant="destructive"
             onClick={handleDelete}
-            disabled={confirmName !== `delete ${orgName}` || loading}
+            disabled={
+              loading ||
+              confirmName !== `delete ${orgName}` ||
+              (canTransferCredits && !transferOrgId)
+            }
           >
             {loading ? 'Deleting...' : 'Delete Organization'}
           </Button>

@@ -2,7 +2,7 @@
 
 'use client'
 
-import { Building2, ChevronsUpDown, Plus, Settings, Loader2 } from 'lucide-react'
+import { Building2, ChevronsUpDown, Loader2, Plus, Settings } from 'lucide-react'
 import Link from 'next/link'
 import * as React from 'react'
 
@@ -105,7 +105,7 @@ export function TeamSwitcher({
               <div className='flex size-6 items-center justify-center rounded-md border bg-transparent'>
                 <Plus className='size-4' />
               </div>
-              <div className='text-muted-foreground font-medium'>Create Organization</div>
+              <div className='font-medium'>Create Organization</div>
             </DropdownMenuItem>
             {/* 👇 WRAP THIS ITEM IN CONDITION 👇 */}
             {isPrivileged && (
@@ -116,7 +116,7 @@ export function TeamSwitcher({
                     <div className='flex size-6 items-center justify-center rounded-md border bg-transparent'>
                       <Settings className='size-4' />
                     </div>
-                    <div className='text-muted-foreground font-medium'>Organization Settings</div>
+                    <div className='font-medium'>Organization Settings</div>
                   </Link>
                 </DropdownMenuItem>
               </>

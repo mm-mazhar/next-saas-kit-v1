@@ -3,18 +3,24 @@
 'use server'
 
 import prisma from '@/app/lib/db'
+import { sendCancellationEmail } from '@/app/lib/email'
 import { stripe } from '@/app/lib/stripe'
 import { createClient } from '@/app/lib/supabase/server'
 import { requireOrgRole } from '@/lib/auth/guards'
-import { LIMITS } from '@/lib/constants'
+import { CHECK_DISPOSABLE_EMAILS, LIMITS } from '@/lib/constants'
+import { isDisposableEmail } from '@/lib/email-validator'
 import { OrganizationService } from '@/lib/services/organization-service'
 import { slugify } from '@/lib/utils'
 import { revalidatePath } from 'next/cache'
 import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
 
-// Note: LIMITS imports might need verification if LIMITS is not exported or different name.
-// Assuming LIMITS exists as per Service usage.
+function buildOrganizationSlug(name: string, userId: string) {
+  const base = slugify(name)
+  const userPrefix = userId.substring(0, 8)
+  const timestamp = Date.now()
+  return `${base}-${userPrefix}-${timestamp}`
+}
 
 export async function createOrganization(formData: FormData) {
   const supabase = await createClient()
@@ -26,14 +32,20 @@ export async function createOrganization(formData: FormData) {
 
   // Limit Check
   const orgCount = await prisma.organizationMember.count({
-      where: { userId: user.id, role: 'OWNER' }
+    where: {
+      userId: user.id,
+      role: 'OWNER',
+      organization: {
+        deletedAt: null,
+      },
+    },
   })
   if (orgCount >= (LIMITS?.MAX_ORGANIZATIONS_PER_USER ?? 5)) {
       return { success: false, error: 'Maximum organizations limit reached' }
   }
 
   const name = formData.get('name') as string
-  const slug = (formData.get('slug') as string) || slugify(name)
+  const slug = buildOrganizationSlug(name, user.id)
 
   if (!name) {
     throw new Error('Name is required')
@@ -123,12 +135,16 @@ export async function inviteMember(formData: FormData) {
     throw new Error('Unauthorized')
   }
 
-  const email = formData.get('email') as string
+  const email = (formData.get('email') as string).trim()
   const role = formData.get('role') as import('@/lib/constants').OrganizationRole
   const orgId = formData.get('orgId') as string
 
   if (!email || !role || !orgId) {
     return { success: false, error: 'All fields are required' }
+  }
+
+  if (CHECK_DISPOSABLE_EMAILS && isDisposableEmail(email)) {
+    return { success: false, error: 'Disposable emails cannot be invited to organizations.' }
   }
 
   // Security
@@ -315,7 +331,7 @@ export async function removeMember(orgId: string, userId: string) {
   }
 }
 
-export async function deleteOrganization(orgId: string) {
+export async function deleteOrganization(orgId: string, transferToOrgId?: string) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
@@ -340,22 +356,119 @@ export async function deleteOrganization(orgId: string) {
       return { success: false, error: 'Default Organization cannot be deleted' }
     }
 
-    // 2. Stripe Cancellation Check
-    if (org.subscription?.stripeSubscriptionId) {
-      // Check if subscription is active or implying active (not canceled)
-      // The requirement says "If a stripeSubscriptionId exists... immediately cancel"
-      // We'll wrap in try/catch to handle errors gracefully
+    let transferredCredits: number | null = null
+    let transferTargetName: string | null = null
+
+    // 2. Credit Transfer (Wallet Move)
+    if (transferToOrgId) {
+      if (transferToOrgId === orgId) {
+        return { success: false, error: 'Cannot transfer credits to the same organization' }
+      }
+
+      await requireOrgRole(transferToOrgId, user.id, 'OWNER')
+
       try {
-        await stripe.subscriptions.cancel(org.subscription.stripeSubscriptionId)
+        await prisma.$transaction(async (tx) => {
+          const source = await tx.organization.findUnique({
+            where: { id: orgId },
+            select: { credits: true, deletedAt: true }
+          })
+
+          const target = await tx.organization.findUnique({
+            where: { id: transferToOrgId },
+            select: { name: true, deletedAt: true }
+          })
+
+          if (!source || source.deletedAt) {
+            throw new Error('Organization not found')
+          }
+
+          if (!target || target.deletedAt) {
+            throw new Error('Target organization not found')
+          }
+
+          const creditsToMove = source.credits || 0
+
+          if (creditsToMove > 0) {
+            await tx.organization.update({
+              where: { id: transferToOrgId },
+              data: { credits: { increment: creditsToMove } }
+            })
+          }
+
+          if (creditsToMove !== 0) {
+            await tx.organization.update({
+              where: { id: orgId },
+              data: { credits: 0 }
+            })
+          }
+
+          transferredCredits = creditsToMove
+          transferTargetName = target.name
+        })
       } catch (err) {
-        // If it's already canceled, Stripe might throw. We can check error code or just log and proceed if critical?
-        // Requirement says: "if Stripe fails, do not delete the Org, return an error to the user"
-        console.error('Stripe cancellation failed:', err)
-        const msg = err instanceof Error ? err.message : 'Stripe cancellation failed'
-        return { success: false, error: `Failed to cancel subscription: ${msg}` }
+        const msg = err instanceof Error ? err.message : 'Failed to transfer credits'
+        return { success: false, error: msg }
+      }
+    }
+
+    const hadStripeSubscriptionId = !!org.subscription?.stripeSubscriptionId
+    if (org.subscription?.stripeSubscriptionId) {
+      try {
+        const stripeSub = await stripe.subscriptions.retrieve(org.subscription.stripeSubscriptionId)
+        const status = stripeSub.status
+
+        const activeStatuses: string[] = [
+          'trialing',
+          'active',
+          'past_due',
+          'unpaid',
+          'incomplete',
+          'incomplete_expired'
+        ]
+
+        if (activeStatuses.includes(status)) {
+          try {
+            await stripe.subscriptions.cancel(stripeSub.id)
+          } catch (err) {
+            console.error('Stripe cancellation failed:', err)
+            const msg = err instanceof Error ? err.message : 'Stripe cancellation failed'
+            return { success: false, error: `Failed to cancel subscription: ${msg}` }
+          }
+        }
+      } catch (err) {
+        console.error('Stripe subscription lookup failed:', err)
+        const message = err instanceof Error ? err.message : 'Stripe subscription lookup failed'
+        if (!message.toLowerCase().includes('no such subscription')) {
+          return { success: false, error: `Failed to verify subscription: ${message}` }
+        }
       }
     }
     
+    if (hadStripeSubscriptionId) {
+      try {
+        const owner = await prisma.organizationMember.findFirst({
+          where: { organizationId: orgId, role: 'OWNER' },
+          include: { user: true }
+        })
+
+        const to = owner?.user.email ?? null
+        if (to) {
+          await sendCancellationEmail({
+            to,
+            name: owner?.user.name ?? null,
+            orgName: org.name,
+            planTitle: 'Pro',
+            effectiveDate: org.subscription?.currentPeriodEnd ?? null,
+            final: true,
+            creditsRemaining: transferredCredits,
+            creditsTransferredTo: transferTargetName,
+            portalUrl: null
+          })
+        }
+      } catch {}
+    }
+
     // Soft Delete (via Service)
     await OrganizationService.deleteOrganization(orgId)
 
@@ -392,7 +505,7 @@ export async function updateOrganizationName(orgId: string, formData: FormData) 
   await requireOrgRole(orgId, user.id, 'ADMIN')
 
   const name = formData.get('name') as string
-  const slug = (formData.get('slug') as string) || slugify(name)
+  const slug = buildOrganizationSlug(name, user.id)
 
   if (!name) {
     return { success: false, error: 'Name is required' }
@@ -425,7 +538,7 @@ export async function updateOrganizationNameAction(
 
   const orgId = (formData.get('orgId') as string) || ''
   const name = formData.get('name') as string
-  const slug = (formData.get('slug') as string) || slugify(name)
+  const slug = buildOrganizationSlug(name, user.id)
 
   if (!name || !orgId) {
     return { success: false, error: 'Name is required' }

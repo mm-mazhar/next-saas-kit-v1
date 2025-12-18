@@ -53,10 +53,16 @@ async function DashboardGroupLayout({ children }: { children: ReactNode }) {
     try {
       const newOrg = await OrganizationService.createOrganization(
         user.id,
-         defaultOrgName,
-         slugify(`${defaultOrgName}-${user.id.substring(0, 8)}`)
-       )
-      await ProjectService.createProject(user.id, newOrg.id, 'Default Project', slugify('Default Project'))
+        defaultOrgName,
+        slugify(`${defaultOrgName}-${user.id.substring(0, 8)}`)
+      )
+      const defaultProjectName = 'Default Project'
+      await ProjectService.createProject(
+        user.id,
+        newOrg.id,
+        defaultProjectName,
+        `${slugify(defaultProjectName)}-${user.id.substring(0, 8)}-${Date.now()}`
+      )
       organizations = [newOrg]
     } catch (e) {
       console.error('[Dashboard Layout] Failed to create default organization:', e)
@@ -169,6 +175,7 @@ async function DashboardGroupLayout({ children }: { children: ReactNode }) {
               currentPlanId: effectivePlan,
               exhausted,
             }}
+            subscriptionStatus={subStatus ?? null}
           />
           <div className='px-4 md:px-8 pt-2 md:pt-4 pb-4 md:pb-8'>
             {children}

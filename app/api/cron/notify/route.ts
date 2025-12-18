@@ -21,30 +21,31 @@ export async function GET() {
     where: {
       status: 'active',
       currentPeriodEnd: { gte: now, lte: upper },
+      organization: {
+        deletedAt: null,
+      },
     },
     select: {
       stripeSubscriptionId: true,
       planId: true,
       currentPeriodEnd: true,
       periodEndReminderSent: true,
-      // Fetch Organization and Owner
-      organization: { 
-          select: { 
-              name: true, 
-              credits: true, 
-              members: {
-                  where: { role: 'OWNER' },
-                  take: 1,
-                  select: { user: { select: { email: true, name: true } } }
-              }
-          } 
+      organization: {
+        select: {
+          name: true,
+          credits: true,
+          members: {
+            where: { role: 'OWNER' },
+            take: 1,
+            select: { user: { select: { email: true, name: true } } },
+          },
+        },
       },
     },
   })
 
   let sent = 0
   const details: { email: string; daysLeft?: number; reason: 'days' | 'credits' }[] = []
-  const alreadySent = new Set<string>()
 
   // 2. Reset threshold for organizations with enough credits
   await prisma.organization.updateMany({
@@ -68,7 +69,8 @@ export async function GET() {
     try {
       await sendRenewalReminderEmail({
         to,
-        name: owner?.name ?? s.organization?.name ?? null, 
+        name: owner?.name ?? s.organization?.name ?? null,
+        orgName: s.organization?.name ?? null,
         planTitle: PRICING_PLANS.find((p) => p.stripePriceId === s.planId)?.title ?? null,
         periodEnd: s.currentPeriodEnd,
         creditsRemaining: remaining,
@@ -79,7 +81,6 @@ export async function GET() {
         where: { stripeSubscriptionId: s.stripeSubscriptionId },
         data: { periodEndReminderSent: true },
       })
-      alreadySent.add(to)
       details.push({ email: to, daysLeft: daysLeft, reason: 'days' })
     } catch {}
   }
@@ -89,33 +90,34 @@ export async function GET() {
   // 3. Find Low Credit Organizations
   const lowCreditsOrgs = await prisma.organization.findMany({
     where: {
+      deletedAt: null,
       creditsReminderThresholdSent: false,
       credits: { lte: CREDIT_REMINDER_THRESHOLD },
     },
-    select: { 
-        id: true, 
-        name: true, 
-        credits: true,
-        members: {
-            where: { role: 'OWNER' },
-            take: 1,
-            select: { user: { select: { email: true, name: true } } }
-        }
+    select: {
+      id: true,
+      name: true,
+      credits: true,
+      members: {
+        where: { role: 'OWNER' },
+        take: 1,
+        select: { user: { select: { email: true, name: true } } },
+      },
     },
   })
 
   for (const o of lowCreditsOrgs) {
     const owner = o.members[0]?.user
     const to = owner?.email || null
+    if (!to) continue
 
-    if (!to || alreadySent.has(to)) continue
-    
     const creditsRemaining = o.credits ?? 0
     creditCandidates++
     try {
       await sendLowCreditsEmail({
         to,
         name: owner?.name ?? o.name ?? null,
+        orgName: o.name ?? null,
         creditsRemaining,
       })
       await prisma.organization.update({ where: { id: o.id }, data: { creditsReminderThresholdSent: true } })

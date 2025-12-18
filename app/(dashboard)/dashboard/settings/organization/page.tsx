@@ -76,6 +76,11 @@ export default async function OrganizationSettingsPage() {
 
   const invites = await InvitationService.getOrganizationInvites(effectiveOrgId)
 
+  const ownedOrganizations = organizations.filter((o) => o.members[0]?.role === 'OWNER')
+  const transferTargets = ownedOrganizations
+    .filter((o) => o.id !== org.id)
+    .map((o) => ({ id: o.id, name: o.name }))
+
   return (
     <div className='flex flex-1 flex-col gap-4 p-4 pt-0'>
       <div>
@@ -115,7 +120,12 @@ export default async function OrganizationSettingsPage() {
                 <>
                   {org.members.find((m) => m.userId === user.id)?.role ===
                   'OWNER' ? (
-                    <DeleteOrgButton orgId={org.id} orgName={org.name} />
+                    <DeleteOrgButton
+                      orgId={org.id}
+                      orgName={org.name}
+                      credits={org.credits}
+                      transferTargets={transferTargets}
+                    />
                   ) : (
                     <div className='flex flex-col gap-2'>
                       <Button variant='destructive' disabled className='w-fit'>

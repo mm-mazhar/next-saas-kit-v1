@@ -9,6 +9,13 @@ import { ProjectService } from '@/lib/services/project-service'
 import { slugify } from '@/lib/utils'
 import { revalidatePath } from 'next/cache'
 
+function buildProjectSlug(name: string, userId: string) {
+  const base = slugify(name)
+  const userPrefix = userId.substring(0, 8)
+  const timestamp = Date.now()
+  return `${base}-${userPrefix}-${timestamp}`
+}
+
 export async function createProject(formData: FormData) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -18,7 +25,7 @@ export async function createProject(formData: FormData) {
   }
 
   const name = formData.get('name') as string
-  const slug = (formData.get('slug') as string) || slugify(name)
+  const slug = buildProjectSlug(name, user.id)
   const orgId = formData.get('orgId') as string
 
   if (!name || !orgId) {
@@ -48,7 +55,7 @@ export async function updateProjectName(projectId: string, formData: FormData) {
   }
 
   const name = formData.get('name') as string
-  const slug = (formData.get('slug') as string) || slugify(name)
+  const slug = buildProjectSlug(name, user.id)
 
   if (!name) {
     return { success: false, error: 'Name is required' }

@@ -7,8 +7,19 @@ import { PrismaPg } from '@prisma/adapter-pg'
 const connectionString = process.env.DATABASE_URL
 
 const prismaClientSingleton = () => {
-  const pool = new Pool({ connectionString })
+  if (!connectionString) {
+    throw new Error('DATABASE_URL is not set')
+  }
+
+  const pool = new Pool({
+    connectionString,
+    max: 5,
+    idleTimeoutMillis: 30_000,
+    connectionTimeoutMillis: 5_000,
+  })
+
   const adapter = new PrismaPg(pool)
+
   return new PrismaClient({
     adapter,
     log: process.env.NODE_ENV === 'development' ? ['error', 'warn'] : ['error'],
@@ -143,8 +154,7 @@ export async function getData(userData?: UserData | string): Promise<DbUser | nu
                     projects: {
                       create: {
                         name: 'Default Project',
-                        slug: 'default-project',
-                        // organizationId automatically handled by nesting
+                        slug: `default-project-${userData.id.substring(0, 8)}-${Date.now()}`,
                       },
                     },
                   },

@@ -75,7 +75,9 @@ export default async function DashboardPage() {
                 <ProjectActions projectId={project.id} defaultName={project.name} userRole={userRole} />
               </CardHeader>
               <CardContent>
-                <div className='text-2xl font-bold'>{project.slug}</div>
+                <div className='text-xs text-muted-foreground'>
+                  slug: {project.slug}
+                </div>
                 <p className='text-xs text-muted-foreground'>
                   Updated {new Date(project.updatedAt).toLocaleDateString()}
                 </p>

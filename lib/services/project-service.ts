@@ -16,7 +16,12 @@ export class ProjectService {
 
     // 2. Check Limits
     const projectCount = await prisma.project.count({
-      where: { organizationId },
+      where: {
+        organizationId,
+        organization: {
+          deletedAt: null,
+        },
+      },
     })
 
     if (projectCount >= LIMITS.MAX_PROJECTS_PER_ORGANIZATION) {
