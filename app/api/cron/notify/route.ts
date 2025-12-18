@@ -121,7 +121,6 @@ export async function GET() {
         creditsRemaining,
       })
       await prisma.organization.update({ where: { id: o.id }, data: { creditsReminderThresholdSent: true } })
-      alreadySent.add(to)
       details.push({ email: to, reason: 'credits' })
     } catch {}
   }
