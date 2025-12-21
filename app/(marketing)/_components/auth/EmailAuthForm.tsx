@@ -1,11 +1,10 @@
 // app/(marketing)/_components/auth/EmailAuthForm.tsx
 
 'use client'
+import { validateEmail } from '@/app/actions/auth-check'
 import { createClient } from '@/app/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { isDisposableEmail } from '@/lib/email-validator'
-import { CHECK_DISPOSABLE_EMAILS } from '@/lib/constants'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
 import { useState } from 'react'
@@ -27,13 +26,15 @@ export function EmailAuthForm({ next }: { next?: string }) {
   const handleMagicLink = async () => {
     setErrorMsg(null)
     setInfoMsg(null)
+    setLoading(true)
 
-    if (CHECK_DISPOSABLE_EMAILS && isDisposableEmail(email)) {
-      setErrorMsg('Please use a permanent email address (e.g., Gmail, Outlook, or work email).')
+    const validation = await validateEmail(email)
+
+    if (!validation.valid) {
+      setErrorMsg(validation.message || 'Invalid email')
+      setLoading(false)
       return
     }
-
-    setLoading(true)
 
     // Check if nextParam is an invite link and set a backup cookie
     const inviteMatch = nextParam.match(/\/invite\/([a-f0-9]{32,})/)

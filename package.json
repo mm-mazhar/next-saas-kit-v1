@@ -7,6 +7,7 @@
     "dev:supabase": "next dev --turbopack",
     "prebuild": "node scripts/update-domains.mjs",
     "build": "prisma generate && prisma migrate deploy && next build --turbopack",
+    "analyze": "cross-env ANALYZE=true next build",
     "start": "next start",
     "lint": "eslint"
   },
@@ -43,11 +44,13 @@
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
+    "@next/bundle-analyzer": "^16.1.0",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/pg": "^8.15.6",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "cross-env": "^10.1.0",
     "dotenv": "^17.2.3",
     "eslint": "^9",
     "eslint-config-next": "^15.5.7",

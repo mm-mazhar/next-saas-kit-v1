@@ -1,9 +1,15 @@
+// next.config.ts
+
 import type { NextConfig } from "next";
+
+// Initialize the bundle analyzer
+const withBundleAnalyzer = require('@next/bundle-analyzer')({
+  enabled: process.env.ANALYZE === 'true',
+});
 
 const nextConfig: NextConfig = {
   /* config options here */
 };
 
-export default nextConfig;
-
-// Forced restart to reload Prisma Client
+// Wrap your existing config with the analyzer
+export default withBundleAnalyzer(nextConfig);

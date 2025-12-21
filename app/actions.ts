@@ -81,5 +81,3 @@ export async function createCustomerPortal() {
 export async function revalidateDashboard() {
   revalidatePath('/dashboard', 'layout')
 }
-
-// Removed auto-renew logic

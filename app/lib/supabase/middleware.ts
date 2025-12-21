@@ -40,20 +40,30 @@ export async function updateSession(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser()
 
-  if (
-    !user &&
-    !request.nextUrl.pathname.startsWith('/get-started') &&
-    !request.nextUrl.pathname.startsWith('/auth') &&
-    !request.nextUrl.pathname.startsWith('/api') &&
-    request.nextUrl.pathname !== '/'
-  ) {
+//   if (
+//     !user &&
+//     !request.nextUrl.pathname.startsWith('/get-started') &&
+//     !request.nextUrl.pathname.startsWith('/auth') &&
+//     !request.nextUrl.pathname.startsWith('/api') &&
+//     request.nextUrl.pathname !== '/'
+//   ) {
+//     const url = request.nextUrl.clone()
+//     url.pathname = '/get-started'
+//     // Preserve intended destination so post-auth redirects correctly
+//     url.searchParams.set(
+//       'next',
+//       `${request.nextUrl.pathname}${request.nextUrl.search}`
+//     )
+//     return NextResponse.redirect(url)
+//   }
+
+//   return supabaseResponse
+// }
+if (!user) {
     const url = request.nextUrl.clone()
     url.pathname = '/get-started'
-    // Preserve intended destination so post-auth redirects correctly
-    url.searchParams.set(
-      'next',
-      `${request.nextUrl.pathname}${request.nextUrl.search}`
-    )
+    // Add 'next' param so they go back to dashboard after login
+    url.searchParams.set('next', request.nextUrl.pathname)
     return NextResponse.redirect(url)
   }
 
