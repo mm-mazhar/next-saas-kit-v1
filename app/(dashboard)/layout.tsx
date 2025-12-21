@@ -17,6 +17,9 @@ import { ReactNode } from 'react'
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
 
+const SUPER_ADMINS =
+  process.env.SUPER_ADMIN_EMAILS?.split(',').map((email) => email.trim()).filter(Boolean) || []
+
 async function DashboardGroupLayout({ children }: { children: ReactNode }) {
   noStore()
   const supabase = await createClient()
@@ -27,6 +30,8 @@ async function DashboardGroupLayout({ children }: { children: ReactNode }) {
   if (!user) {
     return redirect('/get-started')
   }
+
+  const isSuperAdmin = !!(user.email && SUPER_ADMINS.includes(user.email))
 
   const userName =
     user.user_metadata?.full_name || user.email?.split('@')[0] || 'User'
@@ -159,6 +164,7 @@ async function DashboardGroupLayout({ children }: { children: ReactNode }) {
               (user.user_metadata?.avatar_url as string) ||
               'https://github.com/shadcn.png',
           }}
+          isSuperAdmin={isSuperAdmin}
           currentPlanId={subStatus === 'active' ? currentPlan : (paygEligible ? PLAN_IDS.payg : null)}
           organizations={mappedOrgs}
           currentOrganization={mappedCurrentOrg}

@@ -3,38 +3,55 @@
 'use client'
 
 import {
-    Bell,
-    Building2,
-    ChevronsUpDown,
-    CreditCard,
-    Settings,
-    Sparkles
+  Bell,
+  Building2,
+  ChevronsUpDown,
+  CreditCard,
+  Settings,
+  Shield,
+  Sparkles
 } from 'lucide-react'
 
 import { LogoutButton } from '@/app/(dashboard)/_components/LogoutButton'
 import {
-    SidebarMenu,
-    SidebarMenuButton,
-    SidebarMenuItem,
-    useSidebar,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
+  useSidebar,
 } from '@/app/(dashboard)/_components/sidebar'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuGroup,
-    DropdownMenuItem,
-    DropdownMenuLabel,
-    DropdownMenuSeparator,
-    DropdownMenuSub,
-    DropdownMenuSubContent,
-    DropdownMenuSubTrigger,
-    DropdownMenuTrigger,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
+  DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { CREDIT_REMINDER_THRESHOLD, PLAN_IDS, type PlanId } from '@/lib/constants'
 import Link from 'next/link'
 import * as React from 'react'
+
+export type NavUserUser = {
+  name: string
+  email: string
+  avatar: string
+}
+
+export type NavUserProps = {
+  user: NavUserUser
+  currentPlanId?: PlanId | null
+  creditsUsed?: number
+  creditsTotal?: number
+  exhausted?: boolean
+  role?: string | null
+  isSuperAdmin?: boolean
+}
 
 export function NavUser({
   user,
@@ -42,23 +59,14 @@ export function NavUser({
   creditsUsed,
   exhausted,
   role,
-}: {
-  user: {
-    name: string
-    email: string
-    avatar: string
-  }
-  currentPlanId?: PlanId | null
-  creditsUsed?: number
-  creditsTotal?: number
-  exhausted?: boolean
-  role?: string
-}) {
+  isSuperAdmin,
+}: NavUserProps) {
   const { isMobile } = useSidebar()
   const [mounted, setMounted] = React.useState(false)
   React.useEffect(() => setMounted(true), [])
   
   const isPrivileged = role === 'OWNER' || role === 'ADMIN'
+  const isSuperAdminUser = !!isSuperAdmin
 
   if (!mounted) {
     return (
@@ -162,6 +170,15 @@ export function NavUser({
             <DropdownMenuSeparator />
             <DropdownMenuGroup>
               <DropdownMenuSub>
+                {isSuperAdminUser && (
+                  <DropdownMenuItem asChild>
+                    <Link href='/admin' className='flex items-center gap-2'>
+                      <Shield />
+                      <span>Super Admin</span>
+                    </Link>
+                  </DropdownMenuItem>
+                )}
+              
                 <DropdownMenuSubTrigger className='gap-2'>
                   <Settings />
                   Settings

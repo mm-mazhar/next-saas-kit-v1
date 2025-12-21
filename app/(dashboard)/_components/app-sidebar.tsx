@@ -33,6 +33,7 @@ export function AppSidebar({
   creditsUsed,
   creditsTotal,
   exhausted,
+  isSuperAdmin,
   ...props
 }: React.ComponentProps<typeof Sidebar> & {
   user?: { name: string; email: string; avatar: string }
@@ -42,6 +43,7 @@ export function AppSidebar({
   creditsUsed?: number
   creditsTotal?: number
   exhausted?: boolean
+  isSuperAdmin?: boolean
 }) {
   const pathname = usePathname()
   const mappedNavMain = navItems
@@ -82,6 +84,7 @@ export function AppSidebar({
           creditsTotal={creditsTotal}
           exhausted={exhausted}
           role={currentOrganization?.role}
+          isSuperAdmin={isSuperAdmin}
         />
       </SidebarFooter>
       <SidebarRail />

@@ -1,6 +1,7 @@
 // app/(marketing)/_components/auth/EmailAuthForm.tsx
 
 'use client'
+
 import { validateEmail } from '@/app/actions/auth-check'
 import { createClient } from '@/app/lib/supabase/client'
 import { Button } from '@/components/ui/button'
@@ -82,14 +83,15 @@ export function EmailAuthForm({ next }: { next?: string }) {
         <p className='text-sm text-destructive text-center mt-6'>{errorMsg}</p>
       )}
 
-      <p className='text-center mt-6'>
+      <p className='text-center mt-3'>
         <Link href='/' className='text-xs hover:text-primary underline'>
           Back to Home
         </Link>
       </p>
 
       {infoMsg && (
-        <p className='text-sm text-muted-foreground text-center mt-6'>{infoMsg}</p>
+        // <p className='text-sm text-muted-foreground text-center mt-6'>{infoMsg}</p>
+        <p className='text-sm text-destructive text-center mt-6'>{infoMsg}</p>
       )}
     </div>
   )

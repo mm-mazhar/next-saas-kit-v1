@@ -9,5 +9,7 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   // Only run middleware on protected areas. Other paths will 404 naturally.
-  matcher: ['/dashboard/:path*'],
+  matcher: ['/dashboard/:path*',
+    '/admin/:path'
+  ],
 }

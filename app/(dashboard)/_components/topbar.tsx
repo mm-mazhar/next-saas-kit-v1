@@ -4,6 +4,7 @@
 
 import { SidebarTrigger } from '@/app/(dashboard)/_components/sidebar'
 import { Themetoggle } from '@/components/Themetoggle'
+import { Badge } from '@/components/ui/badge'
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -12,12 +13,12 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from '@/components/ui/breadcrumb'
-import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { CREDIT_REMINDER_THRESHOLD, type PlanId } from '@/lib/constants'
 import {
   Bell,
+  Building2,
   ChartNoAxesCombined,
   CreditCard,
   Database,
@@ -52,6 +53,7 @@ export function TopBar({
     documents: 'Documents',
     settings: 'Settings',
     billing: 'Billing',
+    organization: 'Organization',
   }
   const icons: Record<string, React.ElementType> = {
     dashboard: ChartNoAxesCombined,
@@ -59,6 +61,7 @@ export function TopBar({
     documents: FileText,
     settings: Settings,
     billing: CreditCard,
+    organization: Building2,
   }
 
   let acc = ''
@@ -89,7 +92,7 @@ export function TopBar({
   })
 
   return (
-    <header className='flex h-16 shrink-0 items-center justify-between px-4 md:px-12 border-b'>
+    <header className='flex h-16 shrink-0 items-center justify-between px-4 md:px-8 border-b'>
       <div className='flex items-center gap-2'>
         <SidebarTrigger className='-ml-1' />
         <Separator
