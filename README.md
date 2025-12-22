@@ -1,908 +1,849 @@
-# Next.js SaaS Kit: Comprehensive Setup and Development Guide
+# Next.js SaaS Kit
 
-🚀 Build a modern SaaS application with Next.js 15, Supabase, Stripe, Prisma, and Tailwind CSS. This starter kit provides a solid foundation for your next project, complete with authentication, subscriptions, and a database setup.
+Build a production-ready, multi-tenant SaaS with:
 
-<p align="center">
-  <a href="https://next-saas-kit-v2.vercel.app" style="font-weight: bold; font-size: 20px; text-decoration: underline;">See the demo</a>
-</p>
+- Next.js 15 (App Router, Server Actions)
+- Supabase Auth + Postgres
+- Prisma ORM
+- Stripe subscriptions + usage-based credits
+- Role Based Access Control (RBAC)
+- Super Admin analytics dashboard
+- Tailwind CSS + Shadcn UI
 
----
-
-## ✨ Features
-
-- **Framework**: [Next.js 15](https://nextjs.org/) (App Router)
-- **Authentication**: [Supabase Auth](https://supabase.com/docs/guides/auth)
-  - Passwordless (Magic Link)
-  - Social OAuth (Google, GitHub)
-- **Database**: [Supabase](https://supabase.com/) with [Prisma ORM](https://prisma.io)
-- **Styling**: [Tailwind CSS](https://tailwindcss.com/) with [Shadcn/UI](https://ui.shadcn.com/)
-- **Payments**: [Stripe](https://stripe.com/) for subscriptions
-- **Webhooks**: Serverless endpoint for Stripe events
-- **Deployment**: Ready for [Vercel](https://vercel.com/)
+This README is a full, end‑to‑end setup and operations guide for this specific codebase.
 
 ---
 
-## 🛠️ Getting Started: Full Setup Walkthrough
+## Table of Contents
 
-This section provides a consolidated, step-by-step guide to setting up your Next.js SaaS Kit, integrating all the components.
+- [Next.js SaaS Kit](#nextjs-saas-kit)
+  - [Table of Contents](#table-of-contents)
+  - [Overview](#overview)
+  - [Features](#features)
+  - [Tech Stack](#tech-stack)
+  - [Architecture](#architecture)
+    - [Multi-tenancy Model](#multi-tenancy-model)
+    - [RBAC Model](#rbac-model)
+    - [Super Admin Dashboard](#super-admin-dashboard)
+  - [Getting Started](#getting-started)
+    - [1. Clone \& Install](#1-clone--install)
+    - [2. Environment Variables](#2-environment-variables)
+    - [3. Database \& Prisma](#3-database--prisma)
+      - [Optional: Seed Data](#optional-seed-data)
+    - [4. Supabase Auth Setup](#4-supabase-auth-setup)
+      - [4.1 API Keys](#41-api-keys)
+      - [4.2 Email Provider](#42-email-provider)
+      - [4.3 Google OAuth](#43-google-oauth)
+      - [4.4 URL Configuration](#44-url-configuration)
+      - [4.5 Email Templates](#45-email-templates)
+    - [5. Row Level Security (RLS)](#5-row-level-security-rls)
+    - [6. Stripe Setup](#6-stripe-setup)
+      - [6.1 Local Webhook Setup](#61-local-webhook-setup)
+    - [7. CRON Jobs \& Maintenance](#7-cron-jobs--maintenance)
+      - [7.1 Local Testing](#71-local-testing)
+      - [7.2 Vercel CRON Configuration](#72-vercel-cron-configuration)
+    - [8. Run the App](#8-run-the-app)
+  - [Role Based Access Control (RBAC)](#role-based-access-control-rbac)
+    - [Roles](#roles)
+    - [High-level Rules](#high-level-rules)
+    - [Enforcement Examples](#enforcement-examples)
+    - [UI Behavior](#ui-behavior)
+  - [Super Admin Mode](#super-admin-mode)
+    - [Enabling Super Admin Access](#enabling-super-admin-access)
+    - [Super Admin Dashboard Capabilities](#super-admin-dashboard-capabilities)
+  - [Testing Checklist](#testing-checklist)
+    - [Authentication \& Onboarding](#authentication--onboarding)
+    - [Organizations, Projects \& RBAC](#organizations-projects--rbac)
+    - [Billing \& Credits](#billing--credits)
+    - [Super Admin Dashboard](#super-admin-dashboard-1)
+    - [Security \& RLS](#security--rls)
+  - [Useful Commands](#useful-commands)
+    - [General](#general)
+    - [Prisma](#prisma)
+    - [Stripe (Local)](#stripe-local)
+    - [Supabase Quick Test](#supabase-quick-test)
+  - [Deployment](#deployment)
+  - [Troubleshooting](#troubleshooting)
+    - [Auth Issues](#auth-issues)
+    - [RBAC / Permission Errors](#rbac--permission-errors)
+    - [Super Admin](#super-admin)
+    - [Database \& RLS](#database--rls)
 
-## 1. Clone the Repository
+---
 
-Begin by cloning the project repository to your local machine and navigating into its directory.
+## Overview
+
+This project is a multi-tenant SaaS starter built with Next.js 15 and Supabase. It supports:
+
+- Authentication via Supabase (email magic links + Google OAuth)
+- Multi-organization accounts with members and projects
+- RBAC with `OWNER`, `ADMIN`, and `MEMBER` roles
+- Billing via Stripe (subscriptions + credit refills)
+- A Super Admin section to monitor system-wide stats (users, orgs, revenue)
+- CRON-based background maintenance and email notifications
+
+You can use it as a starting point for your own SaaS, or as a reference for:
+
+- How to combine Supabase Auth with Prisma
+- How to implement RBAC and multi-tenancy
+- How to build a super admin area separate from tenant dashboards
+
+---
+
+## Features
+
+- **Authentication**
+  - Supabase magic links (passwordless)
+  - Google OAuth
+  - Email templates wired to `/auth/callback`
+
+- **Multi-tenancy**
+  - Each user can belong to multiple organizations
+  - Each organization owns its own projects and billing
+  - RLS policies to prevent cross‑org data leaks
+
+- **RBAC**
+  - Roles: `OWNER`, `ADMIN`, `MEMBER`
+  - Fine-grained server-side checks via `requireOrgRole` and `permissions`
+  - UI behavior matches role permissions (e.g., disabled buttons for low-privilege members)
+
+- **Billing**
+  - Stripe subscriptions (e.g. Pro plan)
+  - Credits per organization
+  - Daily maintenance job to refill/cleanup
+  - Reminder emails for renewals and credit exhaustion
+
+- **Super Admin**
+  - Email-based super admin whitelisting
+  - `/admin` area with analytics cards, charts, user/org lists, system status
+  - CSV export of aggregated statistics
+
+- **DX**
+  - Tailwind CSS 4 + Shadcn UI components
+  - ESLint + TypeScript strict
+  - Prisma schema tuned for multi‑tenant SaaS
+
+---
+
+## Tech Stack
+
+- `next` – Next.js 15 (App Router, RSC, Server Actions)
+- `react`, `react-dom` – React 19
+- `@supabase/supabase-js`, `@supabase/ssr` – Supabase Auth + SSR helpers
+- `pg` – Postgres driver used with Prisma
+- `@prisma/client`, `prisma` – ORM + migrations
+- `stripe` – Stripe Billing / subscriptions
+- `resend` – Transactional emails
+- `tailwindcss` + `tailwindcss-animate` + Shadcn UI (`components.json`)
+- `lucide-react` – Icons
+- CRON via `vercel.json` scheduled functions
+
+Config references:
+
+- `package.json`: scripts and dependencies
+- `prisma/schema.prisma`: data model
+- `lib/constants.ts`: RBAC roles, limits, and configuration
+- `lib/auth/guards.ts`: RBAC enforcement helpers
+- `app/(dashboard)/**`: tenant dashboard
+- `app/(super-admin)/**`: super admin area
+
+---
+
+## Architecture
+
+### Multi-tenancy Model
+
+The core multi-tenant model is defined in `prisma/schema.prisma`:
+
+- `User`
+  - Identified by Supabase Auth user `id` (UUID string)
+  - Stores profile preferences (`colorScheme`, `themePreference`)
+  - Has many `OrganizationMember` rows (one per organization)
+
+- `Organization`
+  - Owns billing (`stripeCustomerId`, `credits`, `subscription`)
+  - Has many `OrganizationMember` (users) and `Project` (resources)
+  - Soft-delete via `deletedAt`
+
+- `OrganizationMember`
+  - Junction of `User` + `Organization`
+  - Has `role` of type `OrganizationRole` (`OWNER`, `ADMIN`, `MEMBER`)
+  - Enforced uniqueness on (`organizationId`, `userId`)
+
+- `Project`
+  - Belongs to exactly one `Organization`
+  - Slug unique per organization
+
+- `OrganizationInvite`
+  - Used to invite users by email into organizations with a specific role
+  - Includes `status` and expiration
+
+All queries are made through Prisma and respect RLS enforced in Supabase.
+
+### RBAC Model
+
+RBAC types and limits live in `lib/constants.ts:158`:
+
+- `ROLES` – `{ OWNER, ADMIN, MEMBER }`
+- `OrganizationRole` – union of role keys
+- `LIMITS` – per-user/org constraints (max orgs, projects, members, pending invites)
+
+Server-side authorization helpers:
+
+- `lib/auth/guards.ts:1`
+  - `getCurrentOrgContext(orgId, userId)` returns the user’s role in the organization or `null`
+  - `requireOrgRole(orgId, userId, minimumRole)` throws if user does not meet required role
+  - `ROLE_HIERARCHY` enforces `OWNER > ADMIN > MEMBER`
+
+- `lib/auth/permissions.ts:1`
+  - Declares a simple permission map for actions:
+    - Org‑level: `org:update`, `org:delete`, `org:transfer`
+    - Member‑level: `member:invite`, `member:remove`, `member:update`
+    - Project‑level: `project:create`, `project:update`, `project:delete`
+  - `can(role, action)` returns a boolean used to control UI and business logic
+
+Actions that enforce RBAC:
+
+- `app/actions/organization.ts:68`
+  - `updateMemberRoleAction` – only `ADMIN`+ can change roles, cannot downgrade `OWNER`, cannot set `OWNER` via this path
+  - `inviteMember` – only `ADMIN`+ can invite, with rate limiting and pending-invite caps
+  - `updateOrganizationNameAction` – requires at least `ADMIN`
+
+- `app/actions/project.ts:76`
+  - `deleteProject` – resolves `organizationId` and enforces `ADMIN`+ via `requireOrgRole`
+
+### Super Admin Dashboard
+
+The super admin area lives under `app/(super-admin)`:
+
+- `app/(super-admin)/layout.tsx:1`
+  - Server layout that:
+    - Reads currently authenticated user via Supabase
+    - Checks `SUPER_ADMIN_EMAILS` env var
+    - Redirects non-super-admins to `/dashboard`
+  - Wraps children with `SidebarProvider` and `AdminSidebar`, plus `DashboardHeader`
+
+- `app/(super-admin)/_components/admin-sidebar.tsx:1`
+  - Client sidebar for super admin navigation
+  - Links to:
+    - Overview dashboard (`/admin`)
+    - Revenue analytics
+    - User analytics
+    - Users, organizations, subscriptions, settings
+
+- `app/(super-admin)/_components/dashboard-actions.tsx:1`
+  - Controls for refreshing dashboard, exporting CSV reports, etc.
+
+- `app/(super-admin)/_components/system-status.tsx:1`
+  - Receives system health data (`database` status + latency)
+  - Renders cards with overall system status
+
+The dashboard aggregates data across all organizations (e.g., total revenue, active orgs, growth), separate from tenant scoping.
+
+---
+
+## Getting Started
+
+### 1. Clone & Install
+
+Clone your own repository that contains this code and install dependencies:
 
 ```bash
-git clone https://github.com/mm-mazhar/next-saas-kit-v2.git
-cd next-saas-kit-v2
-```
+git clone <your-repo-url> saas-kit
+cd saas-kit
 
-## 2. Install Dependencies
-
-Install all necessary Node.js packages for the project.
-
-```bash
 npm install
 ```
 
-## 3. Setup Environment Variables
+> This project uses plain `npm` scripts. You can adapt to `pnpm` or `yarn` if you prefer.
 
-Create your `.env` file and populate it with the required environment variables.
+### 2. Environment Variables
+
+Copy the example env file and fill it as you configure services:
 
 ```bash
 cp .env.example .env
 ```
 
-You will fill in these variables as you go through the setup steps for Supabase and Stripe. A summary will be provided at the end of each major section, and a full summary at the end of this guide.
-
-## 4. Supabase Setup
-
-Supabase will handle your authentication and database.
-
-### 4.1 Create a Supabase Project
-
-1. Go to Supabase and create a new project.
-2. Note your Project Reference as you'll need it for URLs. (Project ID/ Project URL)
-
-### 4.2 Database Configuration with Prisma
-
-This project uses Prisma for database management. Since you're setting up a new project, we'll start fresh.
-
-1.  Install Prisma CLI & Client:
-
-    ```bash
-    npm i -D prisma
-    npm i @prisma/client
-    ```
-
-2.  Initialize Prisma: This creates the prisma directory and schema.prisma file.
-
-    ```bash
-    npx prisma init
-    ```
-
-3.  Update your `.env` with Supabase Database Connection Strings:
-
-    Go to your Supabase Dashboard → Project Settings → Database → Connection String. Copy the connection pooling and direct connection strings.
-
-    ```bash
-    # Database (Get from: Project Settings → Database)
-    DATABASE_URL="postgresql://postgres.[YOUR-PROJECT-REF]:[YOUR-PASSWORD]@aws-0-[REGION].pooler.supabase.com:5432/postgres?pgbouncer=true"
-
-    DIRECT_URL="postgresql://postgres.[YOUR-PROJECT-REF]:[YOUR-PASSWORD]@aws-0-[REGION].pooler.supabase.com:5432/postgres"
-    ```
-
-    Replace `[YOUR-PROJECT-REF]`, `[YOUR-PASSWORD]`, and `[REGION]` with your actual Supabase details.
-
-4.  Update Prisma Schema:
-
-    Ensure your `prisma/schema.prisma` file is configured with the following models. If you initialized Prisma, you'll need to add these.
-
-    ```bash
-    // prisma/schema.prisma
-    datasource db {
-      provider  = "postgresql"
-      url       = env("DATABASE_URL")
-      directUrl = env("DIRECT_URL")
-    }
-
-    generator client {
-      provider = "prisma-client-js"
-    }
-
-    model User {
-      id               String        @id @unique // UUID from Supabase Auth
-      name             String?
-      email            String        @unique
-      stripeCustomerId String?       @unique
-      colorScheme      String        @default("theme-orange")
-      Subscription     Subscription?
-      createdAt        DateTime      @default(now())
-      updatedAt        DateTime      @updatedAt
-    }
-
-    model Subscription {
-      stripeSubscriptionId String   @id @unique
-      interval             String
-      status               String
-      planId               String
-      currentPeriodStart   Int
-      currentPeriodEnd     Int
-      createdAt            DateTime @default(now())
-      updatedAt            DateTime @updatedAt
-      user                 User     @relation(fields: [userId], references: [id])
-      userId               String   @unique
-    }
-    ```
-
-5.  Run Initial Database Migration: This will create the tables in your Supabase database.
-
-    ```bash
-    npx prisma migrate dev --name init
-    ```
-
-    If prompted to reset, type y.
-
-6.  Generate Prisma Client:
-
-    ```bash
-    npx prisma generate
-    ```
-
-7.  Verify Database Setup (Optional):
-
-    ```bash
-    npx prisma studio
-    ```
-
-    This will open a browser-based GUI to view your database, which should now contain empty User and Subscription tables.
-
-### 4.3 Supabase Authentication Configuration
-
-This section details the necessary settings in your Supabase Dashboard to configure authentication.
-
-1. Update your `.env` with Supabase API Keys:
-
-   ```bash
-   # Supabase Configuration (Get from: Project Settings → API)
-   NEXT_PUBLIC_SUPABASE_URL=https://xxxxxxxxxxxxxxxxxx.supabase.co
-   NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOixxxxxxxxxxxxxxxxxxxxxxxx...
-   ```
-
-2. Authentication Providers:
-
-   - Email Provider Setup:
-
-     **Path:** `Authentication → Providers → Email`
-
-     | Setting                     | Value                                           | Description                                 |
-     | --------------------------- | ----------------------------------------------- | ------------------------------------------- |
-     | Enable Email provider       | ✅ Enabled                                      | Allow users to sign in with email           |
-     | Confirm email               | ❌ Disabled (Testing) / ✅ Enabled (Production) | Require email verification before access    |
-     | Secure email change         | ✅ Enabled                                      | Require confirmation for email changes      |
-     | Double confirm email change | ✅ Enabled                                      | Send confirmation to both old and new email |
-
-   - Google OAuth Provider Setup:
-
-     **Path:** `Authentication → Providers → Google`
-
-     **How to get Google OAuth Credentials:**
-
-     1. Go to: `https://console.cloud.google.com`
-     2. Create new project or select existing
-     3. Navigate: `APIs & Services → Credentials`
-     4. Click: `Create Credentials → OAuth 2.0 Client ID`
-     5. Configure consent screen if prompted
-     6. Application type: `Web application`
-     7. **Authorized JavaScript origins:**
-        ```bash
-        http://localhost:3000
-        https://your-production-domain.com
-        ```
-     8. **Authorized redirect URIs:**
-
-        ```bash
-        https://YOUR_PROJECT_REF.supabase.co/auth/v1/callback
-        ```
-
-        (Replace `YOUR_PROJECT_REF` with your actual Supabase project reference)
-
-     9. Copy the **Client ID** and **Client Secret** to Supabase
-
-3. URL Configuration
-
-   **Path:** `Authentication → URL Configuration`
-
-   - Site URL
-
-     ```bash
-     https://your-production-domain.com
-     ```
-
-     (For local development: `http://localhost:3000`)
-
-   - Redirect URLs (Add all of these)
-
-     ```bash
-     http://localhost:3000
-     http://localhost:3000/auth/callback
-     http://localhost:3000/dashboard
-     https://your-production-domain.com
-     https://your-production-domain.com/auth/callback
-     https://your-production-domain.com/dashboard
-     ```
-
-   **Why these URLs?**
-
-   - Base URLs: For initial OAuth redirects
-   - `/auth/callback`: Where users land after OAuth/magic link sign-in
-   - `/dashboard`: Final destination after successful authentication
-
-4. Email Templates Configuration:
-
-   **Path:** `Authentication → Email Templates`
-
-   - Magic Link Email Template:
-
-     ```html
-     <h2>Magic Link</h2>
-     <p>Click this link to sign in:</p>
-     <p>
-       <a
-         href="{{ .SiteURL }}/auth/callback?token_hash={{ .TokenHash }}&type=email&next=/dashboard"
-       >
-         Sign In
-       </a>
-     </p>
-     ```
-
-   - Confirm Signup Email Template (if email confirmation is enabled):
-
-     ```html
-     <h2>Confirm your email</h2>
-     <p>Follow this link to confirm your email:</p>
-     <p>
-       <a
-         href="{{ .SiteURL }}/auth/callback?token_hash={{ .TokenHash }}&type=signup&next=/dashboard"
-       >
-         Confirm Email
-       </a>
-     </p>
-     ```
-
-   ### Where to Find Each Value in Supabase:
-
-   | Variable                        | Location in Supabase Dashboard                                       |
-   | ------------------------------- | -------------------------------------------------------------------- |
-   | `NEXT_PUBLIC_SUPABASE_URL`      | Project Settings → API → Project URL                                 |
-   | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Project Settings → API → Project API keys → `anon` public            |
-   | `DATABASE_URL`                  | Project Settings → Database → Connection string → Connection pooling |
-   | `DIRECT_URL`                    | Project Settings → Database → Connection string → Direct connection  |
-
-5. Security Settings:
-
-   - Rate Limiting (Recommended):
-
-     **Path:** `Authentication → Providers → Email`
-
-     | Setting                     | Recommended Value     |
-     | :-------------------------- | :-------------------- |
-     | OTP Expiration              | 3600 seconds (1 hour) |
-     | OTP Length                  | 6 digits              |
-     | Max Frequency (Magic Links) | 60 seconds            |
-     | Max Frequency (OTP)         | 60 seconds            |
-
-   - CORS Settings:
-
-     **Path:** `Project Settings → API`
-
-     Add your domains:
-
-     ```bash
-     http://localhost:3000
-     https://your-production-domain.com
-     ```
-
-### 4.4. Row Level Security (RLS) Setup
-
-**Decision Matrix for RLS:**
-
-- **Scenario A:** Starting Fresh (Testing/Development)
-
-  If you have no production users or can reset all users, you can clear existing data and enable RLS.
-
-  ```sql
-  -- WARNING: This deletes ALL the rows in existing tables!
-  BEGIN;
-
-  TRUNCATE TABLE
-    public."OrganizationInvite",
-    public."Project",
-    public."OrganizationMember",
-    public."Subscription",
-    public."Organization",
-    public."User"
-  RESTART IDENTITY CASCADE;
-
-  TRUNCATE TABLE auth.users CASCADE;
-
-  COMMIT;
-  ```
-
-  Then proceed to enable RLS.
-
-- **Scenario B:** You Have Existing Kinde Users (Migration)
-
-  If you are migrating from Kinde Auth and have existing users with Kinde IDs `(kp_xxx format)`, do not enable RLS yet.
-  Supabase Auth will create new users with UUIDs, and RLS will block your old users. Plan for parallel migration or force re-registration after Supabase Auth is fully functional.
-
-- **Scenario C:** No Users Yet (Clean Slate)
-  If this is a brand new project, proceed directly to enabling RLS.
-
-**Enable RLS Scripts:**
-
-Run these in the Supabase SQL Editor in the exact order shown
-
-```sql
-ALTER TABLE "User" ENABLE ROW LEVEL SECURITY;
-DROP POLICY IF EXISTS "Users can view own data" ON "User";
-CREATE POLICY "Users can view own data" ON "User"
-  FOR SELECT
-  USING ((auth.uid())::uuid = id::uuid);
-
-DROP POLICY IF EXISTS "Users can update own data" ON "User";
-CREATE POLICY "Users can update own data" ON "User"
-  FOR UPDATE
-  USING ((auth.uid())::uuid = id::uuid);
-
-DROP POLICY IF EXISTS "Users can insert own data" ON "User";
-CREATE POLICY "Users can insert own data" ON "User"
-  FOR INSERT
-  WITH CHECK ((auth.uid())::uuid = id::uuid);
-
-DROP POLICY IF EXISTS "Service role has full access" ON "User";
-CREATE POLICY "Service role has full access" ON "User"
-  FOR ALL
-  USING (auth.role() = 'service_role');
-
-ALTER TABLE "Subscription" ENABLE ROW LEVEL SECURITY;
-DROP POLICY IF EXISTS "Users can view their own subscription" ON "Subscription";
-CREATE POLICY "Users can view their own subscription" ON "Subscription"
-  FOR SELECT
-  USING ((auth.uid())::uuid = "userId"::uuid);
-
-DROP POLICY IF EXISTS "Users can update their own subscription" ON "Subscription";
-CREATE POLICY "Users can update their own subscription" ON "Subscription"
-  FOR UPDATE
-  USING ((auth.uid())::uuid = "userId"::uuid);
-
-ALTER TABLE "Organization" ENABLE ROW LEVEL SECURITY;
-DROP POLICY IF EXISTS "Org: select by membership" ON "Organization";
-CREATE POLICY "Org: select by membership" ON "Organization"
-  FOR SELECT
-  USING (
-    EXISTS (
-      SELECT 1 FROM "OrganizationMember" m
-      WHERE m."organizationId" = "Organization".id
-        AND m."userId"::uuid = (auth.uid())::uuid
-    )
-  );
-
-DROP POLICY IF EXISTS "Org: insert by authenticated" ON "Organization";
-CREATE POLICY "Org: insert by authenticated" ON "Organization"
-  FOR INSERT
-  WITH CHECK ((auth.uid())::uuid IS NOT NULL);
-
-DROP POLICY IF EXISTS "Org: update by owner_or_admin" ON "Organization";
-CREATE POLICY "Org: update by owner_or_admin" ON "Organization"
-  FOR UPDATE
-  USING (
-    EXISTS (
-      SELECT 1 FROM "OrganizationMember" m
-      WHERE m."organizationId" = "Organization".id
-        AND m."userId"::uuid = (auth.uid())::uuid
-        AND m."role"::text IN ('OWNER','ADMIN')
-    )
-  );
-
-DROP POLICY IF EXISTS "Org: delete by owner" ON "Organization";
-CREATE POLICY "Org: delete by owner" ON "Organization"
-  FOR DELETE
-  USING (
-    EXISTS (
-      SELECT 1 FROM "OrganizationMember" m
-      WHERE m."organizationId" = "Organization".id
-        AND m."userId"::uuid = (auth.uid())::uuid
-        AND m."role"::text = 'OWNER'
-    )
-  );
-
-DROP POLICY IF EXISTS "Org: service role" ON "Organization";
-CREATE POLICY "Org: service role" ON "Organization"
-  FOR ALL
-  USING (auth.role() = 'service_role');
-
-ALTER TABLE "OrganizationMember" ENABLE ROW LEVEL SECURITY;
-
-DROP POLICY IF EXISTS "OrgMember: select in same org" ON "OrganizationMember";
-CREATE POLICY "OrgMember: select in same org" ON "OrganizationMember"
-  FOR SELECT
-  USING (
-    EXISTS (
-      SELECT 1 FROM "OrganizationMember" m2
-      WHERE m2."organizationId" = "OrganizationMember"."organizationId"
-        AND m2."userId"::uuid = (auth.uid())::uuid
-    )
-  );
-
-DROP POLICY IF EXISTS "OrgMember: insert by owner_or_admin" ON "OrganizationMember";
-CREATE POLICY "OrgMember: insert by owner_or_admin" ON "OrganizationMember"
-  FOR INSERT
-  WITH CHECK (
-    EXISTS (
-      SELECT 1 FROM "OrganizationMember" m2
-      WHERE m2."organizationId" = "OrganizationMember"."organizationId"
-        AND m2."userId"::uuid = (auth.uid())::uuid
-        AND m2."role"::text IN ('OWNER','ADMIN')
-    )
-  );
-
-DROP POLICY IF EXISTS "OrgMember: update by owner_or_admin" ON "OrganizationMember";
-CREATE POLICY "OrgMember: update by owner_or_admin" ON "OrganizationMember"
-  FOR UPDATE
-  USING (
-    EXISTS (
-      SELECT 1 FROM "OrganizationMember" m2
-      WHERE m2."organizationId" = "OrganizationMember"."organizationId"
-        AND m2."userId"::uuid = (auth.uid())::uuid
-        AND m2."role"::text IN ('OWNER','ADMIN')
-    )
-  );
-
-DROP POLICY IF EXISTS "OrgMember: delete by owner_or_admin" ON "OrganizationMember";
-CREATE POLICY "OrgMember: delete by owner_or_admin" ON "OrganizationMember"
-  FOR DELETE
-  USING (
-    EXISTS (
-      SELECT 1 FROM "OrganizationMember" m2
-      WHERE m2."organizationId" = "OrganizationMember"."organizationId"
-        AND m2."userId"::uuid = (auth.uid())::uuid
-        AND m2."role"::text IN ('OWNER','ADMIN')
-    )
-  );
-
-DROP POLICY IF EXISTS "OrgMember: service role" ON "OrganizationMember";
-CREATE POLICY "OrgMember: service role" ON "OrganizationMember"
-  FOR ALL
-  USING (auth.role() = 'service_role');
-
-ALTER TABLE "Project" ENABLE ROW LEVEL SECURITY;
-
-DROP POLICY IF EXISTS "Project: select by membership" ON "Project";
-CREATE POLICY "Project: select by membership" ON "Project"
-  FOR SELECT
-  USING (
-    EXISTS (
-      SELECT 1 FROM "OrganizationMember" m
-      WHERE m."organizationId" = "Project"."organizationId"
-        AND m."userId"::uuid = (auth.uid())::uuid
-    )
-  );
-
-DROP POLICY IF EXISTS "Project: insert by owner_or_admin" ON "Project";
-CREATE POLICY "Project: insert by owner_or_admin" ON "Project"
-  FOR INSERT
-  WITH CHECK (
-    EXISTS (
-      SELECT 1 FROM "OrganizationMember" m
-      WHERE m."organizationId" = "Project"."organizationId"
-        AND m."userId"::uuid = (auth.uid())::uuid
-        AND m."role"::text IN ('OWNER','ADMIN')
-    )
-  );
-
-DROP POLICY IF EXISTS "Project: update by owner_or_admin" ON "Project";
-CREATE POLICY "Project: update by owner_or_admin" ON "Project"
-  FOR UPDATE
-  USING (
-    EXISTS (
-      SELECT 1 FROM "OrganizationMember" m
-      WHERE m."organizationId" = "Project"."organizationId"
-        AND m."userId"::uuid = (auth.uid())::uuid
-        AND m."role"::text IN ('OWNER','ADMIN')
-    )
-  );
-
-DROP POLICY IF EXISTS "Project: delete by owner_or_admin" ON "Project";
-CREATE POLICY "Project: delete by owner_or_admin" ON "Project"
-  FOR DELETE
-  USING (
-    EXISTS (
-      SELECT 1 FROM "OrganizationMember" m
-      WHERE m."organizationId" = "Project"."organizationId"
-        AND m."userId"::uuid = (auth.uid())::uuid
-        AND m."role"::text IN ('OWNER','ADMIN')
-    )
-  );
-
-DROP POLICY IF EXISTS "Project: service role" ON "Project";
-CREATE POLICY "Project: service role" ON "Project"
-  FOR ALL
-  USING (auth.role() = 'service_role');
-
-ALTER TABLE "OrganizationInvite" ENABLE ROW LEVEL SECURITY;
-
-DROP POLICY IF EXISTS "Invite: select by owner_admin_or_inviter_or_invitee" ON "OrganizationInvite";
-CREATE POLICY "Invite: select by owner_admin_or_inviter_or_invitee" ON "OrganizationInvite"
-  FOR SELECT
-  USING (
-    EXISTS (
-      SELECT 1 FROM "OrganizationMember" m
-      WHERE m."organizationId" = "OrganizationInvite"."organizationId"
-        AND m."userId"::uuid = (auth.uid())::uuid
-        AND m."role"::text IN ('OWNER','ADMIN')
-    )
-    OR "OrganizationInvite"."inviterId"::uuid = (auth.uid())::uuid
-    OR "OrganizationInvite"."email" = (auth.jwt() ->> 'email')
-  );
-
-DROP POLICY IF EXISTS "Invite: insert by owner_or_admin" ON "OrganizationInvite";
-CREATE POLICY "Invite: insert by owner_or_admin" ON "OrganizationInvite"
-  FOR INSERT
-  WITH CHECK (
-    EXISTS (
-      SELECT 1 FROM "OrganizationMember" m
-      WHERE m."organizationId" = "OrganizationInvite"."organizationId"
-        AND m."userId"::uuid = (auth.uid())::uuid
-        AND m."role"::text IN ('OWNER','ADMIN')
-    )
-  );
-
-DROP POLICY IF EXISTS "Invite: update by owner_admin_or_invitee_or_inviter" ON "OrganizationInvite";
-CREATE POLICY "Invite: update by owner_admin_or_invitee_or_inviter" ON "OrganizationInvite"
-  FOR UPDATE
-  USING (
-    EXISTS (
-      SELECT 1 FROM "OrganizationMember" m
-      WHERE m."organizationId" = "OrganizationInvite"."organizationId"
-        AND m."userId"::uuid = (auth.uid())::uuid
-        AND m."role"::text IN ('OWNER','ADMIN')
-    )
-    OR "OrganizationInvite"."inviterId"::uuid = (auth.uid())::uuid
-    OR "OrganizationInvite"."email" = (auth.jwt() ->> 'email')
-  );
-
-DROP POLICY IF EXISTS "Invite: delete by owner_or_admin" ON "OrganizationInvite";
-CREATE POLICY "Invite: delete by owner_or_admin" ON "OrganizationInvite"
-  FOR DELETE
-  USING (
-    EXISTS (
-      SELECT 1 FROM "OrganizationMember" m
-      WHERE m."organizationId" = "OrganizationInvite"."organizationId"
-        AND m."userId"::uuid = (auth.uid())::uuid
-        AND m."role"::text IN ('OWNER','ADMIN')
-    )
-    OR "OrganizationInvite"."inviterId"::uuid = (auth.uid())::uuid
-  );
-
-DROP POLICY IF EXISTS "Invite: service role" ON "OrganizationInvite";
-CREATE POLICY "Invite: service role" ON "OrganizationInvite"
-  FOR ALL
-  USING (auth.role() = 'service_role');
-
+Key groups:
+
+- Supabase:
+  - `NEXT_PUBLIC_SUPABASE_URL`
+  - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+  - `DATABASE_URL`
+  - `DIRECT_URL`
+
+- Stripe:
+  - `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY`
+  - `STRIPE_SECRET_KEY`
+  - `STRIPE_PRICE_ID`
+  - `STRIPE_WEBHOOK_SECRET` (per environment)
+
+- App:
+  - `NEXT_PUBLIC_APP_URL` / `PRODUCTION_URL`
+  - `SUPPORT_EMAIL`, `APP_EMAIL`
+  - `CRON_SECRET` – secret key for CRON endpoints
+  - `SUPER_ADMIN_EMAILS` – comma-separated list of emails with super admin access
+
+- Email (Resend / SMTP):
+  - `RESEND_API_KEY` or SMTP credentials (depending on how you configure `sendBasicEmail`)
+
+### 3. Database & Prisma
+
+This project uses Supabase Postgres with Prisma as the ORM.
+
+1. In Supabase, go to **Project Settings → Database → Connection String**.
+2. Copy:
+   - **Connection pooling** URL → `DATABASE_URL`
+   - **Direct connection** URL → `DIRECT_URL`
+3. Confirm `prisma/schema.prisma` matches the schema you want for your SaaS.
+4. Run initial migration and generate the client:
+
+```bash
+npx prisma migrate dev --name init
+npx prisma generate
 ```
 
-**Verify RLS:**
+To inspect the DB:
 
-After enabling RLS, test it in the Supabase SQL Editor:
+```bash
+npx prisma studio
+```
+
+#### Optional: Seed Data
+
+The README previously included raw SQL seeding examples. You can adapt those to:
+
+- Create sample users (including potential super admin emails)
+- Create a few organizations, members, subscriptions, and projects
+
+You can run SQL directly in the Supabase SQL editor using your Prisma model names (wrapped in quotes).
+
+### 4. Supabase Auth Setup
+
+In the Supabase dashboard:
+
+#### 4.1 API Keys
+
+- **Path**: `Project Settings → API`
+- Set in `.env`:
+
+```bash
+NEXT_PUBLIC_SUPABASE_URL=...
+NEXT_PUBLIC_SUPABASE_ANON_KEY=...
+DATABASE_URL=...
+DIRECT_URL=...
+```
+
+#### 4.2 Email Provider
+
+- **Path**: `Authentication → Providers → Email`
+- Recommended config:
+
+| Setting                     | Recommended                              |
+| --------------------------- | ---------------------------------------- |
+| Enable Email provider       | Enabled                                  |
+| Confirm email               | Disabled (dev) / Enabled (prod)         |
+| Secure email change         | Enabled                                  |
+| Double confirm email change | Enabled                                  |
+
+#### 4.3 Google OAuth
+
+1. Go to Google Cloud Console → **APIs & Services → Credentials**.
+2. Create an OAuth 2.0 client (Web application).
+3. Authorized JavaScript origins:
+
+```bash
+http://localhost:3000
+https://your-production-domain.com
+```
+
+4. Authorized redirect URIs:
+
+```bash
+https://YOUR_PROJECT_REF.supabase.co/auth/v1/callback
+```
+
+5. Paste Client ID and Secret into:
+   - Supabase → `Authentication → Providers → Google`
+
+#### 4.4 URL Configuration
+
+- **Path**: `Authentication → URL Configuration`
+
+Set:
+
+- Site URL (production):
+
+```bash
+https://your-production-domain.com
+```
+
+- For local dev, also use:
+
+```bash
+http://localhost:3000
+```
+
+Redirect URLs to add:
+
+```bash
+http://localhost:3000
+http://localhost:3000/auth/callback
+http://localhost:3000/dashboard
+https://your-production-domain.com
+https://your-production-domain.com/auth/callback
+https://your-production-domain.com/dashboard
+```
+
+#### 4.5 Email Templates
+
+Magic link (sign-in) template:
+
+```html
+<h2>Magic Link</h2>
+<p>Click this link to sign in:</p>
+<p>
+  <a
+    href="{{ .SiteURL }}/auth/callback?token_hash={{ .TokenHash }}&type=email&next=/dashboard"
+  >
+    Sign In
+  </a>
+</p>
+```
+
+Confirm signup template:
+
+```html
+<h2>Confirm your email</h2>
+<p>Follow this link to confirm your email:</p>
+<p>
+  <a
+    href="{{ .SiteURL }}/auth/callback?token_hash={{ .TokenHash }}&type=signup&next=/dashboard"
+  >
+    Confirm Email
+  </a>
+</p>
+```
+
+### 5. Row Level Security (RLS)
+
+RLS is required to ensure tenant isolation. The policies are tailored to the Prisma models in this repo.
+
+High-level approach:
+
+- Enable RLS on all tenant tables (`User`, `Organization`, `OrganizationMember`, `Project`, `Subscription`)
+- Use policies so users only see data for organizations where they are members
+- Use `OWNER`/`ADMIN` roles for mutating operations
+- Use `auth.role() = 'service_role'` for server‑side maintenance and Stripe webhooks
+
+For full, copy‑pastable SQL policies tailored to this schema, see `RLS.md` in the project root. That file contains the complete set of `ALTER TABLE` and `CREATE POLICY` statements you can run in the Supabase SQL editor.
+
+When starting on a **new project** (no existing production users):
+
+1. (Optional but recommended for clean local/dev) Truncate tenant tables:
 
 ```sql
--- This should return your authenticated user only (run while logged in via Supabase Auth)
+BEGIN;
+
+TRUNCATE TABLE
+  public."OrganizationInvite",
+  public."Project",
+  public."OrganizationMember",
+  public."Subscription",
+  public."Organization",
+  public."User"
+RESTART IDENTITY CASCADE;
+
+TRUNCATE TABLE auth.users CASCADE;
+
+COMMIT;
+```
+
+2. Apply the RLS scripts from `RLS.md` (or your own) to:
+   - Enable RLS on each table
+   - Create policies:
+     - `Org: select by membership`
+     - `Org: insert by authenticated`
+     - `Org: update by owner_or_admin`
+     - `Org: delete by owner`
+     - `OrgMember: select in same org`, etc.
+     - `Project: select by membership`, `Project: insert/update by owner_or_admin`
+
+To verify RLS:
+
+```sql
+-- When logged in as a test user (via Supabase SQL editor)
 SELECT * FROM "User" WHERE id::uuid = auth.uid();
 
--- This should return nothing (RLS blocks it), unless you're using service_role key
+-- Should be empty unless using service_role
 SELECT * FROM "User" LIMIT 10;
 ```
 
-## 5. Strip Setup (Test Mode)
+### 6. Stripe Setup
 
-Integrate Stripe for handling subscriptions and payments.
+1. Go to the Stripe dashboard and enable **Test mode**.
+2. Create a **Product** and **Price** that matches your plan (e.g., Pro monthly).
+3. Copy:
+   - Publishable key → `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY`
+   - Secret key → `STRIPE_SECRET_KEY`
+   - Price ID → `STRIPE_PRICE_ID`
 
-### 5.1. Get Your Stripe API Keys
+Set these in `.env`.
 
-1. Sign in to your Stripe Dashboard.
-2. Ensure you are in Test mode (toggle at the top right).
-3. Navigate to Developers > API keys.
-4. Copy your `Publishable key (pk*test*...)` and `Secret key (sk*test*...)`.
+#### 6.1 Local Webhook Setup
 
-   Update Your `.env` File:
+Install Stripe CLI and log in:
 
-   ```bash
-   # Stripe Configuration
-   NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_test_...
-   STRIPE_SECRET_KEY=sk_test_...
-   ```
+```bash
+stripe login
+```
 
-### 5.2 Create a Product and Price
+Forward webhooks to your dev server (with `npm run dev` running):
 
-1. In the Stripe Dashboard, go to the Products section.
-2. Click + Add product.
-3. Fill in details (e.g., Name: "SaaS Kit Pro").
-4. Under "Pricing", set:
-   - Pricing model: Standard pricing
-   - Price: e.g., 30
-   - Currency: e.g., USD
-   - Billing period: Recurring > Monthly
-5. Click Save product.
-6. Copy the Price ID (e.g., price\_...) from the product's detail page.
-   Update Your .env File:
+```bash
+stripe listen --forward-to localhost:3000/api/webhook/stripe
+```
 
-   ```Env
-    # Stripe Price ID
-    STRIPE_PRICE_ID=price_...
-   ```
+Stripe CLI will print a `whsec_...` signing secret; set:
 
-### 5.3. Set Up Webhooks for Local Development
+```bash
+STRIPE_WEBHOOK_SECRET=whsec_...
+```
 
-The Stripe CLI will forward webhook events to your local server.
+### 7. CRON Jobs & Maintenance
 
-1.  Install the Stripe CLI: Follow instructions from Stripe CLI documentation.
-2.  Log in to the Stripe CLI:
-    ```bash
-    stripe login
-    ```
-3.  Forward Webhook Events:
+The project uses HTTP‑based CRON endpoints protected by `CRON_SECRET`:
 
-    While your Next.js dev server is running, open a new terminal window and run:
+- `/api/cron/notify` – renewal and credit exhaustion reminders
+- `/api/cron/daily-maintenance` – refill & cleanup tasks
 
-    ```bash
-    stripe listen --forward-to localhost:3000/api/webhook/stripe
-    ```
-
-4.  Get Your Webhook Signing Secret:
-
-    The CLI will output a webhook signing secret (e.g., whsec\_...). Copy this secret.
-
-    Update Your `.env` File:
-
-    ```bash
-    # Stripe Webhook Secret (for local development)
-    STRIPE_WEBHOOK_SECRET=whsec_...
-    ```
-
-5.  Run the Development Server
-
-    ```bash
-    npm run dev
-    ```
-
-Open `http://localhost:3000` in your browser to see the result.
-
-## CRON SECRET
-
-Run:
+Generate a strong CRON secret:
 
 ```bash
 node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
 ```
 
-Add the generated secret to your `.env` file:
+Set:
 
 ```bash
-CRON_SECRET=YOUR-GENERATED-SECRET
+CRON_SECRET=your-generated-secret
 ```
 
-#### **TEST CREDIT EXHAUSTION EMAIL**
+#### 7.1 Local Testing
 
-Run:
+Notifications:
 
 ```bash
-curl -H "Authorization: Bearer <CRON_SECRET>" http://localhost:3000/api/cron/notify
+curl -H "Authorization: Bearer <CRON_SECRET>" \
+  http://localhost:3000/api/cron/notify
 ```
 
-#### **TEST Reminder Emails: 2-Day Renewal Reminder / Credits Exhaustion Reminder Email**
+Daily maintenance:
 
-- 2‑day renewal reminder:
-  - Ensure a user’s subscription is active and `currentPeriodEnd` is exactly 2 days ahead.
-  - Invoke: `curl -H "Authorization: Bearer <CRON_SECRET>" http://localhost:3000/api/cron/notify`
-  - Expect details to include { reason: 'days', daysLeft: 2 } .
+```bash
+curl -H "Authorization: Bearer <CRON_SECRET>" \
+  http://localhost:3000/api/cron/daily-maintenance
+```
 
-- Credits Exhaustion reminder:
+Expected behavior (example):
 
-  - Set user credits to `CREDIT_REMINDER_THRESHOLD - 1` and `creditsReminderThresholdSent` to false .
-  - Invoke endpoint; expect details entry {"totalCandidates":0,"creditCandidates":1,"sent":0,"details":[{"email":",<email>","reason":"credits"}]} .
-  - It flips creditsReminderThresholdSent to true after sending.
+- Renewal reminder when `currentPeriodEnd` is 2 days away
+- Credit exhaustion reminder when credits fall below a threshold and no reminder was sent
+- Daily refill of free credits and cleanup of deleted orgs
 
-#### **TEST Daily Maintenance:**
+#### 7.2 Vercel CRON Configuration
 
-  - Invoke: `curl -H "Authorization: Bearer <CRON_SECRET>" http://localhost:3000/api/cron/daily-maintenance`
-  - Expect details to include {"success":true,"orgsRefilled":0,"orgsCleanedUp":1} .
+`vercel.json:1` includes:
 
-- `vercel.json` for setting up cron jobs in vercel
-
-  ```bash
+```json
+{
+  "crons": [
     {
-      "crons": [
-        {
-          "path": "/api/cron/daily-maintenance",
-          "schedule": "0 0 * * *"
-        },
-        {
-          "path": "/api/cron/notify",
-          "schedule": "0 * * * *"
-        }
-      ]
+      "path": "/api/cron/daily-maintenance",
+      "schedule": "0 0 * * *"
+    },
+    {
+      "path": "/api/cron/notify",
+      "schedule": "0 9 * * *"
     }
-  ```
+  ]
+}
+```
 
-- 0 0 \* \* \* = Run at midnight (Daily).
-- 0 \* \* \* \* = Run at minute 0 of every hour (Hourly).
+You can adjust the schedules as needed:
+
+- `0 0 * * *` – every day at midnight
+- `0 9 * * *` – every day at 9:00
+
+### 8. Run the App
+
+```bash
+npm run dev
+```
+
+Visit:
+
+- `http://localhost:3000` – landing page / marketing
+- `http://localhost:3000/get-started` – onboarding
+- `http://localhost:3000/dashboard` – tenant dashboard
+- `http://localhost:3000/admin` – super admin dashboard (for super admin emails)
+
+---
+
+## Role Based Access Control (RBAC)
+
+### Roles
+
+Defined in `lib/constants.ts:158`:
+
+- `OWNER`
+- `ADMIN`
+- `MEMBER`
+
+### High-level Rules
+
+- `OWNER`
+  - Full control of the organization
+  - Can delete the organization
+  - Can invite/remove members
+  - Can transfer ownership
+
+- `ADMIN`
+  - Manages most org settings
+  - Can invite/remove/update members (excluding owner)
+  - Can create/update/delete projects
+  - Cannot promote anyone to `OWNER` (must use transfer flow)
+
+- `MEMBER`
+  - Limited access
+  - Typically can create/update projects they are involved with
+  - Cannot change org settings or manage membership
+
+### Enforcement Examples
+
+- `updateMemberRoleAction` (`app/actions/organization.ts:68`)
+  - Checks the caller is at least `ADMIN` via `requireOrgRole`
+  - Prevents changes to `OWNER`
+  - Prevents setting a member to `OWNER`
+
+- `inviteMember` (`app/actions/organization.ts:122`)
+  - Requires `ADMIN`
+  - Applies rate limiting and pending invite caps
+
+- `updateOrganizationNameAction` (`app/actions/organization.ts:527`)
+  - Requires `ADMIN`
+
+- `deleteProject` (`app/actions/project.ts:76`)
+  - Resolves the project’s org
+  - Requires `ADMIN`
+
+### UI Behavior
+
+- `MemberRoleSelect` (`app/(dashboard)/_components/member-role-select.tsx:21`)
+  - Displays `OWNER` as read‑only text
+  - Prevents users from editing their own role
+  - Only `OWNER`/`ADMIN` see editable role selectors
+
+These patterns ensure that server‑side checks and client‑side behavior stay in sync.
+
+---
+
+## Super Admin Mode
+
+Super admin access is gated by the `SUPER_ADMIN_EMAILS` environment variable.
+
+### Enabling Super Admin Access
+
+1. Set:
+
+```bash
+SUPER_ADMIN_EMAILS=alice@example.com,bob@example.com
+```
+
+2. Ensure those emails exist as Supabase users and are also present in the `User` table.
+3. When such a user logs in and visits `/admin`, they are allowed into the super admin area.
+4. Non‑super‑admins visiting `/admin` are redirected back to `/dashboard`.
+
+Logic is implemented in `app/(super-admin)/layout.tsx:1`.
+
+### Super Admin Dashboard Capabilities
+
+Components under `app/(super-admin)/_components` provide:
+
+- Overview cards: total users, total organizations, active subscriptions
+- Revenue analytics: aggregated MRR, total revenue, breakdown by plan
+- User analytics: growth over time
+- System status: database connectivity, latency, basic health
+- Lists: users, organizations, subscriptions
+- Actions:
+  - Refresh data on demand
+  - Export CSV snapshot of stats
+
+Use this area for operational visibility and, if needed, for additional admin tooling.
+
+---
+
+## Testing Checklist
+
+This section is updated to reflect RBAC and the Super Admin dashboard.
+
+### Authentication & Onboarding
+
+- [ ] Email provider configured in Supabase
+- [ ] Google OAuth configured (client ID/secret set, redirect URIs added)
+- [ ] Magic link sign‑in works locally
+- [ ] Signup + confirm email flow works (if enabled)
+- [ ] `/get-started` onboarding completes and redirects to `/dashboard`
+- [ ] Logout clears session and redirects correctly
+
+### Organizations, Projects & RBAC
+
+- [ ] New users get a default organization and project (if applicable)
+- [ ] Users can create additional organizations until `MAX_ORGANIZATIONS_PER_USER` is hit
+- [ ] Users can create projects until `MAX_PROJECTS_PER_ORGANIZATION` is hit
+- [ ] Invites:
+  - [ ] Owners/Admins can invite members with different roles
+  - [ ] Pending invite limit per org enforced (`MAX_PENDING_INVITES_PER_ORG`)
+  - [ ] Disposable emails are rejected when `CHECK_DISPOSABLE_EMAILS` is enabled
+- [ ] Role changes:
+  - [ ] Only `OWNER`/`ADMIN` can change member roles
+  - [ ] Owners cannot be modified via the role dropdown
+  - [ ] Users cannot change their own roles
+  - [ ] No path allows setting someone directly to `OWNER` except via ownership transfer (if implemented)
+- [ ] Authorization:
+  - [ ] `MEMBER` cannot access organization settings page
+  - [ ] `MEMBER` cannot invite or remove members
+  - [ ] `ADMIN` cannot delete organization (if that is reserved for `OWNER`)
+  - [ ] Unauthorized access attempts surface clear errors (and do not leak data)
+
+### Billing & Credits
+
+- [ ] Stripe product and price exist, and `STRIPE_PRICE_ID` is set
+- [ ] New subscriptions can be created and show up in Stripe dashboard
+- [ ] Webhook events correctly update `Subscription` and `Organization` records
+- [ ] Credits:
+  - [ ] Credits increment on successful payments (if implemented)
+  - [ ] Credit‑gated actions fail gracefully when out of credits
+  - [ ] Daily maintenance job refills free credits as designed
+- [ ] Renewal & credit reminder emails:
+  - [ ] 2‑day renewal reminder sent when criteria match
+  - [ ] Credit exhaustion reminder sent once per threshold
+
+### Super Admin Dashboard
+
+- [ ] `SUPER_ADMIN_EMAILS` set and matches at least one user email
+- [ ] Super admin user can access `/admin`
+- [ ] Non‑super‑admin users are redirected away from `/admin`
+- [ ] Overview cards show realistic counts (users, orgs, revenue)
+- [ ] Revenue and user analytics charts render without errors
+- [ ] System status panel shows database as online and reasonable latency
+- [ ] CSV export downloads with correct columns and values
+
+### Security & RLS
+
+- [ ] RLS enabled on all tenant tables (`User`, `Organization`, `OrganizationMember`, `Project`, `Subscription`, `OrganizationInvite`)
+- [ ] A user cannot query organizations they are not a member of (tested via Supabase SQL editor)
+- [ ] Service role key is only used on server‑side (e.g. API routes, cron jobs, webhooks)
+- [ ] Environment variables are set correctly for production and are **not** exposed accidentally
+- [ ] Rate limiting and abuse protections:
+  - [ ] Invite rate limit enforced (time‑based)
+  - [ ] Pending invite max enforced
+
+---
 
 ## Useful Commands
 
-This section provides a quick reference for common commands and additional guides.
+### General
 
-### General Commands
+- `npm run dev` – Start development server (Next.js + API routes)
+- `npm run build` – Build production assets
+- `npm run start` – Start production server
+- `npm run lint` – Run ESLint
 
-- `npm run dev`: Starts the development server.
-- `npm run build`: Builds the application for production.
-- `npm run start`: Starts the production server.
-- `npm run lint`: Lints the codebase.
+### Prisma
 
-### Prisma (Database) Commands
+- `npx prisma migrate dev --name <name>` – Create & apply new migration locally
+- `npx prisma migrate deploy` – Apply migrations in production
+- `npx prisma generate` – Regenerate Prisma client
+- `npx prisma studio` – Visual DB browser
+- `npx prisma migrate reset` – Reset local DB (drops data)
 
-- `npx prisma migrate dev --name <migration_name>`: Creates and applies a new database migration.
-- `npx prisma studio`: Opens a browser-based GUI to view and edit your database.
-- `npx prisma generate`: Generates/updates the Prisma Client based on your schema.
-- `npx prisma migrate reset`: Resets the development database (deletes all data).
-- `npx prisma migrate deploy`: Applies pending migrations to a production database.
+### Stripe (Local)
 
-### Stripe (Local Development) Commands
+- `stripe login` – Authenticate Stripe CLI
+- `stripe listen --forward-to localhost:3000/api/webhook/stripe` – Forward events to dev
 
-- `stripe login`: Connects the Stripe CLI to your Stripe account.
-- `stripe listen --forward-to localhost:3000/api/webhook/stripe`: Forwards webhook events from Stripe to your local server.
-
-### Supabase Connection Test (in Node.js)
+### Supabase Quick Test
 
 ```bash
 node -e "const { createClient } = require('@supabase/supabase-js'); const s = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY); s.auth.getSession().then(console.log);"
 ```
 
-## 🚀 Deployment
+---
 
-The easiest way to deploy your Next.js app is to use the Vercel Platform.
+## Deployment
 
-1. Push your code to a Git repository (GitHub, GitLab, Bitbucket)
-2. Import your project into Vercel.
-3. Add all your environment variables from your .env file to the Vercel project settings.
-   - nsure DATABASE_URL and DIRECT_URL are correct.
-   - STRIPE_WEBHOOK_SECRET for production will be different from local (see Stripe Dashboard for production webhook secrets).
-   - Update PRODUCTION_URL to your Vercel domain.
-4. Deploy!
+Recommended platform: **Vercel**.
 
-For more details, check out the [Next.js deployment documentation](https://nextjs.org/docs/deployment).
+1. Push your repository to GitHub / GitLab / Bitbucket.
+2. Import the repo into Vercel.
+3. In Vercel → Project Settings:
+   - Add all environment variables from `.env`
+   - Ensure `DATABASE_URL` and `DIRECT_URL` point to the **production** Supabase project
+   - Set `STRIPE_WEBHOOK_SECRET` from Stripe’s **production** webhook
+   - Configure `NEXT_PUBLIC_SUPABASE_URL` / `NEXT_PUBLIC_SUPABASE_ANON_KEY` for production
+   - Set `PRODUCTION_URL` (or equivalent) to your Vercel domain
+   - Set `CRON_SECRET` and `SUPER_ADMIN_EMAILS`
+4. Deploy.
 
-## Testing Checklist
+After deploy:
 
-### Before Going Live:
+- Run `npx prisma migrate deploy` against your production database (e.g. via Vercel CLI or a separate step).
+- Re-test critical flows using the [Testing Checklist](#testing-checklist).
 
-- [ ] ✅ Email provider enabled
-- [ ] ✅ Google OAuth configured with valid credentials
-- [ ] ✅ All redirect URLs added (local + production)
-- [ ] ✅ Email templates customized
-- [ ] ✅ Environment variables set
-- [ ] ✅ Database connection working
-- [ ] ✅ RLS policies configured
-- [ ] ✅ Test email login flow
-- [ ] ✅ Test Google OAuth flow
-- [ ] ✅ Test protected routes
-- [ ] ✅ Test logout functionality
-- [ ] ✅ Verify user creation in database
+---
 
-### Production Checklist:
+## Troubleshooting
 
-- [ ] ✅ Enable email confirmation (`Confirm email` setting)
-- [ ] ✅ Update Site URL to production domain
-- [ ] ✅ Add production redirect URLs
-- [ ] ✅ Update Google OAuth redirect URIs
-- [ ] ✅ Set production environment variables
-- [ ] ✅ Configure custom SMTP (optional, via Project Settings → Auth)
-- [ ] ✅ Set up monitoring/alerts
-- [ ] ✅ Test authentication in production
+### Auth Issues
 
-## Common Configuration Issues & Solutions
+- **Invalid redirect URL**
+  - Check Supabase `Authentication → URL Configuration`
+  - Ensure exact matches including protocol and trailing slash
 
-### Issue: "Invalid redirect URL"
+- **Google OAuth errors**
+  - Verify client ID/secret
+  - Confirm redirect URI matches exactly:
+    - `https://YOUR_PROJECT_REF.supabase.co/auth/v1/callback`
 
-**Solution:**
+- **Emails not sending**
+  - Check Resend / SMTP provider logs
+  - Verify API keys
+  - Ensure rate limits are not exceeded
+  - Confirm Supabase email templates are enabled
 
-- Verify the redirect URL is added to Authentication → URL Configuration
-- Ensure exact match (including http/https)
-- Check for trailing slashes
+### RBAC / Permission Errors
 
-### Issue: "Google OAuth returns error"
+- “Unauthorized” errors when performing org/project actions:
+  - Ensure the user is a member of the organization
+  - Confirm their role is high enough for the action
+  - Check `requireOrgRole` usage in the relevant action
 
-**Solution:**
+- Members seeing options they cannot use:
+  - Review `MemberRoleSelect` and related UI
+  - Ensure `can(role, action)` is used to gate destructive actions
 
-- Verify Client ID and Secret are correct
-- Check Authorized redirect URIs in Google Cloud Console
-- Ensure the callback URL matches exactly: `https://YOUR_PROJECT_REF.supabase.co/auth/v1/callback`
+### Super Admin
 
-### Issue: "Email not sending"
+- `/admin` redirects to `/dashboard` unexpectedly:
+  - Ensure logged-in user’s email is listed in `SUPER_ADMIN_EMAILS`
+  - Confirm the email matches exactly (case and whitespace)
 
-**Solution:**
+### Database & RLS
 
-- Check email rate limits not exceeded
-- Verify email templates are configured
-- Check Supabase auth logs: Authentication → Logs
-- Consider configuring custom SMTP for production
+- Queries returning no data unexpectedly:
+  - Inspect RLS policies in Supabase
+  - Temporarily test with `service_role` key (in a safe, non-client context) to isolate policy issues
 
-### Issue: "Users can't access protected routes"
-
-**Solution:**
-
-- Verify middleware is configured correctly
-- Check cookies are being set (browser DevTools)
-- Ensure redirect URLs include the destination route
-- Check session refresh in middleware
-
-## Post-Migration Steps
-
-### Update Google Cloud Console for Production
-
-When deploying to production, update your Google OAuth settings:
-
-1. Go to Google Cloud Console → Credentials
-2. Edit your OAuth 2.0 Client ID
-3. Add production authorized redirect URI:
-   ```
-   https://YOUR_PROJECT_REF.supabase.co/auth/v1/callback
-   ```
-4. Add production JavaScript origins:
-   ```
-   https://your-production-domain.com
-   ```
-
-### Custom Email Domain (Optional)
-
-For professional emails from your domain:
-
-1. Go to: Project Settings → Auth → SMTP Settings
-2. Configure your SMTP server details
-3. Test email delivery
-
-## Monitoring & Maintenance
-
-### Key Metrics to Monitor
-
-**Path:** `Authentication → Users`
-
-- Active users
-- Sign-up rate
-- Authentication method distribution
-
-**Path:** `Authentication → Logs`
-
-- Failed login attempts
-- OAuth errors
-- Rate limit hits
-
-### Regular Maintenance Tasks
-
-- Review and update RLS policies
-- Monitor authentication logs for suspicious activity
-- Update redirect URLs when adding new domains
-- Rotate API keys periodically (for service_role key)
-- Keep @supabase packages updated
-
-## Support Resources
-
-- **Supabase Documentation:** https://supabase.com/docs
-- **Auth Documentation:** https://supabase.com/docs/guides/auth
-- **Community Discord:** https://discord.supabase.com
-- **GitHub Issues:** https://github.com/supabase/supabase/issues
-- **Next.js deployment documentation** https://nextjs.org/docs/deployment
-
-## 📞 Contact
-
-- **GitHub**: [@mm-mazhar](https://github.com/mm-mazhar)
-- **Website**: [mm-mazhar.github.io](https://mm-mazhar.github.io/mmazhar.github.io/)
-- **Email for Business Inquiries**: mazqoty.01@gmail.com
+If you customize the schema or flows heavily, update this README to match your new behavior so that future you—and your team—always have a single, accurate source of truth.

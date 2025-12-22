@@ -39,6 +39,11 @@ model Subscription {
   updatedAt            DateTime @updatedAt
   organization         Organization? @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   organizationId       String?       @unique
+
+  @@index([status])
+  @@index([planId])
+  @@index([createdAt(sort: Desc)])
+  @@index([organizationId])
 }
 
 enum OrganizationRole {

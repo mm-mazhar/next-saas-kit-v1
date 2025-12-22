@@ -152,7 +152,7 @@ export const PRICING_PLANS: PricingPlan[] = [
 export const RENEWAL_REMINDER_DAYS_BEFORE = 32
 export const CREDIT_REMINDER_THRESHOLD = 10
 export const ENABLE_EMAILS = true
-export const CHECK_DISPOSABLE_EMAILS = true
+export const CHECK_DISPOSABLE_EMAILS = false
 export const INVITE_EXPIRATION_MS = 60 * 60 * 1000
 
 // ✅ Multi-Tenancy Limits & Configuration
