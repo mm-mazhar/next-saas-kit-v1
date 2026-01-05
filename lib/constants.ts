@@ -80,14 +80,12 @@ export const APP_PHONE_2 = `+1 xxx xxxx` as string
 // ✅ Pricing
 export const STRIPE_PRICE_ID_1 = (process.env.STRIPE_PRICE_ID_1 || '') as string
 export const STRIPE_PRICE_ID_2 = (process.env.STRIPE_PRICE_ID_2 || '') as string
-export const STRIPE_PRICE_ID_3 = (process.env.STRIPE_PRICE_ID_3 || '') as string
 
 // A new type definition for a pricing plan
 export const PRICE_HEADING = `Pricing that scales with your interests` as string
 export const PLAN_IDS = {
   free: 'RZ5wzP!PwpF%gj',       // random generated
-  payg: 'X6t!RNJPq#7Jdb',       // random generated
-  pro: 'UyWYzJ#FPJ7&Xg',       // random generated
+  pro: 'X6t!RNJPq#7Jdb',       // random generated
   proplus: 'Y9vLm#K2sP!Q4w'    // random generated
 } as const
 export type PlanId = (typeof PLAN_IDS)[keyof typeof PLAN_IDS]
@@ -120,9 +118,9 @@ export const PRICING_PLANS: PricingPlan[] = [
     stripePriceId: undefined,
   },
   {
-    id: PLAN_IDS.payg,
-    title: 'Pay As You Go',
-    price: '5',
+    id: PLAN_IDS.pro,
+    title: 'Pro',
+    price: '6.99',
     priceSuffix: '/mo',
     description: 'Lorem ipsum dolor sit amet',
     credits: 50,
@@ -135,9 +133,9 @@ export const PRICING_PLANS: PricingPlan[] = [
     stripePriceId: STRIPE_PRICE_ID_1,
   },
   {
-    id: PLAN_IDS.pro,
-    title: 'Pro',
-    price: '15',
+    id: PLAN_IDS.proplus,
+    title: 'Pro Plus',
+    price: '21.99',
     priceSuffix: '/mo',
     description: 'Lorem ipsum dolor sit amet',
     credits: 100,
@@ -148,22 +146,7 @@ export const PRICING_PLANS: PricingPlan[] = [
       'Lorem ipsum dolor sit amet, consetetur sadipscing',
     ],
     stripePriceId: STRIPE_PRICE_ID_2,
-  },
-  {
-    id: PLAN_IDS.proplus,
-    title: 'Pro Plus',
-    price: '20',
-    priceSuffix: '/mo',
-    description: 'Lorem ipsum dolor sit amet',
-    credits: 150,
-    features: [
-      'Lorem ipsum dolor sit amet, consetetur sadipscing',
-      'Lorem ipsum dolor sit amet, consetetur sadipscing',
-      'Lorem ipsum dolor sit amet, consetetur sadipscing',
-      'Lorem ipsum dolor sit amet, consetetur sadipscing',
-    ],
-    stripePriceId: STRIPE_PRICE_ID_3,
-  },
+  },  
 ]
 
 export const RENEWAL_REMINDER_DAYS_BEFORE = 32

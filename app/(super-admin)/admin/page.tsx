@@ -61,8 +61,8 @@ async function getAdminData() {
     monthIndexMap[key] = 11 - i;
   }
 
-  const proPlan = PRICING_PLANS.find(p => p.id === PLAN_IDS.pro);
-  const paygPlan = PRICING_PLANS.find(p => p.id === PLAN_IDS.payg);
+  const proPlan = PRICING_PLANS.find(p => p.id === PLAN_IDS.proplus);
+  const paygPlan = PRICING_PLANS.find(p => p.id === PLAN_IDS.pro);
   const paygPrice = Number(paygPlan?.price ?? 5);
 
   const [subRevenueRows, paygRevenueRows, userGrowthRows] = await Promise.all([

@@ -39,7 +39,7 @@ export default function PricingComponent({
     mode === 'billing' && (currentPlanId === null || currentPlanId === PLAN_IDS.free)
   const visiblePlans =
     mode === 'billing' &&
-    (currentPlanId === PLAN_IDS.payg || currentPlanId === PLAN_IDS.pro)
+    (currentPlanId === PLAN_IDS.pro || currentPlanId === PLAN_IDS.proplus)
       ? PRICING_PLANS.filter((p) => p.id !== PLAN_IDS.free)
       : PRICING_PLANS
 
@@ -90,7 +90,7 @@ export default function PricingComponent({
             </Button>
           )
         }
-        if (plan.id === PLAN_IDS.payg) {
+        if (plan.id === PLAN_IDS.pro) {
           return (
             <Button className={btnClass} asChild>
               <Link href='/dashboard/billing'>Purchase, go to Billing</Link>
@@ -112,7 +112,7 @@ export default function PricingComponent({
             </Button>
           )
         }
-        if (plan.id === PLAN_IDS.payg) {
+        if (plan.id === PLAN_IDS.pro) {
           return (
             <Button className={btnClass} asChild>
               <Link href='/dashboard/billing'>Purchase, go to Billing</Link>
@@ -126,7 +126,7 @@ export default function PricingComponent({
         )
       }
 
-      if (currentPlanId === PLAN_IDS.payg) {
+      if (currentPlanId === PLAN_IDS.pro) {
         if (plan.id === PLAN_IDS.free) {
           return (
             <Button className={btnClass} disabled>
@@ -134,7 +134,7 @@ export default function PricingComponent({
             </Button>
           )
         }
-        if (plan.id === PLAN_IDS.payg) {
+        if (plan.id === PLAN_IDS.pro) {
           return (
             <Button className={btnClass} asChild>
               <Link href='/dashboard'>Go To Dashboard</Link>
@@ -148,8 +148,8 @@ export default function PricingComponent({
         )
       }
 
-      if (currentPlanId === PLAN_IDS.pro) {
-        if (plan.id === PLAN_IDS.pro) {
+      if (currentPlanId === PLAN_IDS.proplus) {
+        if (plan.id === PLAN_IDS.proplus) {
           return (
             <Button className={btnClass} asChild>
               <Link href='/dashboard'>Go to Dashboard</Link>
@@ -163,7 +163,7 @@ export default function PricingComponent({
             </Button>
           )
         }
-        if (plan.id === PLAN_IDS.payg) {
+        if (plan.id === PLAN_IDS.pro) {
           return (
             <Button className={btnClass} asChild>
               <Link href='/dashboard/billing'>Purchase, go to Billing</Link>
@@ -174,7 +174,7 @@ export default function PricingComponent({
     }
 
     if (plan.id === PLAN_IDS.free) {
-      if (currentPlanId === PLAN_IDS.payg || currentPlanId === PLAN_IDS.pro) {
+      if (currentPlanId === PLAN_IDS.pro || currentPlanId === PLAN_IDS.proplus) {
         return (
           <Button className={btnClass} disabled>
             Current Plan Unavailable
@@ -189,7 +189,7 @@ export default function PricingComponent({
     }
 
     if (onSubscribeAction) {
-      if (plan.id === PLAN_IDS.payg) {
+      if (plan.id === PLAN_IDS.pro) {
         const label = mode === 'billing' ? 'Purchase Credits' : 'Purchase Now'
         return (
           <form action={onSubscribeAction} className='w-full'>
@@ -207,7 +207,7 @@ export default function PricingComponent({
           </Button>
         )
       }
-      const label = plan.id === PLAN_IDS.pro ? 'Subscribe' : (currentPlanId ? 'Upgrade' : 'Subscribe')
+      const label = plan.id === PLAN_IDS.proplus ? 'Subscribe' : (currentPlanId ? 'Upgrade' : 'Subscribe')
       return (
         <form action={onSubscribeAction} className='w-full'>
           <input type='hidden' name='planId' value={plan.id} />
@@ -258,7 +258,7 @@ export default function PricingComponent({
                     </span>
                   )
                 }
-                const showPayg = plan.id === PLAN_IDS.payg && !!lastPaygPurchaseAt
+                const showPayg = plan.id === PLAN_IDS.pro && !!lastPaygPurchaseAt
                 if (showPayg) {
                   const raw = lastPaygPurchaseAt
                   const d = typeof raw === 'string' || typeof raw === 'number' ? new Date(raw) : raw instanceof Date ? raw : null
@@ -270,7 +270,7 @@ export default function PricingComponent({
                     </span>
                   )
                 }
-                const showPro = plan.id === PLAN_IDS.pro && currentPlanId === PLAN_IDS.pro && (mode === 'marketing' || mode === 'billing')
+                const showPro = plan.id === PLAN_IDS.proplus && currentPlanId === PLAN_IDS.proplus && (mode === 'marketing' || mode === 'billing')
                 if (showPro) {
                   return (
                     <span className='text-[10px] px-2 py-0.5 rounded-full bg-primary/15 text-primary border border-primary/30'>
@@ -294,7 +294,7 @@ export default function PricingComponent({
               <span className='ml-1 text-xl text-muted-foreground'>
                 {plan.priceSuffix}
               </span>
-              {mode === 'marketing' && plan.id === PLAN_IDS.payg ? (
+              {mode === 'marketing' && plan.id === PLAN_IDS.pro ? (
                 <span className='absolute left-1/2 -translate-x-1/2 text-sm font-bold px-4 py-1.5 rounded-full bg-primary/15 text-primary border border-primary/30 shadow-sm'>
                   Popular
                 </span>

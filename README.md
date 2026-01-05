@@ -39,6 +39,7 @@ This README is a full, end‑to‑end setup and operations guide for this specif
     - [5. Row Level Security (RLS)](#5-row-level-security-rls)
     - [6. Stripe Setup](#6-stripe-setup)
       - [6.1 Local Webhook Setup](#61-local-webhook-setup)
+      - [6.2  Webhook Setup in Stripe](#62--webhook-setup-in-stripe)
     - [7. CRON Jobs \& Maintenance](#7-cron-jobs--maintenance)
       - [7.1 Local Testing](#71-local-testing)
       - [7.2 Vercel CRON Configuration](#72-vercel-cron-configuration)
@@ -508,10 +509,71 @@ stripe listen --forward-to localhost:3000/api/webhook/stripe
 ```
 
 Stripe CLI will print a `whsec_...` signing secret; set:
-
 ```bash
+# For Local
 STRIPE_WEBHOOK_SECRET=whsec_...
 ```
+
+#### 6.2  Webhook Setup in Stripe
+
+Steps in the Stripe Dashboard
+- Navigate to Webhooks: Log in to your Stripe Dashboard, go to the Developers section, and click the Webhooks tab (or "Event destinations").
+- Add Endpoint: Click + Add endpoint (or "Create an event destination").
+- Select Events: Choose specific events rather than all events for better performance.
+  - Checkout: 
+        
+        - checkout.session.async_payment_succeeded 
+        - checkout.session.completed
+        - checkout.session.expired
+  - Customer:
+        
+        - customer.subscription.created
+        - customer.subscription.deleted
+        - customer.subscription.paused
+        - customer.subscription.pending_update_applied
+        - customer.subscription.pending_update_expired
+        - customer.subscription.resumed
+        - customer.subscription.trial_will_end
+        - customer.subscription.updated
+        
+  - Invoice:
+      
+        - invoice.created
+        - invoice.deleted
+        - invoice.finalization_failed
+        - invoice.finalized
+        - invoice.marked_uncollectible
+        - invoice.overdue
+        - invoice.overpaid
+        - invoice.paid
+        - invoice.payment_action_required
+        - invoice.payment_failed
+        - invoice.payment_succeeded
+        - invoice.sent
+        - invoice.upcoming
+        - invoice.updated
+        - invoice.voided
+        - invoice.will_be_due
+  
+  - Payment Intent:
+      
+        - payment_intent.amount_capturable_updated
+        - payment_intent.canceled
+        - payment_intent.created
+        - payment_intent.partially_funded
+        - payment_intent.payment_failed
+        - payment_intent.processing
+        - payment_intent.requires_action
+        - payment_intent.succeeded
+- Enter Endpoint URL: Input your server's HTTPS URL (e.g., https://your-domain.com/api/webhook/stripe) where Stripe will send events.
+     
+- Add Endpoint: Click to add the endpoint.
+- Get the Secret: After creation, find your unique webhook signing secret (starts with whsec_) and set it as `STRIPE_WEBHOOK_SECRET` in your environment variables `.env` file. 
+  ```bash
+    # For Production
+    STRIPE_WEBHOOK_SECRET=whsec_...
+  ```
+
 
 ### 7. CRON Jobs & Maintenance
 

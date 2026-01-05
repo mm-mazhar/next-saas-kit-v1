@@ -82,7 +82,7 @@ export default async function BillingPage() {
     const currentOrg = await prisma.organization.findUnique({ where: { id: orgId } })
 
     const origin = process.env.NODE_ENV === 'production' ? PRODUCTION_URL : LOCAL_SITE_URL
-    const mode = planId === PLAN_IDS.payg ? 'payment' : 'subscription'
+    const mode = planId === PLAN_IDS.pro ? 'payment' : 'subscription'
     const url = await getStripeSession({
       priceId,
       domainUrl: origin,
@@ -138,8 +138,8 @@ export default async function BillingPage() {
   }
 
   const resolvedCurrent = await resolvePlanId(data.planId)
-  const proCredits = PRICING_PLANS.find((p) => p.id === PLAN_IDS.pro)?.credits ?? 0
-  const proExhausted = (data.status === 'active' && resolvedCurrent === PLAN_IDS.pro)
+  const proCredits = PRICING_PLANS.find((p) => p.id === PLAN_IDS.proplus)?.credits ?? 0
+  const proExhausted = (data.status === 'active' && resolvedCurrent === PLAN_IDS.proplus)
     ? ((data.org.credits ?? 0) >= proCredits)
     : false
   const hasPayg = !!data.org.lastPaygPurchaseAt
@@ -171,7 +171,7 @@ export default async function BillingPage() {
         ) : null}
 
         {/* EDIT SUB CARD: Reduced padding to p-2, font to text-xs, button height to h-8 */}
-        {resolvedCurrent === PLAN_IDS.pro ? (
+        {resolvedCurrent === PLAN_IDS.proplus ? (
           <Card className='rounded-lg border bg-muted/30'>
             <CardHeader className='p-2'>
               <CardTitle className="text-sm">Edit Subscription</CardTitle>
@@ -195,7 +195,7 @@ export default async function BillingPage() {
         ) : null}
 
         <PricingComponent
-          currentPlanId={isSubActive ? resolvedCurrent : (hasPayg ? PLAN_IDS.payg : null)}
+          currentPlanId={isSubActive ? resolvedCurrent : (hasPayg ? PLAN_IDS.pro : null)}
           lastPaygPurchaseAt={data.org.lastPaygPurchaseAt ?? null}
           onSubscribeAction={createSubscriptionAction}
           onFreeAction={handleFreePlanSubscription}

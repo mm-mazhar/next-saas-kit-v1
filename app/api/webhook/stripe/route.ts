@@ -79,7 +79,7 @@ export async function POST(req: Request) {
            return 
         }
 
-        const paygCredits = PRICING_PLANS.find((p) => p.id === PLAN_IDS.payg)?.credits ?? 50
+        const paygCredits = PRICING_PLANS.find((p) => p.id === PLAN_IDS.pro)?.credits ?? 50
         
         await tx.organization.update({
           where: { id: orgId! },
@@ -175,7 +175,7 @@ export async function POST(req: Request) {
     })
 
     try {
-      const proCredits = PRICING_PLANS.find((p) => p.id === PLAN_IDS.pro)?.credits ?? 100
+      const proCredits = PRICING_PLANS.find((p) => p.id === PLAN_IDS.proplus)?.credits ?? 100
       await prisma.organization.update({
         where: { id: orgId },
         data: {
@@ -262,7 +262,7 @@ export async function POST(req: Request) {
 
         const custId = String(subscription.customer || '')
         if (custId) {
-          const proCredits = PRICING_PLANS.find((p) => p.id === PLAN_IDS.pro)?.credits ?? 100
+          const proCredits = PRICING_PLANS.find((p) => p.id === PLAN_IDS.proplus)?.credits ?? 100
           await prisma.organization.update({
             where: { stripeCustomerId: custId },
             data: { credits: { increment: proCredits }, creditsReminderThresholdSent: false },

@@ -152,11 +152,11 @@ export function NavUser({
                   className='flex items-center text-sm gap-2'
                 >
                   <Sparkles />
-                  {currentPlanId === PLAN_IDS.payg ? (
+                  {currentPlanId === PLAN_IDS.pro ? (
                     <>
                       PAYG, Upgrade to <span className="text-primary font-semibold">Pro</span>
                     </>
-                  ) : currentPlanId === PLAN_IDS.pro ? (
+                  ) : currentPlanId === PLAN_IDS.proplus ? (
                     <span className="text-primary font-semibold">Pro</span>
                   ) : (
                     <>
