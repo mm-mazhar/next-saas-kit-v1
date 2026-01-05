@@ -37,7 +37,7 @@ async function getAdminData() {
   // 1. SYSTEM HEALTH CHECK
   const start = performance.now();
   let dbStatus: 'online' | 'degraded' | 'offline' = 'online';
-  try { await prisma.$queryRaw`SELECT 1`; } catch (e) { dbStatus = 'offline'; }
+  try { await prisma.$queryRaw`SELECT 1`; } catch { dbStatus = 'offline'; }
   const latency = Math.round(performance.now() - start);
   const healthData: SystemHealthData = { database: dbStatus, latency };
 
