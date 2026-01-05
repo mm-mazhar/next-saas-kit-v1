@@ -36,6 +36,7 @@ const BAR_COLORS = [
 
 export const UserGrowthChart = memo(({ className, data }: UserGrowthChartProps) => {
   const [period, setPeriod] = useState<string>("6");
+  const [chartType, setChartType] = useState<'bar' | 'line'>('line');
 
   // Filter data based on selection
   const filteredData = useMemo(() => {
@@ -44,6 +45,23 @@ export const UserGrowthChart = memo(({ className, data }: UserGrowthChartProps) 
   }, [data, period]);
 
   const maxValue = Math.max(...filteredData.map((d) => d.value)) || 1;
+
+  const chartData = useMemo(
+    () =>
+      filteredData.map((point, index) => {
+        const prevValue = filteredData[index - 1]?.value || 0;
+        let momChange = 0;
+        if (prevValue === 0 && point.value > 0) momChange = 100;
+        else if (prevValue > 0) momChange = ((point.value - prevValue) / prevValue) * 100;
+
+        const ratio = filteredData.length > 1 ? index / (filteredData.length - 1) : 0.5;
+        const x = ratio * 100;
+        const y = 100 - (point.value / maxValue) * 100;
+
+        return { ...point, momChange, x, y };
+      }),
+    [filteredData, maxValue],
+  );
 
   // Stats Calculation
   const stats = useMemo(() => {
@@ -72,43 +90,108 @@ export const UserGrowthChart = memo(({ className, data }: UserGrowthChartProps) 
             Monthly new signups
           </span>
         </div>
-        
-        <Select value={period} onValueChange={setPeriod}>
-          <SelectTrigger className="w-[140px] h-8 text-xs">
-            <SelectValue placeholder="Select period" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="3">Last 3 months</SelectItem>
-            <SelectItem value="6">Last 6 months</SelectItem>
-            <SelectItem value="12">Last 12 months</SelectItem>
-          </SelectContent>
-        </Select>
+
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+          <Select value={chartType} onValueChange={(v) => setChartType(v as 'bar' | 'line')}>
+            <SelectTrigger className="w-full sm:w-[120px] h-8 text-xs focus-visible:ring-0 focus-visible:border-primary">
+              <SelectValue placeholder="Chart type" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="line">Line chart</SelectItem>
+              <SelectItem value="bar">Bar chart</SelectItem>
+            </SelectContent>
+          </Select>
+
+          <Select value={period} onValueChange={setPeriod}>
+            <SelectTrigger className="w-full sm:w-[140px] h-8 text-xs">
+              <SelectValue placeholder="Select period" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="3">Last 3 months</SelectItem>
+              <SelectItem value="6">Last 6 months</SelectItem>
+              <SelectItem value="12">Last 12 months</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
       </CardHeader>
 
       <CardContent className="flex-1 flex flex-col justify-between gap-6">
-        
-        {/* Chart Area */}
-        <div className="flex justify-between gap-3 h-52 items-end">
-          <TooltipProvider delayDuration={100}>
-            {filteredData.map((point, index) => {
-              const height = `${Math.round((point.value / maxValue) * 100)}%`;
-              const isZero = point.value === 0;
-              const colorClass = BAR_COLORS[index % BAR_COLORS.length];
+        <div className="h-52">
+          {chartType === 'bar' ? (
+            <div className="flex justify-between gap-3 h-full items-end">
+              <TooltipProvider delayDuration={100}>
+                {chartData.map((point, index) => {
+                  const height = `${Math.round((point.value / maxValue) * 100)}%`;
+                  const isZero = point.value === 0;
+                  const colorClass = BAR_COLORS[index % BAR_COLORS.length];
 
-              const prevValue = filteredData[index - 1]?.value || 0;
-              let momChange = 0;
-              if (prevValue === 0 && point.value > 0) momChange = 100;
-              else if (prevValue > 0) momChange = ((point.value - prevValue) / prevValue) * 100;
-
-              return (
-                <div key={point.month} className="flex flex-1 flex-col items-center gap-2 h-full justify-end group">
-                  <Tooltip>
+                  return (
+                    <div
+                      key={point.month}
+                      className="flex flex-1 flex-col items-center gap-2 h-full justify-end group"
+                    >
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <div className="relative w-full flex items-end h-full">
+                            <div
+                              className={`w-full rounded-t-md transition-all duration-500 ease-in-out ${colorClass} hover:opacity-80 cursor-pointer`}
+                              style={{ height: isZero ? '4px' : height }}
+                            />
+                          </div>
+                        </TooltipTrigger>
+                        <TooltipContent className="bg-popover text-popover-foreground border-border shadow-xl p-2 rounded-lg text-xs font-medium">
+                          <div className="text-center mb-1 text-muted-foreground">{point.month}</div>
+                          <div className="text-lg font-bold text-center">
+                            {point.value} Users
+                          </div>
+                          {index > 0 && (
+                            <div
+                              className={`text-center mt-1 ${
+                                point.momChange >= 0 ? 'text-emerald-500' : 'text-red-500'
+                              }`}
+                            >
+                              {point.momChange > 0 ? '+' : ''}
+                              {Math.round(point.momChange)}
+                              %
+                            </div>
+                          )}
+                        </TooltipContent>
+                      </Tooltip>
+                      <div className="flex flex-col items-center gap-0.5">
+                        <span className="text-xs font-medium text-muted-foreground group-hover:text-foreground transition-colors text-nowrap">
+                          {point.month}
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </TooltipProvider>
+            </div>
+          ) : (
+            <div className="relative h-full">
+              <TooltipProvider delayDuration={100}>
+                <svg
+                  viewBox="0 0 100 100"
+                  preserveAspectRatio="none"
+                  className="absolute inset-0 w-full h-full text-blue-500/80"
+                >
+                  {chartData.length > 1 && (
+                    <polyline
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth={1.5}
+                      points={chartData.map((p) => `${p.x},${p.y}`).join(' ')}
+                    />
+                  )}
+                </svg>
+                {chartData.map((point) => (
+                  <Tooltip key={point.month}>
                     <TooltipTrigger asChild>
-                      <div className="relative w-full flex items-end h-full">
-                        <div
-                          className={`w-full rounded-t-md transition-all duration-500 ease-in-out ${colorClass} hover:opacity-80 cursor-pointer`}
-                          style={{ height: isZero ? '4px' : height }}
-                        />
+                      <div
+                        className="absolute -translate-x-1/2 -translate-y-1/2 cursor-pointer"
+                        style={{ left: `${point.x}%`, top: `${point.y}%` }}
+                      >
+                        <div className="h-2 w-2 rounded-full bg-blue-500 border border-background" />
                       </div>
                     </TooltipTrigger>
                     <TooltipContent className="bg-popover text-popover-foreground border-border shadow-xl p-2 rounded-lg text-xs font-medium">
@@ -116,22 +199,22 @@ export const UserGrowthChart = memo(({ className, data }: UserGrowthChartProps) 
                       <div className="text-lg font-bold text-center">
                         {point.value} Users
                       </div>
-                      {index > 0 && (
-                        <div className={`text-center mt-1 ${momChange >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
-                          {momChange > 0 ? '+' : ''}{Math.round(momChange)}%
-                        </div>
-                      )}
                     </TooltipContent>
                   </Tooltip>
-                  <div className="flex flex-col items-center gap-0.5">
-                    <span className="text-xs font-medium text-muted-foreground group-hover:text-foreground transition-colors text-nowrap">
-                      {point.month}
-                    </span>
-                  </div>
-                </div>
-              );
-            })}
-          </TooltipProvider>
+                ))}
+              </TooltipProvider>
+              <div className="absolute inset-x-0 bottom-0 translate-y-4 flex justify-between gap-3">
+                {chartData.map((point) => (
+                  <span
+                    key={`${point.month}-label`}
+                    className="text-xs font-medium text-muted-foreground text-nowrap"
+                  >
+                    {point.month}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Footer Stats */}

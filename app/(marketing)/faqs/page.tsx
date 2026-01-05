@@ -12,7 +12,7 @@ import { Badge } from '@/components/ui/badge';
 
 export default function FaqPage() {
   return (
-    <PageSection className='bg-background'>
+    <PageSection className='bg-background pb-16 md:pb-16'>
       <div className='flex flex-col items-center space-y-8 px-4'>
         <Badge
           variant='outline'
@@ -21,11 +21,11 @@ export default function FaqPage() {
           FAQs
         </Badge>
 
-        <h1 className='text-foreground mb-6 text-center text-4xl font-bold tracking-tight md:text-5xl'>
+        <h1 className='text-foreground mt-6 text-center text-4xl font-bold tracking-tight md:text-5xl'>
           Frequently Asked Questions
         </h1>
 
-        <p className='mb-6 text-muted-foreground max-w-2xl text-center'>
+        <p className='text-muted-foreground max-w-2xl text-center'>
           Everything you need to know about our platform, billing, and team management.
         </p>
       </div>
@@ -37,13 +37,13 @@ export default function FaqPage() {
       */}
       <FaqList />
 
-      <div className='mt-16 text-center'>
+      <div className='mt-8 text-center'>
         <p className='text-muted-foreground mb-4'>
           Can&apos;t find what you&apos;re looking for?
         </p>
         <a
           href='/contact'
-          className='border-primary text-foreground hover:bg-primary hover:text-primary-foreground inline-flex items-center justify-center rounded-lg border-2 px-6 py-3 font-medium transition-colors'
+          className='border-primary text-foreground hover:bg-primary hover:text-primary-foreground inline-flex items-center justify-center rounded-lg border-2 mt-6 px-6 py-3 font-medium transition-colors'
         >
           Contact Support
         </a>

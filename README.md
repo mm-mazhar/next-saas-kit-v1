@@ -270,6 +270,7 @@ Key groups:
 - Supabase:
   - `NEXT_PUBLIC_SUPABASE_URL`
   - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+  - `SUPABASE_SERVICE_ROLE_KEY`
   - `DATABASE_URL`
   - `DIRECT_URL`
 
@@ -331,6 +332,7 @@ In the Supabase dashboard:
 ```bash
 NEXT_PUBLIC_SUPABASE_URL=...
 NEXT_PUBLIC_SUPABASE_ANON_KEY=...
+SUPABASE_SERVICE_ROLE_KEY=...
 DATABASE_URL=...
 DIRECT_URL=...
 ```
@@ -487,7 +489,7 @@ SELECT * FROM "User" LIMIT 10;
 3. Copy:
    - Publishable key → `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY`
    - Secret key → `STRIPE_SECRET_KEY`
-   - Price ID → `STRIPE_PRICE_ID`
+   - Price IDs → `STRIPE_PRICE_ID` e.g `STRIPE_PRICE_ID_1`, `STRIPE_PRICE_ID_2`, `STRIPE_PRICE_ID_3`
 
 Set these in `.env`.
 

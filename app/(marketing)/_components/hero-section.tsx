@@ -10,6 +10,8 @@ import { Button } from '@/components/ui/button'
 import { ShineBorder } from '@/components/ui/shine-border'
 import HeroLight from '@/public/HeroDark-02.png'
 import HeroDark from '@/public/HeroDark-03.png'
+// import HeroLight from '@/public/HeroDark-04.png'
+// import HeroDark from '@/public/HeroLight-03.png'
 import BackgroundImage from '@/public/night-background.webp'
 import { ArrowRight } from 'lucide-react'
 import Image from 'next/image'
@@ -29,14 +31,14 @@ import Link from 'next/link'
 import prisma from '@/app/lib/db'
 import { createClient } from '@/app/lib/supabase/server'
 import {
-    APP_DESCRIPTION,
-    APP_DESCRIPTION_LONG,
-    APP_SLOGAN,
-    PLAN_IDS,
-    PRICE_HEADING,
-    PRICING_PLANS,
-    type PlanId,
-    type PricingPlan,
+  APP_DESCRIPTION,
+  APP_DESCRIPTION_LONG,
+  APP_SLOGAN,
+  PLAN_IDS,
+  PRICE_HEADING,
+  PRICING_PLANS,
+  type PlanId,
+  type PricingPlan,
 } from '@/lib/constants'
 
 const transitionVariants = {
@@ -54,8 +56,6 @@ const transitionVariants = {
 export default async function HeroSection() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
-
-
 
   // Get Organization Billing Data
   let orgBilling = null
@@ -116,13 +116,15 @@ export default async function HeroSection() {
         {/* --- CONTENT LAYER --- */}
         <div className='relative z-10'>
           
-          <PageSection>
+          <PageSection className='pt-16 md:pt-24 pb-0'>
+          {/* <PageSection> */}
+            
             {/* 
               ✅ TEXT CLUSTER WRAPPER 
               This 'flex flex-col gap-8' controls the spacing between 
               Badge, H1, P, and Buttons uniformly.
             */}
-            <div className='mx-auto flex max-w-4xl flex-col items-center gap-8 text-center'>
+            <div className='pt-8 mx-auto flex max-w-4xl flex-col items-center gap-6 text-center md:pt-12'>
               
               {/* 1. BADGE */}
               <AnimatedGroup variants={transitionVariants}>
@@ -144,18 +146,18 @@ export default async function HeroSection() {
                 </Link>
               </AnimatedGroup>
 
-              {/* 2. HEADLINE (Removed mt-8/mt-16) */}
+              {/* 2. HEADLINE (Removed mt-classes for unified spacing) */}
               <TextEffect
-            preset='fade-in-blur'
-            speedSegment={0.3}
-            as='h1'
-            className='mx-auto mt-8 max-w-4xl text-balance text-5xl max-md:font-semibold md:text-7xl lg:mt-16 xl:text-[5.25rem]'
-          >
-            {APP_DESCRIPTION}
-          </TextEffect>
+                preset='fade-in-blur'
+                speedSegment={0.3}
+                as='h1'
+                className='pt-8 mx-auto max-w-4xl text-balance text-5xl max-md:font-semibold md:pt-12 md:text-7xl xl:text-[5.25rem]'
+              >
+                {APP_DESCRIPTION}
+              </TextEffect>
 
               {/* 3. SUBHEAD (Removed mt-8) */}
-              <HyperText className='max-w-2xl text-balance text-lg text-muted-foreground'>
+              <HyperText className='pt-8 max-w-2xl text-balance text-lg text-muted-foreground md:pt-12'>
                 {APP_DESCRIPTION_LONG}
               </HyperText>
 
@@ -167,7 +169,7 @@ export default async function HeroSection() {
                   },
                   ...transitionVariants,
                 }}
-                className='flex flex-col items-center justify-center gap-5 md:flex-row'
+                className='pt-8 flex flex-col items-center justify-center gap-5 md:flex-row md:pt-12'
               >
                 {user ? (
                   <Button asChild size='lg' variant='default' className='px-5'>
@@ -175,7 +177,7 @@ export default async function HeroSection() {
                   </Button>
                 ) : (
                   <Button asChild size='lg' variant='default' className='px-5'>
-                    <Link href='/get-started'><span className='text-nowrap'>Start Building</span></Link>
+                    <Link href='/get-started'><span className='pt-14 text-nowrap'>Start Building</span></Link>
                   </Button>
                 )}
                 {/* <Button key={2} asChild size='lg' variant='secondary' className='h-10.5 rounded-xl px-5'>
@@ -194,7 +196,7 @@ export default async function HeroSection() {
                 container: { visible: { transition: { staggerChildren: 0.05, delayChildren: 0.75 } } },
                 ...transitionVariants,
               }}
-              className="mt-16 md:mt-24" 
+              className='mt-18'
             >
               <div className='mask-b-from-55% relative overflow-hidden px-2'>
                 <div className='inset-shadow-2xs ring-background dark:inset-shadow-white/20 bg-background relative mx-auto max-w-6xl overflow-hidden rounded-2xl border p-4 shadow-lg shadow-zinc-950/15 ring-1'>
@@ -210,22 +212,24 @@ export default async function HeroSection() {
              ✅ PRICING SECTION
              Standard PageSection padding (py-32) handles the top spacing here.
           */}
-          <PageSection id='pricing'>
-            <div className='flex flex-col items-center gap-4 mb-16 text-center'>
+          <PageSection id='pricing' className='pt-16 pb-16 md:pt-16 md:pb-16'>
+          {/* <PageSection> */}
+            <div className='flex flex-col items-center gap-4 mb-10 text-center'>
               <h2 className='text-3xl font-bold'>
                 {PRICE_HEADING}
               </h2>
               {/* Optional subtext if you want it */}
               {/* <p className="text-muted-foreground">Simple plans for everyone.</p> */}
             </div>
-
-            <PricingComponent
-              currentPlanId={currentPlanId}
-              isAuthenticated={!!user}
-              mode='marketing'
-              lastPaygPurchaseAt={orgBilling?.lastPaygPurchaseAt ?? null}
-              proExhausted={proExhausted}
-            />
+            <div className='pt-10'>
+              <PricingComponent
+                currentPlanId={currentPlanId}
+                isAuthenticated={!!user}
+                mode='marketing'
+                lastPaygPurchaseAt={orgBilling?.lastPaygPurchaseAt ?? null}
+                proExhausted={proExhausted}              
+              />
+            </div>
           </PageSection>
             {/* ------------- Customer's Logo Section ------------- */}
           {/* <PageSection className='bg-background pb-16 md:pb-32'>

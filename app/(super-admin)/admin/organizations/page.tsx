@@ -61,13 +61,13 @@ export default async function OrganizationsPage(props: {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Subscription</TableHead>
-                  <TableHead>Members</TableHead>
-                  <TableHead>Projects</TableHead>
-                  <TableHead>Credits</TableHead>
-                  <TableHead className="text-right">Created</TableHead>
-                  <TableHead className="w-[50px]"></TableHead>
+                  <TableHead className="min-w-[260px]">Name</TableHead>
+                  <TableHead className="w-[70px] pl-4 md:pl-6">View</TableHead>
+                  <TableHead className="w-[140px] md:px-16">Subscription</TableHead>
+                  <TableHead className="w-[90px] md:px-16">Members</TableHead>
+                  <TableHead className="w-[90px] md:px-16">Projects</TableHead>
+                  <TableHead className="w-[90px] md:px-16">Credits</TableHead>
+                  <TableHead className="w-[120px] md:px-16">Created</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -79,7 +79,12 @@ export default async function OrganizationsPage(props: {
                         <span className="text-xs text-muted-foreground">{org.slug}</span>
                       </div>
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="pl-4 md:pl-6">
+                      <Link href={`/admin/organizations/${org.id}`} className="text-muted-foreground hover:text-primary">
+                        <Eye className="h-4 w-4" />
+                      </Link>
+                    </TableCell>
+                    <TableCell className="md:px-16">
                       {org.subscription?.status === 'active' ? (
                         <Badge className="w-[90px] justify-center text-xs font-medium bg-primary/10 text-primary border border-primary/20">
                           Pro
@@ -90,14 +95,11 @@ export default async function OrganizationsPage(props: {
                         </Badge>
                       )}
                     </TableCell>
-                    <TableCell>{org._count.members}</TableCell>
-                    <TableCell>{org._count.projects}</TableCell>
-                    <TableCell>{org.credits}</TableCell>
-                    <TableCell className="text-right text-muted-foreground">{timeAgo(org.createdAt)}</TableCell>
-                    <TableCell>
-                      <Link href={`/admin/organizations/${org.id}`} className="text-muted-foreground hover:text-primary">
-                        <Eye className="h-4 w-4" />
-                      </Link>
+                    <TableCell className="md:px-16">{org._count.members}</TableCell>
+                    <TableCell className="md:px-16">{org._count.projects}</TableCell>
+                    <TableCell className="md:px-16">{org.credits}</TableCell>
+                    <TableCell className="md:px-16 text-muted-foreground">
+                      {timeAgo(org.createdAt)}
                     </TableCell>
                   </TableRow>
                 ))}

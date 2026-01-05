@@ -156,7 +156,7 @@ export function FaqList() {
     <>
       {/* Category Tabs */}
       <div className='flex flex-col items-center space-y-8 px-4'>
-        <div className='mb-10 flex flex-wrap justify-center gap-2'>
+        <div className='mt-8 flex flex-wrap justify-center gap-2'>
           {categories.map((category) => (
             <button
               key={category.id}
@@ -174,7 +174,7 @@ export function FaqList() {
         </div>
       </div>
 
-      <div className='grid grid-cols-1 gap-6 sm:grid-cols-2'>
+      <div className='grid grid-cols-1 gap-6 mt-8 sm:grid-cols-2'>
         <AnimatePresence mode='wait' initial={false}>
           {filteredFaqs.map((faq, index) => (
             <motion.div

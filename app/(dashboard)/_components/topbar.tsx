@@ -100,7 +100,7 @@ export function TopBar({
           className='mr-2 data-[orientation=vertical]:h-4'
         />
         <Breadcrumb>
-          <BreadcrumbList className='text-sm h-10 items-center'>
+          <BreadcrumbList className='text-sm h-10 items-center hidden md:flex'>
             <BreadcrumbItem>
               <BreadcrumbLink href='/' className='flex items-center gap-1.5'>
                 <Home className='size-3.5' />

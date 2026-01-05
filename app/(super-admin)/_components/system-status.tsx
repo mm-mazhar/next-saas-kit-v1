@@ -67,17 +67,17 @@ export const SystemStatus = memo(({ className, health }: SystemStatusProps) => {
   ];
 
   return (
-    <Card className={className}>
+    <Card className={`h-full flex flex-col ${className ?? ''}`}>
       <CardHeader>
         <CardTitle className="text-base font-semibold">System Status</CardTitle>
       </CardHeader>
-      <CardContent className="pt-2 grid gap-3 md:grid-cols-2 lg:grid-cols-4">
+      <CardContent className="pt-2 grid gap-3 grid-cols-1 md:grid-cols-2 auto-rows-fr flex-1">
         {items.map((item) => {
           const Icon = item.icon;
           return (
             <div
               key={item.id}
-              className="flex items-start gap-3 rounded-xl border bg-muted/40 px-3 py-3"
+              className="flex h-full items-start gap-3 rounded-xl border bg-muted/40 px-3 py-3"
             >
               <div className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-background border">
                 <Icon className="h-4 w-4" />
@@ -107,4 +107,3 @@ export const SystemStatus = memo(({ className, health }: SystemStatusProps) => {
 });
 
 SystemStatus.displayName = 'SystemStatus';
-

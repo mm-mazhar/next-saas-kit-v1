@@ -4,7 +4,7 @@ import { SidebarProvider } from '@/app/(dashboard)/_components/sidebar';
 import { createClient } from '@/app/lib/supabase/server';
 import { redirect } from 'next/navigation';
 import { AdminSidebar } from './_components/admin-sidebar';
-import { DashboardHeader } from './_components/dashboard-header'; // ✅ Import
+import { DashboardHeader } from './_components/dashboard-header';
 
 const SUPER_ADMINS = process.env.SUPER_ADMIN_EMAILS?.split(',').map(e => e.trim()) || []
 
@@ -20,7 +20,7 @@ export default async function SuperAdminLayout({ children }: { children: React.R
       <div className="flex min-h-screen w-full bg-background">
         <AdminSidebar /> 
         <main className="flex-1 flex flex-col overflow-y-auto"> {/* ✅ Flex col to stack header */}
-          <DashboardHeader /> {/* ✅ Added here, visible on ALL pages */}
+          <DashboardHeader />
           {children}
         </main>
       </div>

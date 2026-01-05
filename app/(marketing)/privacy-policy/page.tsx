@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge';
 
 export default function PrivacyPolicyPage() {
   return (
-    <PageSection>
+    <PageSection className='pb-16 md:pb-16'>
       <div className='flex flex-col items-center space-y-8 px-4'>
         <Badge
                   variant="outline"
@@ -13,24 +13,35 @@ export default function PrivacyPolicyPage() {
                 >
                   Privacy
                 </Badge>
-        <h1 className='text-3xl font-bold'>Privacy Policy</h1>
-        <p className='text-muted-foreground'>
-          Lorem ipsum dolor sit amet, consectetur adipiscing elit. Integer nec
-          odio. Praesent libero. Sed cursus ante dapibus diam.
-        </p>
-        <div className='space-y-4 text-sm text-muted-foreground'>
+        <h1 className='mt-6 text-3xl font-bold'>Privacy Policy</h1>
+        <div className='mt-6 space-y-4 text-sm text-muted-foreground text-justify'>
           <p>
-            Nulla quis sem at nibh elementum imperdiet. Duis sagittis ipsum.
-            Praesent mauris. Fusce nec tellus sed augue semper porta.
-          </p>
-          <p>
-            Mauris massa. Vestibulum lacinia arcu eget nulla. Class aptent
-            taciti sociosqu ad litora torquent per conubia nostra, per inceptos
-            himenaeos.
-          </p>
-          <p>
-            Curabitur sodales ligula in libero. Sed dignissim lacinia nunc.
-            Curabitur tortor. Pellentesque nibh. Aenean quam.
+            
+          Vestibulum ante ipsum primis in faucibus orci luctus et ultrices
+          posuere cubilia curae; Morbi lacinia molestie dui.
+        
+          Praesent blandit dolor. Sed non quam. In vel mi sit amet augue
+          congue elementum.
+        
+          Morbi in ipsum sit amet pede facilisis laoreet. Donec lacus nunc,
+          viverra nec, blandit vel, egestas et, augue.
+          
+          Vestibulum ante ipsum primis in faucibus orci luctus et ultrices
+          posuere cubilia curae; Morbi lacinia molestie dui.
+          Praesent blandit dolor. Sed non quam. In vel mi sit amet augue
+          congue elementum.
+        
+          Morbi in ipsum sit amet pede facilisis laoreet. Donec lacus nunc,
+          viverra nec, blandit vel, egestas et, augue.
+        
+          Vestibulum ante ipsum primis in faucibus orci luctus et ultrices
+          posuere cubilia curae; Morbi lacinia molestie dui.
+        
+          Praesent blandit dolor. Sed non quam. In vel mi sit amet augue
+          congue elementum.
+        
+          Morbi in ipsum sit amet pede facilisis laoreet. Donec lacus nunc,
+          viverra nec, blandit vel, egestas et, augue.
           </p>
         </div>
       </div>

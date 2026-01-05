@@ -89,7 +89,7 @@ export default function AboutUs1() {
   const valuesInView = useInView(valuesRef, { once: true, amount: 0.3 });
 
   return (
-    <PageSection className="relative overflow-hidden">
+    <PageSection className="relative overflow-hidden pb-16 md:pb-16">
 
       <div className="flex flex-col items-center relative z-10 space-y-8 px-4">
         <Badge
@@ -103,9 +103,9 @@ export default function AboutUs1() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, ease: 'easeOut' }}
-          className="mx-auto mb-16 max-w-2xl text-center"
+          className="mx-auto mb-8 max-w-2xl text-center"
         >
-          <h1 className="from-foreground/80 via-foreground to-foreground/80 bg-gradient-to-r bg-clip-text text-4xl font-bold tracking-tight text-transparent sm:text-5xl md:text-6xl">
+          <h1 className="from-foreground/80 via-foreground to-foreground/80 bg-gradient-to-r bg-clip-text mt-6 text-4xl font-bold tracking-tight text-transparent sm:text-5xl md:text-6xl">
             {aboutData.title}
           </h1>
           <p className="text-muted-foreground mt-6 text-xl">
@@ -114,7 +114,7 @@ export default function AboutUs1() {
         </motion.div>
 
         {/* Mission & Vision Section */}
-        <div ref={missionRef} className="relative mx-auto mb-24 max-w-7xl">
+        <div ref={missionRef} className="relative mx-auto mb-8 max-w-7xl">
           <motion.div
             initial={{ opacity: 0, y: 40 }}
             animate={
@@ -173,7 +173,7 @@ export default function AboutUs1() {
           </motion.div>
         </div>
 
-        <div ref={valuesRef} className="mb-24">
+        <div ref={valuesRef} className="mb-8">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={
@@ -185,13 +185,13 @@ export default function AboutUs1() {
             <h2 className="from-foreground/80 via-foreground to-foreground/80 bg-gradient-to-r bg-clip-text text-3xl font-bold tracking-tight text-transparent sm:text-4xl">
               Our Core Values
             </h2>
-            <p className="text-muted-foreground mx-auto mt-4 max-w-2xl text-lg">
+            <p className="text-muted-foreground mx-auto mt-6 max-w-2xl text-lg">
               The principles that guide everything we do and every decision we
               make.
             </p>
           </motion.div>
 
-          <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-4">
+          <div className="grid gap-6 mt-6 md:grid-cols-2 xl:grid-cols-4">
             {aboutData.values?.map((value, index) => {
               const IconComponent = iconComponents[value.icon];
 

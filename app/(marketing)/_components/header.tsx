@@ -128,9 +128,6 @@ export const HeroHeader = () => {
                 <div className='flex w-full flex-col space-y-3 sm:flex-row sm:gap-3 sm:space-y-0 md:w-fit'>
                   {user ? (
                     <>
-                      <ToastProvider>
-                        <Themetoggle />
-                      </ToastProvider>
                       <Button
                         asChild
                         variant='default'
@@ -141,14 +138,15 @@ export const HeroHeader = () => {
                           <span>Dashboard</span>
                         </Link>
                       </Button>
-
                       <LogoutButton />
-                    </>
-                  ) : (
-                    <>
+                      
                       <ToastProvider>
                         <Themetoggle />
                       </ToastProvider>
+                    </>
+                  ) : (
+                    <>
+                     
                       {/* <Button
                   asChild
                   variant='outline'
@@ -189,6 +187,9 @@ export const HeroHeader = () => {
                           <span>Get Started</span>
                         </Link>
                       </Button>
+                       <ToastProvider>
+                        <Themetoggle />
+                      </ToastProvider>
                     </>
                   )}
                 </div>

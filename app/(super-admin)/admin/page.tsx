@@ -228,7 +228,7 @@ export default async function AdminDashboardPage() {
             <h2 className="text-3xl font-bold tracking-tight">Dashboard</h2>
             <DashboardActions data={data} />
           </div>
-          
+
           {/* Stats Grid */}
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             {cardStats.map((stat, index) => (
@@ -244,25 +244,24 @@ export default async function AdminDashboardPage() {
             ))}
           </div>
 
-          {/* System Status */}
-          <div>
-             <SystemStatus health={data.health} />
-          </div>
-
-          {/* Revenue & Activity Row */}
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
-            <div className="col-span-4" id="revenue-analytics">
-              <RevenueChart data={data.revenueChart} className='h-full' />
+          <div className="grid gap-4 md:grid-cols-2">
+            <div id="user-analytics">
+              <UserGrowthChart data={data.userChart} />
             </div>
-            <div className="col-span-3">
-               <RecentActivity activities={data.recentActivity} className='h-full' />
+            <div id="revenue-analytics">
+              <RevenueChart data={data.revenueChart} className="h-full" />
             </div>
           </div>
 
-          {/* User Growth Row */}
-          <div className="grid gap-4 md:grid-cols-1" id="user-analytics">
-             <UserGrowthChart data={data.userChart} />
+          <div className="grid gap-4 md:grid-cols-2 items-stretch">
+            <div className="h-full">
+              <RecentActivity activities={data.recentActivity} className="h-full" />
+            </div>
+            <div className="h-full">
+              <SystemStatus health={data.health} className="h-full" />
+            </div>
           </div>
+          
 
         </div>
       </div>

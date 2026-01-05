@@ -27,7 +27,7 @@ export default function ContactPage() {
   }
 
   return (
-    <PageSection>
+    <PageSection className='pb-16 md:pb-16'>
       <div className='flex flex-col items-center space-y-8 px-4'>
         <Badge
                   variant="outline"
@@ -36,8 +36,8 @@ export default function ContactPage() {
                   Contact
                 </Badge>
         <div className='flex flex-col items-center space-y-2'>
-          <h1 className='text-3xl font-bold'>Contact Us</h1>
-          <p className='text-muted-foreground'>
+          <h1 className='mt-6 text-3xl font-bold'>Contact Us</h1>
+          <p className='mt-8 text-muted-foreground'>
             Contact the support team at {NEXT_PUBLIC_SITE_NAME}.
           </p>
         </div>
