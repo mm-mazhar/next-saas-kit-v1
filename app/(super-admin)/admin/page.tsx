@@ -17,7 +17,6 @@ const formatCurrency = (amount: number) => {
   return new Intl.NumberFormat(localeString, {
     style: 'currency',
     currency: DEFAULT_CURRENCY,
-    maximumFractionDigits: 0,
   }).format(amount);
 };
 

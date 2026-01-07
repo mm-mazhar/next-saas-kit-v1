@@ -15,7 +15,7 @@ import {
 } from '@/components/ui/breadcrumb'
 import { Separator } from '@/components/ui/separator'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
-import { CREDIT_REMINDER_THRESHOLD, type PlanId } from '@/lib/constants'
+import { CREDIT_REMINDER_THRESHOLD, PLAN_IDS, type PlanId } from '@/lib/constants'
 import {
   Bell,
   Building2,
@@ -43,6 +43,7 @@ export function TopBar({
   }
   subscriptionStatus?: string | null
 }) {
+  void subscriptionStatus
   const pathname = usePathname()
   const parts = pathname.split('/').filter(Boolean)
   const startIndex = Math.max(parts.indexOf('dashboard'), 0)
@@ -113,11 +114,17 @@ export function TopBar({
         </Breadcrumb>
       </div>
       <div className='flex items-center gap-2'>
-        {subscriptionStatus && (
-          <Badge className='h-8 px-3 text-sm font-medium leading-none'>
-            {subscriptionStatus === 'active' ? 'Pro' : `Pro: ${subscriptionStatus}`}
-          </Badge>
-        )}
+        {usageInfo ? (
+          (() => {
+            const id = usageInfo.currentPlanId
+            const base = id === PLAN_IDS.proplus ? 'Pro Plus' : id === PLAN_IDS.pro ? 'Pro' : 'Free'
+            return (
+              <Badge className='h-8 px-3 text-sm font-medium leading-none'>
+                {base}
+              </Badge>
+            )
+          })()
+        ) : null}
         {usageInfo && (
           <span className='inline-flex items-center h-8 px-1 rounded-md bg-primary text-primary-foreground font-medium text-sm border leading-none'>
             Credits: {usageInfo.creditsUsed ?? 0}
@@ -125,7 +132,7 @@ export function TopBar({
         )}
         {usageInfo?.creditsUsed === 0 ? (
           <Link href='/dashboard/billing' className='inline-flex items-center h-8 px-3 rounded-md bg-primary text-primary-foreground font-medium text-sm border border-primary leading-none'>
-            Buy Credits or Upgrade to Pro
+            Renew Now
           </Link>
         ) : null}
         {usageInfo ? (
@@ -136,7 +143,7 @@ export function TopBar({
                 const showNotification = usageInfo.exhausted || (remaining <= CREDIT_REMINDER_THRESHOLD)
                 let tooltipText = `Credits: ${remaining}`
                 if (usageInfo.exhausted || remaining === 0) {
-                  tooltipText = 'Buy Credits'
+                  tooltipText = 'Renew Now'
                 } else if (remaining <= CREDIT_REMINDER_THRESHOLD) {
                   tooltipText = 'Low Credits'
                 }
@@ -156,7 +163,7 @@ export function TopBar({
               const remaining = usageInfo.creditsUsed ?? 0
               let tooltipText = `Credits: ${remaining}`
               if (usageInfo.exhausted || remaining === 0) {
-                tooltipText = 'Buy Credits'
+                tooltipText = 'Renew Now'
               } else if (remaining <= CREDIT_REMINDER_THRESHOLD) {
                 tooltipText = 'Low Credits'
               }

@@ -1,7 +1,7 @@
 // app/(dashboard)/dashboard/billing/page.tsx
 
 import prisma from '@/app/lib/db'
-import { getStripeSession, stripe } from '@/app/lib/stripe'
+import { stripe } from '@/app/lib/stripe'
 import { createClient } from '@/app/lib/supabase/server'
 import { Button } from '@/components/ui/button'
 import {
@@ -13,11 +13,14 @@ import {
 } from '@/components/ui/card'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { requireOrgRole } from '@/lib/auth/guards'
-import { LOCAL_SITE_URL, PLAN_IDS, PRICING_PLANS, PRODUCTION_URL, type PlanId, type PricingPlan } from '@/lib/constants'
+import { PLAN_IDS, PRICING_PLANS, SUBSCRIPTION_RENEWAL_CREDIT_THRESHOLD, type PlanId, type PricingPlan } from '@/lib/constants'
 import { unstable_noStore as noStore } from 'next/cache'
 import { cookies } from 'next/headers'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
+import { RenewSubscriptionButton } from '../../_components/RenewSubscriptionButton'
+import { UpgradeSubscriptionButton } from '../../_components/UpgradeSubscriptionButton'
+import { createCustomerPortal } from './actions'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
@@ -64,80 +67,6 @@ export default async function BillingPage() {
     org: org,
   }
 
-  async function createSubscriptionAction(formData: FormData) {
-    'use server'
-    const planId = formData.get('planId') as PlanId
-    const priceId = PRICING_PLANS.find((p) => p.id === planId)?.stripePriceId
-    if (!priceId) return
-
-    // Re-verify context in action
-    const cStore = await cookies()
-    const orgId = cStore.get('current-org-id')?.value
-    const sb = await createClient()
-    const { data: { user: u } } = await sb.auth.getUser()
-    
-    if (!u || !orgId) return
-
-    await requireOrgRole(orgId, u.id, 'ADMIN') // Enforce Role
-
-    const currentOrg = await prisma.organization.findUnique({ where: { id: orgId } })
-
-    const origin = process.env.NODE_ENV === 'production' ? PRODUCTION_URL : LOCAL_SITE_URL
-    const mode = 'subscription'
-    const url = await getStripeSession({
-      priceId,
-      domainUrl: origin,
-      customerId: currentOrg?.stripeCustomerId as string | undefined,
-      organizationId: orgId, // Bind to Org
-      userId: u.id,
-      mode,
-    })
-    return redirect(url)
-  }
-
-  async function handleFreePlanSubscription() {
-    'use server'
-    const cStore = await cookies()
-    const orgId = cStore.get('current-org-id')?.value
-    const sb = await createClient()
-    const { data: { user: u } } = await sb.auth.getUser()
-    
-    if (!u || !orgId) return redirect('/dashboard')
-    
-    await requireOrgRole(orgId, u.id, 'ADMIN')
-
-    const existing = await prisma.subscription.findUnique({
-      where: { organizationId: orgId },
-    })
-    if (existing) {
-      await prisma.subscription.update({
-        where: { organizationId: orgId },
-        data: { planId: PLAN_IDS.free, status: 'active' },
-      })
-    }
-    return redirect('/dashboard')
-  }
-
-  async function createCustomerPortal() {
-    'use server'
-    const cStore = await cookies()
-    const orgId = cStore.get('current-org-id')?.value
-    const sb = await createClient()
-    const { data: { user: u } } = await sb.auth.getUser()
-    if (!u || !orgId) return
-
-    await requireOrgRole(orgId, u.id, 'ADMIN')
-    const currentOrg = await prisma.organization.findUnique({ where: { id: orgId } })
-
-    if (!currentOrg?.stripeCustomerId) return
-
-    const session = await stripe.billingPortal.sessions.create({
-      customer: currentOrg.stripeCustomerId,
-      return_url: process.env.NODE_ENV === 'production' ? PRODUCTION_URL : `${LOCAL_SITE_URL}/dashboard`,
-    })
-    return redirect(session.url)
-  }
-
   const resolvedCurrent = await resolvePlanId(data.planId)
   const proCredits = PRICING_PLANS.find((p) => p.id === PLAN_IDS.proplus)?.credits ?? 0
   const proExhausted = (data.status === 'active' && resolvedCurrent === PLAN_IDS.proplus)
@@ -154,10 +83,14 @@ export default async function BillingPage() {
       : `Using Pay As You Go until credits are exhausted. Last Purchase: ${dateText}.`
     : null
 
-  const currentForState: PlanId | null = isSubActive ? resolvedCurrent : (hasPayg ? PLAN_IDS.pro : null)
-  const isFreeTierBilling = currentForState === null || currentForState === PLAN_IDS.free
   const proPlan = PRICING_PLANS.find((p) => p.id === PLAN_IDS.pro)
   const proPlusPlan = PRICING_PLANS.find((p) => p.id === PLAN_IDS.proplus)
+
+  const showRenewal = isSubActive && (data.org.credits < SUBSCRIPTION_RENEWAL_CREDIT_THRESHOLD)
+  const showUpgrade = resolvedCurrent === PLAN_IDS.pro && proPlusPlan
+
+  const currentForState: PlanId | null = isSubActive ? resolvedCurrent : (hasPayg ? PLAN_IDS.pro : null)
+  const isFreeTierBilling = currentForState === null || currentForState === PLAN_IDS.free
   
   let invoices: {
     id: string;
@@ -224,10 +157,7 @@ export default async function BillingPage() {
                   <CardTitle className='text-sm'>Upgrade to {proPlan.title}</CardTitle>
                   <CardDescription className='text-xs'>{proPlan.description}</CardDescription>
                 </div>
-                <form action={createSubscriptionAction}>
-                  <input type='hidden' name='planId' value={PLAN_IDS.pro} />
-                  <Button type='submit' className='h-8 text-xs px-3'>Upgrade now</Button>
-                </form>
+                <UpgradeSubscriptionButton planId={PLAN_IDS.pro} hasActiveSubscription={isSubActive} />
               </div>
             </CardHeader>
             <div className='border-t mx-2'></div>
@@ -252,10 +182,7 @@ export default async function BillingPage() {
                   <CardTitle className='text-sm'>Upgrade to {proPlusPlan.title}</CardTitle>
                   <CardDescription className='text-xs'>{proPlusPlan.description}</CardDescription>
                 </div>
-                <form action={createSubscriptionAction}>
-                  <input type='hidden' name='planId' value={PLAN_IDS.proplus} />
-                  <Button type='submit' className='h-8 text-xs px-3'>Upgrade now</Button>
-                </form>
+                <UpgradeSubscriptionButton planId={PLAN_IDS.proplus} hasActiveSubscription={isSubActive} />
               </div>
             </CardHeader>
             <div className='border-t mx-2'></div>
@@ -272,9 +199,33 @@ export default async function BillingPage() {
           </Card>
         ) : null}
 
-        {/* TOP ROW: Edit Subscription + Upgrade (two columns) */}
+        {/* TOP ROW: Edit Subscription + Upgrade + Renew */}
         {isSubActive ? (
-          <div className={`grid grid-cols-1 ${resolvedCurrent === PLAN_IDS.pro && proPlusPlan ? 'md:grid-cols-2' : 'md:grid-cols-1'} gap-4`}>
+          <div className={`grid grid-cols-1 gap-4 ${showUpgrade && showRenewal ? 'md:grid-cols-3' : (showUpgrade || showRenewal ? 'md:grid-cols-2' : 'md:grid-cols-1')}`}>
+            
+             {/* Renew Subscription (Primary Action if Low Credits) */}
+            {showRenewal ? (
+              <Card className='rounded-lg border border-yellow-500/50 bg-yellow-500/10 flex flex-col'>
+                 <CardHeader className='p-2'>
+                  <div className='flex items-center justify-between'>
+                    <div>
+                      <CardTitle className='text-sm text-yellow-600 dark:text-yellow-400'>Run out of credits?</CardTitle>
+                      <CardDescription className='text-xs'>
+                        Renew early to get fresh credits.
+                        <br />
+                        <span className='text-muted-foreground'>
+                           Current Credits: <span className='font-mono font-bold text-foreground'>{data.org.credits}</span>
+                        </span>
+                      </CardDescription>
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent className='px-2 pb-2 mt-auto'>
+                   <RenewSubscriptionButton />
+                </CardContent>
+              </Card>
+            ) : null}
+
             {/* Edit Subscription */}
             <Card className='rounded-lg border bg-muted/30'>
               <CardHeader className='p-2'>
@@ -298,7 +249,7 @@ export default async function BillingPage() {
             </Card>
 
             {/* Upgrade to Pro Plus (only when current is Pro) */}
-            {resolvedCurrent === PLAN_IDS.pro && proPlusPlan ? (
+            {showUpgrade ? (
               <Card className='rounded-lg border'>
                 <CardHeader className='p-2'>
                   <div className='flex items-center justify-between'>
@@ -306,10 +257,7 @@ export default async function BillingPage() {
                       <CardTitle className='text-sm'>Upgrade to {proPlusPlan.title}</CardTitle>
                       <CardDescription className='text-xs'>{proPlusPlan.description}</CardDescription>
                     </div>
-                    <form action={createSubscriptionAction}>
-                      <input type='hidden' name='planId' value={PLAN_IDS.proplus} />
-                      <Button type='submit' className='h-8 text-xs px-3'>Upgrade now</Button>
-                    </form>
+                    <UpgradeSubscriptionButton planId={PLAN_IDS.proplus} hasActiveSubscription={isSubActive} />
                   </div>
                 </CardHeader>
                 <div className='border-t mx-2'></div>
@@ -379,7 +327,7 @@ export default async function BillingPage() {
                             <TableCell className='font-mono text-xs'>{inv.number || inv.id}</TableCell>
                             <TableCell className='text-xs capitalize'>{inv.status || ''}</TableCell>
                             <TableCell className='text-xs'>
-                              {amount.toLocaleString(undefined, { style: 'currency', currency: inv.currency || 'usd', maximumFractionDigits: 0 })}
+                              {amount.toLocaleString(undefined, { style: 'currency', currency: inv.currency || 'usd' })}
                             </TableCell>
                             <TableCell>
                               {inv.hosted_invoice_url ? (

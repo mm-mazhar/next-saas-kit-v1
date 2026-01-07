@@ -136,11 +136,49 @@ export async function POST(req: Request) {
       return new Response(null, { status: 200 })
     }
 
-    // B. SUBSCRIPTION SETUP
     const subscriptionId = session.subscription as string
-    const currentOrg = await prisma.organization.findUnique({ where: { id: orgId }})
+    console.log(`[Stripe Webhook] Processing checkout.session.completed for session ${session.id}, subscription ${subscriptionId}, orgId ${orgId}`)
+
+    // 1. Fetch Org
+    const currentOrg = await prisma.organization.findUnique({ where: { id: orgId } })
+    if (!currentOrg) {
+        console.log(`[Stripe Webhook] Organization ${orgId} not found`)
+        return new Response(null, { status: 200 })
+    }
+
+    // 2. Fetch Existing Subscription explicitly
+    const existingSub = await prisma.subscription.findUnique({
+        where: { organizationId: orgId }
+    })
     
-    if (!currentOrg) return new Response(null, { status: 200 })
+    console.log(`[Stripe Webhook] Existing DB Subscription for Org:`, existingSub)
+
+    // 3. Robust Cancellation via Stripe API
+    // We strictly enforce 1 Active Subscription per Organization (Customer)
+    if (customerId) {
+        try {
+            console.log(`[Stripe Webhook] checking for conflicting subscriptions for customer ${customerId}`)
+            const subscriptions = await stripe.subscriptions.list({
+                customer: customerId,
+                status: 'all',
+                limit: 100,
+            })
+            
+            const activeStatuses = ['active', 'trialing', 'past_due']
+            
+            for (const sub of subscriptions.data) {
+                 if (sub.id === subscriptionId) continue
+                 
+                 if (activeStatuses.includes(sub.status)) {
+                     console.log(`[Stripe Webhook] Found conflicting subscription ${sub.id} (${sub.status}) - Cancelling...`)
+                     await stripe.subscriptions.cancel(sub.id)
+                     console.log(`[Stripe Webhook] Cancelled conflicting subscription ${sub.id}`)
+                 }
+            }
+        } catch (error) {
+             console.error('[Stripe Webhook] Failed to clean up old subscriptions', error)
+        }
+    }
 
     if (!currentOrg.stripeCustomerId && customerId) {
         await prisma.organization.update({ where: { id: orgId }, data: { stripeCustomerId: customerId } })
@@ -301,11 +339,15 @@ export async function POST(req: Request) {
           periodEndReminderSent: false,
         },
       })
-    } catch (error) {
-      console.error('[Stripe Webhook] Failed to update subscription on customer.subscription.updated', {
-        subscriptionId: fresh.id,
-        error,
-      })
+    } catch (error: any) {
+      if (error.code === 'P2025') {
+        console.log(`[Stripe Webhook] Subscription ${fresh.id} not found in DB during update. Skipping.`)
+      } else {
+        console.error('[Stripe Webhook] Failed to update subscription on customer.subscription.updated', {
+          subscriptionId: fresh.id,
+          error,
+        })
+      }
     }
     
     const scheduled = !!fresh.cancel_at_period_end || !!fresh.cancel_at
@@ -357,11 +399,15 @@ export async function POST(req: Request) {
           currentPeriodEnd: (sub as unknown as PeriodFields).current_period_end ?? undefined,
         },
       })
-    } catch (error) {
-      console.error('[Stripe Webhook] Failed to update subscription on customer.subscription.deleted', {
-        subscriptionId: sub.id,
-        error,
-      })
+    } catch (error: any) {
+      if (error.code === 'P2025') {
+        console.log(`[Stripe Webhook] Subscription ${sub.id} not found in DB during deletion. Skipping update.`)
+      } else {
+        console.error('[Stripe Webhook] Failed to update subscription on customer.subscription.deleted', {
+          subscriptionId: sub.id,
+          error,
+        })
+      }
     }
 
     try {

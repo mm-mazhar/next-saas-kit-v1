@@ -184,7 +184,7 @@ export default async function OrgDetailPage(props: { params: Promise<{ id: strin
                                <TableCell className="font-mono text-sm">{inv.number || inv.id}</TableCell>
                                <TableCell className="text-sm capitalize">{inv.status || ''}</TableCell>
                                <TableCell className="text-sm">
-                                 {amount.toLocaleString(undefined, { style: 'currency', currency: inv.currency || 'usd', maximumFractionDigits: 0 })}
+                                 {amount.toLocaleString(undefined, { style: 'currency', currency: inv.currency || 'usd' })}
                                </TableCell>
                                <TableCell>
                                  {inv.hosted_invoice_url ? (

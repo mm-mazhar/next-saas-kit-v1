@@ -212,7 +212,7 @@ export async function sendCancellationEmail(params: CancellationParams) {
       : 'Your remaining credits'
     creditsHtml = `<div style="color:#6b7280;font-size:14px">${prefix} have been successfully transferred to <strong>${params.creditsTransferredTo}</strong>.</div>`
   } else if (params.final) {
-    creditsHtml = '<div style="color:#6b7280;font-size:14px">Any remaining credits associated with this organization have been removed.</div>'
+    creditsHtml = '<div style="color:#6b7280;font-size:14px">Any remaining credits associated with this organization either transferred to another organization or have been retained.</div>'
   } else if (hasCreditsRemaining) {
     creditsHtml = `<div style="color:#6b7280;font-size:14px">Remaining credits: <strong>${params.creditsRemaining}</strong> (Valid until expiry)</div>`
   }

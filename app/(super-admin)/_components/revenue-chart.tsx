@@ -2,23 +2,23 @@
 
 'use client';
 
-import { memo, useMemo, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from '@/components/ui/select';
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
-import { 
-  Select, 
-  SelectContent, 
-  SelectItem, 
-  SelectTrigger, 
-  SelectValue 
-} from '@/components/ui/select';
 import { DEFAULT_CURRENCY, LOCALE } from '@/lib/constants';
 import { BarChart3 } from 'lucide-react';
+import { memo, useMemo, useState } from 'react';
 
 export type RevenuePoint = {
   month: string;
@@ -37,7 +37,8 @@ const BAR_COLORS = [
 const formatCurrency = (amount: number) => {
   const localeString = LOCALE.replace('_', '-');
   return new Intl.NumberFormat(localeString, {
-    style: 'currency', currency: DEFAULT_CURRENCY, maximumFractionDigits: 0,
+    style: 'currency',
+    currency: DEFAULT_CURRENCY,
   }).format(amount);
 };
 
@@ -238,7 +239,7 @@ export const RevenueChart = memo(({ className, data }: RevenueChartProps) => {
         <div className="grid grid-cols-3 gap-4 pt-4 border-t border-border/50">
           <div className="text-center">
             <div className="text-2xl font-bold text-emerald-500">
-              {formatCompact(stats.total)}
+              {formatCurrency(stats.total)}
             </div>
             <div className="text-xs text-muted-foreground font-medium mt-1">
               Total Revenue

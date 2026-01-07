@@ -220,7 +220,7 @@ export function NavUser({
                 const hasNotification = !!(exhausted || remaining <= CREDIT_REMINDER_THRESHOLD)
                 let tooltipText = `Credits: ${remaining}`
                 if (exhausted || remaining === 0) {
-                  tooltipText = 'Buy Credits'
+                  tooltipText = 'Renew Now'
                 } else if (remaining <= CREDIT_REMINDER_THRESHOLD) {
                   tooltipText = 'Low Credits'
                 }
