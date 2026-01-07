@@ -14,9 +14,9 @@ type AdminStats = {
   totalUsers: number;
   totalOrgs: number;
   activeProCount: number;
-  paygOrgsCount: number;
+  activeProPlusCount: number;
   proRevenue: number;
-  paygRevenue: number;
+  proPlusRevenue: number;
   totalRevenue: number;
   growthPercentage: string;
 };
@@ -50,8 +50,8 @@ export function DashboardActions({ data }: { data: AdminDashboardData }) {
     csvContent += `SUMMARY METRICS\n`;
     csvContent += `Metric,Value\n`;
     csvContent += `Total Revenue,${stats.totalRevenue}\n`;
-    csvContent += `Monthly Recurring (MRR),${stats.proRevenue}\n`;
-    csvContent += `Pay As You Go Revenue,${stats.paygRevenue}\n`;
+    csvContent += `Pro Plus (MRR),${stats.proPlusRevenue}\n`;
+    csvContent += `Pro (MRR),${stats.proRevenue}\n`;
     csvContent += `Total Users,${stats.totalUsers}\n`;
     csvContent += `Active Orgs,${stats.totalOrgs}\n\n`;
 

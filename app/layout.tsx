@@ -146,7 +146,7 @@ export default async function RootLayout({
       <head>
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
       </head>
-      <body className={`${inter.className} ${data?.colorScheme ?? DEFAULT_COLOR_SCHEME}`}>
+      <body className={`${inter.className} ${data?.colorScheme ?? DEFAULT_COLOR_SCHEME} scroll-smooth`}>
         <Script id='theme-init' strategy='beforeInteractive'>
           {`(function(){try{var k='app-theme';var s=localStorage.getItem(k);var t=s?s:(window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');var d=document.documentElement;d.classList.remove('light','dark');d.classList.add(t);}catch(e){}})();`}
         </Script>

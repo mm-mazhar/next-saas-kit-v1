@@ -24,8 +24,8 @@ export function formatPrice(
     return new Intl.NumberFormat(resolvedLocale, {
       style: 'currency',
       currency,
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
     }).format(amount)
   } catch {
     return `${amount}`
@@ -120,7 +120,7 @@ export const PRICING_PLANS: PricingPlan[] = [
   {
     id: PLAN_IDS.pro,
     title: 'Pro',
-    price: '6.99',
+    price: '9.99',
     priceSuffix: '/mo',
     description: 'Lorem ipsum dolor sit amet',
     credits: 50,
@@ -135,7 +135,7 @@ export const PRICING_PLANS: PricingPlan[] = [
   {
     id: PLAN_IDS.proplus,
     title: 'Pro Plus',
-    price: '21.99',
+    price: '19.99',
     priceSuffix: '/mo',
     description: 'Lorem ipsum dolor sit amet',
     credits: 100,

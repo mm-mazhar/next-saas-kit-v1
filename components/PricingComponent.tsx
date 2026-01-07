@@ -93,7 +93,7 @@ export default function PricingComponent({
         if (plan.id === PLAN_IDS.pro) {
           return (
             <Button className={btnClass} asChild>
-              <Link href='/dashboard/billing'>Purchase, go to Billing</Link>
+              <Link href='/dashboard/billing'>Subscribe, go to Billing</Link>
             </Button>
           )
         }
@@ -115,7 +115,7 @@ export default function PricingComponent({
         if (plan.id === PLAN_IDS.pro) {
           return (
             <Button className={btnClass} asChild>
-              <Link href='/dashboard/billing'>Purchase, go to Billing</Link>
+              <Link href='/dashboard/billing'>Subscribe, go to Billing</Link>
             </Button>
           )
         }
@@ -166,7 +166,7 @@ export default function PricingComponent({
         if (plan.id === PLAN_IDS.pro) {
           return (
             <Button className={btnClass} asChild>
-              <Link href='/dashboard/billing'>Purchase, go to Billing</Link>
+              <Link href='/dashboard/billing'>Subscribe, go to Billing</Link>
             </Button>
           )
         }
@@ -189,17 +189,6 @@ export default function PricingComponent({
     }
 
     if (onSubscribeAction) {
-      if (plan.id === PLAN_IDS.pro) {
-        const label = mode === 'billing' ? 'Purchase Credits' : 'Purchase Now'
-        return (
-          <form action={onSubscribeAction} className='w-full'>
-            <input type='hidden' name='planId' value={plan.id} />
-            <Button className={btnClass} disabled={false}>
-              {label}
-            </Button>
-          </form>
-        )
-      }
       if (isCurrent) {
         return (
           <Button className={btnClass} asChild>
@@ -207,7 +196,7 @@ export default function PricingComponent({
           </Button>
         )
       }
-      const label = plan.id === PLAN_IDS.proplus ? 'Subscribe' : (currentPlanId ? 'Upgrade' : 'Subscribe')
+      const label = (currentPlanId ? 'Upgrade' : 'Subscribe')
       return (
         <form action={onSubscribeAction} className='w-full'>
           <input type='hidden' name='planId' value={plan.id} />
@@ -294,11 +283,6 @@ export default function PricingComponent({
               <span className='ml-1 text-xl text-muted-foreground'>
                 {plan.priceSuffix}
               </span>
-              {mode === 'marketing' && plan.id === PLAN_IDS.pro ? (
-                <span className='absolute left-1/2 -translate-x-1/2 text-sm font-bold px-4 py-1.5 rounded-full bg-primary/15 text-primary border border-primary/30 shadow-sm'>
-                  Popular
-                </span>
-              ) : null}
             </div>
             <ul className={`space-y-1 ${listTextSizeClass}`}>
               {plan.features.map((f, i) => (
@@ -311,6 +295,13 @@ export default function PricingComponent({
           </CardContent>
           <CardFooter className={footerPaddingClass}>{renderButton(plan)}</CardFooter>
           {mode === 'marketing' ? <ShineBorder /> : null}
+          {mode === 'marketing' && plan.id === PLAN_IDS.pro ? (
+            <span className='pointer-events-none absolute top-3 -right-8 z-10 rotate-45 bg-primary text-primary-foreground text-xs font-semibold px-10 py-1 shadow-sm'>
+            {/* Keep the below commented off lines */}
+            {/* <span className='absolute top-0 right-0 bg-primary text-primary-foreground text-xs font-semibold px-3 py-1 rounded-bl-md shadow-sm'> */}
+              Popular
+            </span>
+          ) : null}
         </Card>
       ))}
     </div>

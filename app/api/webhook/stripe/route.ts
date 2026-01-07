@@ -150,6 +150,10 @@ export async function POST(req: Request) {
     const p = subscription as unknown as PeriodFields
     const currentStart = p.current_period_start ?? Math.floor(Date.now() / 1000)
     const currentEnd = p.current_period_end ?? Math.floor(Date.now() / 1000) + 30 * 24 * 60 * 60
+    const subscribedPriceId = subscription.items.data[0].price.id
+    const subscribedPlan = PRICING_PLANS.find((pl) => pl.stripePriceId === subscribedPriceId)
+    const subscribedCredits = subscribedPlan?.credits ?? 0
+    const subscribedTitle = subscribedPlan?.title ?? 'Subscription'
 
     await prisma.subscription.upsert({
       where: { organizationId: orgId },
@@ -175,11 +179,10 @@ export async function POST(req: Request) {
     })
 
     try {
-      const proCredits = PRICING_PLANS.find((p) => p.id === PLAN_IDS.proplus)?.credits ?? 100
       await prisma.organization.update({
         where: { id: orgId },
         data: {
-          credits: { increment: proCredits },
+          credits: { increment: subscribedCredits },
           creditsReminderThresholdSent: false,
         },
       })
@@ -223,7 +226,7 @@ export async function POST(req: Request) {
           currency: currency2,
           invoiceUrl: invUrl2 || (process.env.NEXT_PUBLIC_SITE_URL || ''),
           invoiceNumber: invNum2,
-          planTitle: 'Pro',
+          planTitle: subscribedTitle,
           periodEnd: currentEnd,
           portalUrl: null,
           finalCredits: finalCredits2,
@@ -262,10 +265,12 @@ export async function POST(req: Request) {
 
         const custId = String(subscription.customer || '')
         if (custId) {
-          const proCredits = PRICING_PLANS.find((p) => p.id === PLAN_IDS.proplus)?.credits ?? 100
+          const priceId = subscription.items.data[0].price.id
+          const plan = PRICING_PLANS.find((pl) => pl.stripePriceId === priceId)
+          const credits = plan?.credits ?? 0
           await prisma.organization.update({
             where: { stripeCustomerId: custId },
-            data: { credits: { increment: proCredits }, creditsReminderThresholdSent: false },
+            data: { credits: { increment: credits }, creditsReminderThresholdSent: false },
           })
         }
       } catch (error) {
@@ -315,11 +320,14 @@ export async function POST(req: Request) {
         if (subRecord?.organization) {
           const owner = await getOrgOwner(subRecord.organization.id)
           if (owner?.email) {
+            const priceId = fresh.items.data[0].price.id
+            const plan = PRICING_PLANS.find((pl) => pl.stripePriceId === priceId)
+            const planTitle = plan?.title ?? 'Subscription'
             await sendCancellationEmail({
               to: owner.email,
               name: owner.name,
               orgName: subRecord.organization.name,
-              planTitle: 'Pro',
+              planTitle,
               effectiveDate:
                 typeof fresh.cancel_at === 'number'
                   ? fresh.cancel_at
@@ -364,11 +372,14 @@ export async function POST(req: Request) {
       if (org && !org.deletedAt) {
         const owner = await getOrgOwner(org.id)
         if (owner?.email) {
+          const priceId = sub.items.data[0].price.id
+          const plan = PRICING_PLANS.find((pl) => pl.stripePriceId === priceId)
+          const planTitle = plan?.title ?? 'Subscription'
           await sendCancellationEmail({
             to: owner.email,
             name: owner.name,
             orgName: org.name,
-            planTitle: 'Pro',
+            planTitle,
             effectiveDate: (sub as unknown as PeriodFields).current_period_end ?? undefined,
             final: true,
             creditsRemaining: org.credits,

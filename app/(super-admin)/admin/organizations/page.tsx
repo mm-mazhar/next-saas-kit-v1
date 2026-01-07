@@ -9,8 +9,8 @@ import Link from 'next/link';
 import { DataPagination } from '../../_components/data-pagination';
 import { OrgTableToolbar } from '../../_components/org-table-toolbar';
 
-function timeAgo(date: Date) {
-  return new Date(date).toLocaleDateString();
+function formatDateGB(date: Date) {
+  return new Date(date).toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric' })
 }
 
 export default async function OrganizationsPage(props: {
@@ -99,7 +99,7 @@ export default async function OrganizationsPage(props: {
                     <TableCell className="md:px-16">{org._count.projects}</TableCell>
                     <TableCell className="md:px-16">{org.credits}</TableCell>
                     <TableCell className="md:px-16 text-muted-foreground">
-                      {timeAgo(org.createdAt)}
+                      {formatDateGB(org.createdAt)}
                     </TableCell>
                   </TableRow>
                 ))}

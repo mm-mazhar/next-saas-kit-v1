@@ -1,6 +1,7 @@
 // app/(super-admin)/admin/organizations/[id]/page.tsx
 
 import prisma from '@/app/lib/db';
+import { stripe } from '@/app/lib/stripe';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -25,6 +26,29 @@ export default async function OrgDetailPage(props: { params: Promise<{ id: strin
   });
 
   if (!org) return notFound();
+
+  let invoices: {
+    id: string;
+    amount_paid: number;
+    currency: string | null;
+    status: string | null;
+    hosted_invoice_url: string | null;
+    number: string | null;
+    created: number | null;
+  }[] = [];
+
+  if (org.stripeCustomerId) {
+    const list = await stripe.invoices.list({ customer: org.stripeCustomerId, limit: 12 });
+    invoices = list.data.map((inv) => ({
+      id: inv.id,
+      amount_paid: typeof inv.amount_paid === 'number' ? inv.amount_paid : 0,
+      currency: inv.currency || 'usd',
+      status: inv.status || null,
+      hosted_invoice_url: inv.hosted_invoice_url || null,
+      number: (inv.number as string | null) || null,
+      created: typeof inv.created === 'number' ? inv.created : null,
+    }));
+  }
 
   return (
     <div className="flex flex-col p-4 md:p-8 gap-6">
@@ -93,7 +117,9 @@ export default async function OrgDetailPage(props: { params: Promise<{ id: strin
                           {m.role}
                         </Badge>
                       </TableCell>
-                      <TableCell className="text-muted-foreground text-sm">{new Date(m.createdAt).toLocaleDateString()}</TableCell>
+                      <TableCell className="text-muted-foreground text-sm">
+                        {new Date(m.createdAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric' })}
+                      </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -114,7 +140,7 @@ export default async function OrgDetailPage(props: { params: Promise<{ id: strin
                     <TableRow key={p.id}>
                       <TableCell className="font-medium flex items-center gap-2"><Folder className="h-4 w-4 text-muted-foreground"/> {p.name}</TableCell>
                       <TableCell className="text-muted-foreground">{p.slug}</TableCell>
-                      <TableCell className="text-muted-foreground">{new Date(p.createdAt).toLocaleDateString()}</TableCell>
+                      <TableCell className="text-muted-foreground">{new Date(p.createdAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric' })}</TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -132,14 +158,49 @@ export default async function OrgDetailPage(props: { params: Promise<{ id: strin
                    <div className="space-y-1"><span className="text-sm text-muted-foreground">Stripe Customer ID</span><p className="font-mono text-sm">{org.stripeCustomerId || 'N/A'}</p></div>
                    <div className="space-y-1"><span className="text-sm text-muted-foreground">Subscription ID</span><p className="font-mono text-sm">{org.subscription?.stripeSubscriptionId || 'N/A'}</p></div>
                    <div className="space-y-1"><span className="text-sm text-muted-foreground">Status</span><p className="capitalize">{org.subscription?.status || 'None'}</p></div>
-                   <div className="space-y-1"><span className="text-sm text-muted-foreground">Current Period End</span><p>{org.subscription?.currentPeriodEnd ? new Date(org.subscription.currentPeriodEnd * 1000).toLocaleDateString() : 'N/A'}</p></div>
+                   <div className="space-y-1"><span className="text-sm text-muted-foreground">Current Period End</span><p>{org.subscription?.currentPeriodEnd ? new Date(org.subscription.currentPeriodEnd * 1000).toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric' }) : 'N/A'}</p></div>
                 </div>
                 <Separator />
                 <div className="pt-2">
-                   <h4 className="text-sm font-medium mb-2">Purchase History</h4>
-                   {org.lastPaygPurchaseAt ? (
-                     <div className="text-sm text-muted-foreground">Last PAYG purchase on {new Date(org.lastPaygPurchaseAt).toLocaleDateString()}</div>
-                   ) : <div className="text-sm text-muted-foreground">No extra credit purchases.</div>}
+                   <h4 className="text-sm font-medium mb-2">Invoice History</h4>
+                   {invoices.length > 0 ? (
+                     <Table>
+                       <TableHeader>
+                         <TableRow>
+                           <TableHead>Date</TableHead>
+                           <TableHead>Invoice</TableHead>
+                           <TableHead>Status</TableHead>
+                           <TableHead>Amount</TableHead>
+                           <TableHead>Link</TableHead>
+                         </TableRow>
+                       </TableHeader>
+                       <TableBody>
+                         {invoices.map((inv) => {
+                           const date = inv.created ? new Date(inv.created * 1000).toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric' }) : '';
+                           const amount = (inv.amount_paid || 0) / 100;
+                           return (
+                             <TableRow key={inv.id}>
+                               <TableCell className="text-sm text-muted-foreground">{date}</TableCell>
+                               <TableCell className="font-mono text-sm">{inv.number || inv.id}</TableCell>
+                               <TableCell className="text-sm capitalize">{inv.status || ''}</TableCell>
+                               <TableCell className="text-sm">
+                                 {amount.toLocaleString(undefined, { style: 'currency', currency: inv.currency || 'usd', maximumFractionDigits: 0 })}
+                               </TableCell>
+                               <TableCell>
+                                 {inv.hosted_invoice_url ? (
+                                   <Link href={inv.hosted_invoice_url} target="_blank" className="text-xs text-primary underline">View</Link>
+                                 ) : (
+                                   <span className="text-xs text-muted-foreground">N/A</span>
+                                 )}
+                               </TableCell>
+                             </TableRow>
+                           );
+                         })}
+                       </TableBody>
+                     </Table>
+                   ) : (
+                     <div className="text-sm text-muted-foreground">No subscription invoices found.</div>
+                   )}
                 </div>
              </CardContent>
           </Card>

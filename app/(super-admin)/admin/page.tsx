@@ -61,11 +61,10 @@ async function getAdminData() {
     monthIndexMap[key] = 11 - i;
   }
 
-  const proPlan = PRICING_PLANS.find(p => p.id === PLAN_IDS.proplus);
-  const paygPlan = PRICING_PLANS.find(p => p.id === PLAN_IDS.pro);
-  const paygPrice = Number(paygPlan?.price ?? 5);
+  const proPlan = PRICING_PLANS.find(p => p.id === PLAN_IDS.pro);
+  const proPlusPlan = PRICING_PLANS.find(p => p.id === PLAN_IDS.proplus);
 
-  const [subRevenueRows, paygRevenueRows, userGrowthRows] = await Promise.all([
+  const [subRevenueRowsPro, subRevenueRowsProPlus, userGrowthRows] = await Promise.all([
     proPlan
       ? prisma.$queryRaw<{ month: Date; count: bigint }[]>`
           SELECT date_trunc('month', "createdAt") AS month, COUNT(*)::bigint AS count
@@ -77,14 +76,17 @@ async function getAdminData() {
           ORDER BY month
         `
       : Promise.resolve([] as { month: Date; count: bigint }[]),
-    prisma.$queryRaw<{ month: Date; count: bigint }[]>`
-      SELECT date_trunc('month', "lastPaygPurchaseAt") AS month, COUNT(*)::bigint AS count
-      FROM "Organization"
-      WHERE "deletedAt" IS NULL
-        AND "lastPaygPurchaseAt" >= ${twelveMonthsAgo}
-      GROUP BY month
-      ORDER BY month
-    `,
+    proPlusPlan
+      ? prisma.$queryRaw<{ month: Date; count: bigint }[]>`
+          SELECT date_trunc('month', "createdAt") AS month, COUNT(*)::bigint AS count
+          FROM "Subscription"
+          WHERE "status" = 'active'
+            AND "createdAt" >= ${twelveMonthsAgo}
+            AND "planId" = ${proPlusPlan.stripePriceId}
+          GROUP BY month
+          ORDER BY month
+        `
+      : Promise.resolve([] as { month: Date; count: bigint }[]),
     prisma.$queryRaw<{ month: Date; count: bigint }[]>`
       SELECT date_trunc('month', "createdAt") AS month, COUNT(*)::bigint AS count
       FROM "User"
@@ -94,7 +96,7 @@ async function getAdminData() {
     `,
   ]);
 
-  subRevenueRows.forEach(row => {
+  subRevenueRowsPro.forEach(row => {
     const d = new Date(row.month);
     const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
     const index = monthIndexMap[key];
@@ -105,13 +107,15 @@ async function getAdminData() {
     }
   });
 
-  paygRevenueRows.forEach(row => {
+  subRevenueRowsProPlus.forEach(row => {
     const d = new Date(row.month);
     const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
     const index = monthIndexMap[key];
     if (index === undefined) return;
     const count = Number(row.count);
-    revenueData[index].value += count * paygPrice;
+    if (proPlusPlan) {
+      revenueData[index].value += count * Number(proPlusPlan.price);
+    }
   });
 
   userGrowthRows.forEach(row => {
@@ -166,7 +170,9 @@ async function getAdminData() {
   const totalOrgs = await prisma.organization.count({ where: { deletedAt: null } });
   
   let proRevenue = 0;
+  let proPlusRevenue = 0;
   let activeProCount = 0;
+  let activeProPlusCount = 0;
 
   if (proPlan) {
     const proSubCountRows = await prisma.$queryRaw<{ count: bigint }[]>`
@@ -180,11 +186,19 @@ async function getAdminData() {
     proRevenue = activeProCount * Number(proPlan.price);
   }
 
-  // PAYG Calc
-  const paygOrgsCount = await prisma.organization.count({ where: { lastPaygPurchaseAt: { not: null }, deletedAt: null } });
-  const paygRevenue = paygOrgsCount * paygPrice;
+  if (proPlusPlan) {
+    const proPlusSubCountRows = await prisma.$queryRaw<{ count: bigint }[]>`
+      SELECT COUNT(*)::bigint AS count
+      FROM "Subscription"
+      WHERE "status" = 'active'
+        AND "planId" = ${proPlusPlan.stripePriceId}
+    `;
+    const proPlusSubCount = proPlusSubCountRows.length > 0 ? Number(proPlusSubCountRows[0].count) : 0;
+    activeProPlusCount = proPlusSubCount;
+    proPlusRevenue = activeProPlusCount * Number(proPlusPlan.price);
+  }
   
-  const totalRevenue = proRevenue + paygRevenue;
+  const totalRevenue = proRevenue + proPlusRevenue;
 
   // Growth %
   const thirtyDaysAgo = new Date(); 
@@ -195,7 +209,7 @@ async function getAdminData() {
     : '100';
 
   return {
-    stats: { totalUsers, totalOrgs, activeProCount, paygOrgsCount, proRevenue, paygRevenue, totalRevenue, growthPercentage },
+    stats: { totalUsers, totalOrgs, activeProCount, activeProPlusCount, proRevenue, proPlusRevenue, totalRevenue, growthPercentage },
     revenueChart: revenueData,
     userChart: userData,
     recentActivity: activityList,
@@ -211,11 +225,11 @@ export default async function AdminDashboardPage() {
 
   const cardStats = [
     { title: 'Total Revenue', value: formatCurrency(stats.totalRevenue), change: 'Lifetime est.', changeType: 'positive' as const, icon: DollarSign, color: 'text-green-500', bgColor: 'bg-green-500/10' },
-    { title: 'Monthly Recurring (MRR)', value: formatCurrency(stats.proRevenue), change: 'Active Pro Subs', changeType: 'positive' as const, icon: CreditCard, color: 'text-purple-500', bgColor: 'bg-purple-500/10' },
-    { title: 'Pay As You Go (Est.)', value: formatCurrency(stats.paygRevenue), change: `${stats.paygOrgsCount} purchases`, changeType: 'positive' as const, icon: Layers, color: 'text-indigo-500', bgColor: 'bg-indigo-500/10' },
+    { title: 'Pro (MRR)', value: formatCurrency(stats.proRevenue), change: `${stats.activeProCount} subs`, changeType: 'positive' as const, icon: Layers, color: 'text-indigo-500', bgColor: 'bg-indigo-500/10' },
+    { title: 'Pro Plus (MRR)', value: formatCurrency(stats.proPlusRevenue), change: 'Active Pro Plus Subs', changeType: 'positive' as const, icon: CreditCard, color: 'text-purple-500', bgColor: 'bg-purple-500/10' },
     { title: 'Total Users', value: stats.totalUsers.toLocaleString(), change: `+${stats.growthPercentage}% (30d)`, changeType: 'positive' as const, icon: Users, color: 'text-blue-500', bgColor: 'bg-blue-500/10' },
     { title: 'Active Organizations', value: stats.totalOrgs.toLocaleString(), change: 'Workspaces', changeType: 'positive' as const, icon: Activity, color: 'text-orange-500', bgColor: 'bg-orange-500/10' },
-    { title: 'Active Subscriptions', value: stats.activeProCount.toLocaleString(), change: 'Pro Plans', changeType: 'positive' as const, icon: Banknote, color: 'text-emerald-500', bgColor: 'bg-emerald-500/10' },
+    { title: 'Active Subscriptions', value: (stats.activeProCount + stats.activeProPlusCount).toLocaleString(), change: 'Pro + Pro Plus', changeType: 'positive' as const, icon: Banknote, color: 'text-emerald-500', bgColor: 'bg-emerald-500/10' },
   ];
 
   return (

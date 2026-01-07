@@ -16,11 +16,9 @@ import { Users } from 'lucide-react';
 import { DataPagination } from '../../_components/data-pagination';
 import { UserTableToolbar } from '../../_components/user-table-toolbar';
 
-// Helper to calculate time ago
-function timeAgo(date: Date) {
-  const diff = Math.floor((new Date().getTime() - new Date(date).getTime()) / 1000);
-  if (diff < 86400) return 'Today';
-  return new Date(date).toLocaleDateString();
+// Helper: format date as "12 June 2026"
+function formatDateGB(date: Date) {
+  return new Date(date).toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric' })
 }
 
 export default async function UsersPage(props: {
@@ -92,10 +90,10 @@ export default async function UsersPage(props: {
                 <TableRow>
                   <TableHead className="w-[50px]"></TableHead>
                   <TableHead>User</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Orgs</TableHead>
-                  <TableHead>Theme</TableHead>
-                  <TableHead className="text-right">Joined</TableHead>
+                  <TableHead className="w-[120px] md:px-16">Status</TableHead>
+                  <TableHead className="w-[100px] md:px-16">Orgs</TableHead>
+                  <TableHead className="w-[100px] md:px-16">Theme</TableHead>
+                  <TableHead className="w-[140px] md:px-16">Joined</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -126,26 +124,26 @@ export default async function UsersPage(props: {
                           <span className="text-xs text-muted-foreground">{user.email}</span>
                         </div>
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="md:px-16">
                         {/* Assuming active if they exist in DB. 
                             If you had an 'isActive' boolean, use that. */}
                         <Badge variant="outline" className="bg-emerald-500/10 text-emerald-600 border-emerald-500/20">
                           Active
                         </Badge>
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="md:px-16">
                          {/* Display number of orgs they are in */}
                          <span className="text-sm text-muted-foreground">
                             {user._count.memberships} Org{user._count.memberships !== 1 && 's'}
                          </span>
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="md:px-16">
                         <span className="capitalize text-xs text-muted-foreground bg-muted px-2 py-1 rounded">
                           {user.colorScheme.replace('theme-', '')}
                         </span>
                       </TableCell>
-                      <TableCell className="text-right text-muted-foreground">
-                        {timeAgo(user.createdAt)}
+                      <TableCell className="md:px-16 text-muted-foreground">
+                        {formatDateGB(user.createdAt)}
                       </TableCell>
                     </TableRow>
                   ))

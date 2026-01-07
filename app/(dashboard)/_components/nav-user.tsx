@@ -152,17 +152,21 @@ export function NavUser({
                   className='flex items-center text-sm gap-2'
                 >
                   <Sparkles />
-                  {currentPlanId === PLAN_IDS.pro ? (
-                    <>
-                      PAYG, Upgrade to <span className="text-primary font-semibold">Pro</span>
-                    </>
-                  ) : currentPlanId === PLAN_IDS.proplus ? (
-                    <span className="text-primary font-semibold">Pro</span>
-                  ) : (
-                    <>
-                      Free, Upgrade to <span className="text-primary font-semibold">Pro</span>
-                    </>
-                  )}
+                  {currentPlanId === PLAN_IDS.pro
+                    ? (
+                      <>
+                        <span className="text-primary font-semibold">Pro</span>, Upgrade to <span className="text-primary font-semibold">Pro Plus</span>
+                      </>
+                    )
+                    : currentPlanId === PLAN_IDS.proplus
+                    ? (
+                      <span className="text-primary font-semibold">Pro Plus</span>
+                    )
+                    : (
+                      <>
+                        Free, Upgrade to <span className="text-primary font-semibold">Pro</span>
+                      </>
+                    )}
                 </Link>
               </DropdownMenuItem>
               )}
