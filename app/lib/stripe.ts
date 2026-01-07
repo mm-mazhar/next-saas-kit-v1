@@ -21,7 +21,7 @@ export const getStripeSession = async ({
   customerId?: string
   userId?: string
   organizationId?: string
-  mode?: 'subscription' | 'payment'
+  mode?: 'subscription'
 }) => {
   const payload: Stripe.Checkout.SessionCreateParams = {
     mode,
@@ -33,15 +33,9 @@ export const getStripeSession = async ({
     allow_promotion_codes: true,
   }
 
-  if (mode === 'payment') {
-    payload.invoice_creation = { enabled: true }
-  }
-
   if (customerId && customerId.startsWith('cus_')) {
     payload.customer = customerId
     payload.customer_update = { address: 'auto', name: 'auto' }
-  } else if (mode === 'payment') {
-    payload.customer_creation = 'always'
   }
 
   if (organizationId || userId) {

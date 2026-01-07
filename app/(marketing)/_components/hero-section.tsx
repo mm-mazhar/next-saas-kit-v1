@@ -75,8 +75,6 @@ export default async function HeroSection() {
   const subStatus = orgBilling?.subscription?.status ?? null
   const rawPlanId = orgBilling?.subscription?.planId ?? null
   const creditsUsed = orgBilling?.credits ?? 0
-  const paygCredits = PRICING_PLANS.find((p) => p.id === PLAN_IDS.pro)?.credits ?? 0
-  const paygEligible = !!orgBilling?.lastPaygPurchaseAt && creditsUsed < paygCredits
   const currentPlanId: PlanId | null = (() => {
     if (subStatus === 'active') {
       if (!rawPlanId) return PLAN_IDS.free
@@ -84,7 +82,7 @@ export default async function HeroSection() {
       const matched = PRICING_PLANS.find((p: PricingPlan) => p.stripePriceId === rawPlanId)
       return matched?.id ?? PLAN_IDS.free
     }
-    return paygEligible ? PLAN_IDS.pro : null
+    return null
   })()
 
   const proCredits = PRICING_PLANS.find((p) => p.id === PLAN_IDS.proplus)?.credits ?? 0
@@ -226,7 +224,6 @@ export default async function HeroSection() {
                 currentPlanId={currentPlanId}
                 isAuthenticated={!!user}
                 mode='marketing'
-                lastPaygPurchaseAt={orgBilling?.lastPaygPurchaseAt ?? null}
                 proExhausted={proExhausted}              
               />
             </div>

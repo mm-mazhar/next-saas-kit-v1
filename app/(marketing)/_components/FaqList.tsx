@@ -68,14 +68,7 @@ const faqItems: FaqItem[] = [
     id: '10',
     question: 'Who pays for the credits, the User or the Organization?',
     answer:
-      'Billing is attached to the Organization, not the User. This means if you buy a "Pay As You Go" pack or subscribe to Pro, those credits belong to the Organization "wallet". Any member of the team can use them to create projects.',
-    category: 'pricing',
-  },
-  {
-    id: '11',
-    question: 'Do "Pay As You Go" credits expire?',
-    answer:
-      'No. Credits purchased via "Pay As You Go" packs do not expire. They roll over indefinitely until your team uses them.',
+      'Billing is attached to the Organization, not the User. This means if you subscribe to Pro, those credits belong to the Organization "wallet". Any member of the team can use them to create projects.',
     category: 'pricing',
   },
   {

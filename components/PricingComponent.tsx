@@ -22,7 +22,6 @@ export type PricingComponentProps = {
   mode?: 'marketing' | 'billing'
   onSubscribeAction?: (formData: FormData) => Promise<void> | void
   onFreeAction?: (formData: FormData) => Promise<void> | void
-  lastPaygPurchaseAt?: Date | string | number | null
   proExhausted?: boolean
 }
 
@@ -31,7 +30,6 @@ export default function PricingComponent({
   isAuthenticated = false,
   mode = 'billing',
   onSubscribeAction,
-  lastPaygPurchaseAt,
   proExhausted,
 }: PricingComponentProps) {
   void proExhausted
@@ -237,25 +235,13 @@ export default function PricingComponent({
               <CardTitle className={mode === 'billing' ? 'text-base' : ''}>{plan.title}</CardTitle>
               {(() => {
                 const showFree = plan.id === PLAN_IDS.free && (
-                  (mode === 'marketing' && isAuthenticated && !lastPaygPurchaseAt && (currentPlanId === null || currentPlanId === PLAN_IDS.free)) ||
+                  (mode === 'marketing' && isAuthenticated && (currentPlanId === null || currentPlanId === PLAN_IDS.free)) ||
                   (mode === 'billing' && (currentPlanId === null || currentPlanId === PLAN_IDS.free))
                 )
                 if (showFree) {
                   return (
                     <span className='text-[10px] px-2 py-0.5 rounded-full bg-primary/15 text-primary border border-primary/30'>
                       Activated
-                    </span>
-                  )
-                }
-                const showPayg = plan.id === PLAN_IDS.pro && !!lastPaygPurchaseAt
-                if (showPayg) {
-                  const raw = lastPaygPurchaseAt
-                  const d = typeof raw === 'string' || typeof raw === 'number' ? new Date(raw) : raw instanceof Date ? raw : null
-                  const dateText = d ? d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : ''
-                  const label = dateText ? `Purchased: ${dateText}` : 'Purchased'
-                  return (
-                    <span className='text-[10px] px-2 py-0.5 rounded-full bg-primary/15 text-primary border border-primary/30'>
-                      {label}
                     </span>
                   )
                 }

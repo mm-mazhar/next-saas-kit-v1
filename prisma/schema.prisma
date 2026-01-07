@@ -69,7 +69,6 @@ model Organization {
   isPrimary                    Boolean   @default(false)
   credits                      Int       @default(5)
   creditsReminderThresholdSent Boolean   @default(false)
-  lastPaygPurchaseAt           DateTime?
   lastFreeRefillAt             DateTime  @default(now())
 
   subscription Subscription?

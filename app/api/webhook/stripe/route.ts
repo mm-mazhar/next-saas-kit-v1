@@ -3,7 +3,7 @@
 import prisma from '@/app/lib/db'
 import { sendCancellationEmail, sendPaymentConfirmationEmail } from '@/app/lib/email'
 import { stripe } from '@/app/lib/stripe'
-import { PLAN_IDS, PRICING_PLANS } from '@/lib/constants'
+import { PRICING_PLANS } from '@/lib/constants'
 import { headers } from 'next/headers'
 import Stripe from 'stripe'
 
@@ -68,74 +68,6 @@ export async function POST(req: Request) {
         return new Response(null, { status: 200 })
     }
 
-    // A. PAY AS YOU GO
-    if (session.mode === 'payment') {
-      const sessionCreatedDate = new Date((session.created || Math.floor(Date.now() / 1000)) * 1000)
-      
-      await prisma.$transaction(async (tx) => {
-        const currentOrg = await tx.organization.findUnique({ where: { id: orgId! } })
-        
-        if (currentOrg?.lastPaygPurchaseAt && currentOrg.lastPaygPurchaseAt.getTime() === sessionCreatedDate.getTime()) {
-           return 
-        }
-
-        const paygCredits = PRICING_PLANS.find((p) => p.id === PLAN_IDS.pro)?.credits ?? 50
-        
-        await tx.organization.update({
-          where: { id: orgId! },
-          data: {
-            credits: { increment: paygCredits },
-            creditsReminderThresholdSent: false,
-            lastPaygPurchaseAt: sessionCreatedDate,
-            stripeCustomerId: currentOrg?.stripeCustomerId ? undefined : (customerId || undefined),
-          },
-        })
-      })
-      
-      // ✅ FIXED: Fetch Owner details properly
-      const owner = await getOrgOwner(orgId)
-      const to = (session.customer_details?.email) || (session.customer_email) || owner?.email || ''
-      const userName = owner?.name || 'Customer'
-      
-      const amountTotal = typeof session.amount_total === 'number' ? session.amount_total : 0
-      const currency = (session.currency as string | undefined) || 'usd'
-      
-      let invoiceUrl = ''
-      let invoiceNumber: string | null = null
-      if (session.invoice && typeof session.invoice === 'string') {
-        const inv = await stripe.invoices.retrieve(session.invoice)
-        invoiceUrl = inv.hosted_invoice_url || ''
-        invoiceNumber = (inv.number as string | null) || null
-      }
-
-      let finalCredits: number | null = null
-      let orgName: string | null = null
-
-      try {
-          const fresh = await prisma.organization.findUnique({ where: { id: orgId }, select: { credits: true, name: true } })
-          finalCredits = fresh?.credits ?? null
-          orgName = fresh?.name ?? null
-      } catch {}
-
-      if (to) {
-        try {
-          await sendPaymentConfirmationEmail({
-            to,
-            name: userName, // ✅ Passing User Name
-            orgName,       // ✅ Passing Org Name separately
-            amountPaid: amountTotal,
-            currency,
-            invoiceUrl: invoiceUrl || (process.env.NEXT_PUBLIC_SITE_URL || ''),
-            invoiceNumber,
-            planTitle: 'Pay As You Go',
-            portalUrl: null,
-            finalCredits,
-          })
-        } catch {}
-      }
-      return new Response(null, { status: 200 })
-    }
-
     const subscriptionId = session.subscription as string
     console.log(`[Stripe Webhook] Processing checkout.session.completed for session ${session.id}, subscription ${subscriptionId}, orgId ${orgId}`)
 
@@ -150,7 +82,7 @@ export async function POST(req: Request) {
     const existingSub = await prisma.subscription.findUnique({
         where: { organizationId: orgId }
     })
-    
+
     console.log(`[Stripe Webhook] Existing DB Subscription for Org:`, existingSub)
 
     // 3. Robust Cancellation via Stripe API
@@ -163,12 +95,12 @@ export async function POST(req: Request) {
                 status: 'all',
                 limit: 100,
             })
-            
+
             const activeStatuses = ['active', 'trialing', 'past_due']
-            
+
             for (const sub of subscriptions.data) {
                  if (sub.id === subscriptionId) continue
-                 
+
                  if (activeStatuses.includes(sub.status)) {
                      console.log(`[Stripe Webhook] Found conflicting subscription ${sub.id} (${sub.status}) - Cancelling...`)
                      await stripe.subscriptions.cancel(sub.id)
@@ -236,24 +168,24 @@ export async function POST(req: Request) {
     const owner = await getOrgOwner(orgId)
     const to2 = (session.customer_details?.email) || (session.customer_email) || owner?.email || ''
     const userName2 = owner?.name || 'Customer'
-    
+
     const amount2 = typeof session.amount_total === 'number' ? session.amount_total : 0
     const currency2 = (session.currency as string | undefined) || 'usd'
     let invUrl2 = ''
     let invNum2: string | null = null
-    
+
     if (session.invoice && typeof session.invoice === 'string') {
         const inv = await stripe.invoices.retrieve(session.invoice)
         invUrl2 = inv.hosted_invoice_url || ''
         invNum2 = (inv.number as string | null) || null
     }
-    
+
     let finalCredits2: number | null = null
     try {
       const freshOrg = await prisma.organization.findUnique({ where: { id: orgId }, select: { credits: true } })
       finalCredits2 = freshOrg?.credits ?? null
     } catch {}
-    
+
     if (to2) {
       try {
         await sendPaymentConfirmationEmail({
@@ -278,7 +210,7 @@ export async function POST(req: Request) {
   // ============================================================
   if (event.type === 'invoice.payment_succeeded') {
     const invoice = event.data.object as Stripe.Invoice & { subscription?: string | Stripe.Subscription | null }
-    
+
     if (invoice.billing_reason === 'subscription_create') {
        return new Response(null, { status: 200 })
     }
@@ -339,8 +271,8 @@ export async function POST(req: Request) {
           periodEndReminderSent: false,
         },
       })
-    } catch (error: any) {
-      if (error.code === 'P2025') {
+    } catch (error) {
+      if (error && typeof error === 'object' && 'code' in error && error.code === 'P2025') {
         console.log(`[Stripe Webhook] Subscription ${fresh.id} not found in DB during update. Skipping.`)
       } else {
         console.error('[Stripe Webhook] Failed to update subscription on customer.subscription.updated', {
@@ -349,10 +281,10 @@ export async function POST(req: Request) {
         })
       }
     }
-    
+
     const scheduled = !!fresh.cancel_at_period_end || !!fresh.cancel_at
     const immediateCanceled = fresh.status === 'canceled'
-    
+
     if (scheduled && !immediateCanceled) {
       try {
         const subRecord = await prisma.subscription.findUnique({
@@ -399,8 +331,8 @@ export async function POST(req: Request) {
           currentPeriodEnd: (sub as unknown as PeriodFields).current_period_end ?? undefined,
         },
       })
-    } catch (error: any) {
-      if (error.code === 'P2025') {
+    } catch (error) {
+      if (error && typeof error === 'object' && 'code' in error && error.code === 'P2025') {
         console.log(`[Stripe Webhook] Subscription ${sub.id} not found in DB during deletion. Skipping update.`)
       } else {
         console.error('[Stripe Webhook] Failed to update subscription on customer.subscription.deleted', {

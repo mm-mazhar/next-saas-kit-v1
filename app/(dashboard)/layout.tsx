@@ -119,13 +119,7 @@ async function DashboardGroupLayout({ children }: { children: ReactNode }) {
   // 'exhausted' should be true only if balance <= 0.
   // The old logic (creditsUsed >= creditsTotal) was treating 'credits' as 'consumed', which was wrong.
   
-  // paygEligible: user bought PAYG and still has some credits? 
-  // Old logic: creditsUsed < paygCredits. If creditsUsed is balance, this means "Balance < 50".
-  // Maybe they meant "If I bought PAYG, I am eligible".
-  // Let's just assume if lastPaygPurchaseAt exists, they are PAYG eligible unless overridden by Sub.
-  const paygEligible = !!orgBilling?.lastPaygPurchaseAt
-  
-  const effectivePlan: PlanId = subStatus === 'active' ? (currentPlan ?? PLAN_IDS.free) : paygEligible ? PLAN_IDS.pro : PLAN_IDS.free
+  const effectivePlan: PlanId = subStatus === 'active' ? (currentPlan ?? PLAN_IDS.free) : PLAN_IDS.free
   const creditsTotal = PRICING_PLANS.find((p) => p.id === effectivePlan)?.credits ?? 0
   
   const exhausted = creditsRemaining <= 0
@@ -165,7 +159,7 @@ async function DashboardGroupLayout({ children }: { children: ReactNode }) {
               'https://github.com/shadcn.png',
           }}
           isSuperAdmin={isSuperAdmin}
-          currentPlanId={subStatus === 'active' ? currentPlan : (paygEligible ? PLAN_IDS.pro : null)}
+          currentPlanId={subStatus === 'active' ? currentPlan : null}
           organizations={mappedOrgs}
           currentOrganization={mappedCurrentOrg}
           creditsUsed={creditsRemaining}

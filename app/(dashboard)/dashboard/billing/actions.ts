@@ -139,7 +139,7 @@ export async function renewSubscription(): Promise<{ success: boolean; message?:
 
     return { success: true, url }
 
-  } catch (error: any) {
+  } catch (error) {
     console.error('[renewSubscription] Unexpected error:', error)
     return { success: false, message: 'An unexpected error occurred' }
   }

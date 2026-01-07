@@ -68,20 +68,12 @@ export default async function BillingPage() {
   }
 
   const resolvedCurrent = await resolvePlanId(data.planId)
-  const proCredits = PRICING_PLANS.find((p) => p.id === PLAN_IDS.proplus)?.credits ?? 0
-  const proExhausted = (data.status === 'active' && resolvedCurrent === PLAN_IDS.proplus)
-    ? ((data.org.credits ?? 0) >= proCredits)
-    : false
-  const hasPayg = !!data.org.lastPaygPurchaseAt
-  const raw = data.org.lastPaygPurchaseAt
-  const d = typeof raw === 'string' || typeof raw === 'number' ? new Date(raw) : raw instanceof Date ? raw : null
-  const dateText = d ? d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : ''
+  // const proCredits = PRICING_PLANS.find((p) => p.id === PLAN_IDS.proplus)?.credits ?? 0
+  // const proExhausted = (data.status === 'active' && resolvedCurrent === PLAN_IDS.proplus)
+  //   ? ((data.org.credits ?? 0) >= proCredits)
+  //   : false
+
   const isSubActive = data.status === 'active'
-  const note = hasPayg
-    ? isSubActive
-      ? `Subscription takes precedence over Pay As You Go. Last Purchase: ${dateText}.`
-      : `Using Pay As You Go until credits are exhausted. Last Purchase: ${dateText}.`
-    : null
 
   const proPlan = PRICING_PLANS.find((p) => p.id === PLAN_IDS.pro)
   const proPlusPlan = PRICING_PLANS.find((p) => p.id === PLAN_IDS.proplus)
@@ -89,9 +81,9 @@ export default async function BillingPage() {
   const showRenewal = isSubActive && (data.org.credits < SUBSCRIPTION_RENEWAL_CREDIT_THRESHOLD)
   const showUpgrade = resolvedCurrent === PLAN_IDS.pro && proPlusPlan
 
-  const currentForState: PlanId | null = isSubActive ? resolvedCurrent : (hasPayg ? PLAN_IDS.pro : null)
+  const currentForState: PlanId | null = isSubActive ? resolvedCurrent : null
   const isFreeTierBilling = currentForState === null || currentForState === PLAN_IDS.free
-  
+
   let invoices: {
     id: string;
     amount_paid: number;
@@ -123,17 +115,6 @@ export default async function BillingPage() {
             All plans &rarr;
           </Link>
         </div>
-        
-        {/* NOTE CARD: Reduced padding to p-2 and font to text-xs */}
-        {note ? (
-          <Card className='rounded-lg border bg-muted/30'>
-            <CardHeader className='p-2'>
-               <CardDescription className='text-xs text-foreground'>
-                 {note}
-               </CardDescription>
-            </CardHeader>
-          </Card>
-        ) : null}
 
         {isFreeTierBilling ? (
           <Card className='rounded-lg border bg-muted/30'>
@@ -173,7 +154,7 @@ export default async function BillingPage() {
             </CardContent>
           </Card>
         ) : null}
-        
+
         {isFreeTierBilling && proPlusPlan ? (
           <Card className='rounded-lg border'>
             <CardHeader className='p-2'>
@@ -202,7 +183,7 @@ export default async function BillingPage() {
         {/* TOP ROW: Edit Subscription + Upgrade + Renew */}
         {isSubActive ? (
           <div className={`grid grid-cols-1 gap-4 ${showUpgrade && showRenewal ? 'md:grid-cols-3' : (showUpgrade || showRenewal ? 'md:grid-cols-2' : 'md:grid-cols-1')}`}>
-            
+
              {/* Renew Subscription (Primary Action if Low Credits) */}
             {showRenewal ? (
               <Card className='rounded-lg border border-yellow-500/50 bg-yellow-500/10 flex flex-col'>
