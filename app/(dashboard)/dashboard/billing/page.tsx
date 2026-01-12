@@ -208,7 +208,7 @@ export default async function BillingPage() {
             ) : null}
 
             {/* Edit Subscription */}
-            <Card className='rounded-lg border bg-muted/30'>
+            <Card className='rounded-lg border bg-muted/30 flex flex-col'>
               <CardHeader className='p-2'>
                 <CardTitle className="text-sm">Edit Subscription</CardTitle>
                 <CardDescription className="text-xs">
@@ -222,7 +222,7 @@ export default async function BillingPage() {
                   </p>
                 </CardDescription>
               </CardHeader>
-              <CardContent className='px-2 pb-2'>
+              <CardContent className='px-2 pb-2 mt-auto'>
                 <form action={createCustomerPortal}>
                   <Button type='submit' className='h-8 text-xs px-3'>View payment details</Button>
                 </form>

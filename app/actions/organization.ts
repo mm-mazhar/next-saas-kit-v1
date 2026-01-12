@@ -445,29 +445,8 @@ export async function deleteOrganization(orgId: string, transferToOrgId?: string
       }
     }
     
-    if (hadStripeSubscriptionId) {
-      try {
-        const owner = await prisma.organizationMember.findFirst({
-          where: { organizationId: orgId, role: 'OWNER' },
-          include: { user: true }
-        })
-
-        const to = owner?.user.email ?? null
-        if (to) {
-          await sendCancellationEmail({
-            to,
-            name: owner?.user.name ?? null,
-            orgName: org.name,
-            planTitle: 'Pro',
-            effectiveDate: org.subscription?.currentPeriodEnd ?? null,
-            final: true,
-            creditsRemaining: transferredCredits,
-            creditsTransferredTo: transferTargetName,
-            portalUrl: null
-          })
-        }
-      } catch {}
-    }
+    // Note: Cancellation email will be sent by Stripe webhook (customer.subscription.deleted)
+    // to avoid duplicate emails and ensure correct plan title is used
 
     // Soft Delete (via Service)
     await OrganizationService.deleteOrganization(orgId)

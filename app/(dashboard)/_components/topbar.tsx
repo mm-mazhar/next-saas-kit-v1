@@ -26,7 +26,8 @@ import {
   Home,
   Settings,
 } from 'lucide-react'
-import Link from 'next/link'
+// keep the commented off code
+// import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import * as React from 'react'
 
@@ -130,11 +131,12 @@ export function TopBar({
             Credits: {usageInfo.creditsUsed ?? 0}
           </span>
         )}
-        {usageInfo?.creditsUsed === 0 ? (
+        {/* keep the commented off */}
+        {/* {usageInfo?.creditsUsed === 0 ? (
           <Link href='/dashboard/billing' className='inline-flex items-center h-8 px-3 rounded-md bg-primary text-primary-foreground font-medium text-sm border border-primary leading-none'>
             Renew Now
           </Link>
-        ) : null}
+        ) : null} */}
         {usageInfo ? (
           <Tooltip>
             <TooltipTrigger asChild>

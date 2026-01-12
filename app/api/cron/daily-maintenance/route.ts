@@ -24,7 +24,8 @@ export async function GET() {
       UPDATE "Organization"
       SET 
         "credits" = 5,
-        "lastFreeRefillAt" = NOW()
+        "lastFreeRefillAt" = NOW(),
+        "creditsReminderThresholdSent" = false
       FROM "Organization" o
       LEFT JOIN "Subscription" s ON s."organizationId" = o.id
       WHERE 

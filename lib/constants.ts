@@ -78,8 +78,8 @@ export const APP_PHONE_1 = `+1 xxx xxxx` as string
 export const APP_PHONE_2 = `+1 xxx xxxx` as string
 
 // ✅ Pricing
-export const STRIPE_PRICE_ID_1 = (process.env.STRIPE_PRICE_ID_1 || '') as string
-export const STRIPE_PRICE_ID_2 = (process.env.STRIPE_PRICE_ID_2 || '') as string
+export const STRIPE_PRICE_ID_pro = (process.env.STRIPE_PRICE_ID_pro || '') as string
+export const STRIPE_PRICE_ID_proplus = (process.env.STRIPE_PRICE_ID_proplus || '') as string
 
 // A new type definition for a pricing plan
 export const PRICE_HEADING = `Pricing that scales with your interests` as string
@@ -130,7 +130,7 @@ export const PRICING_PLANS: PricingPlan[] = [
       'Lorem ipsum dolor sit amet, consetetur sadipscing',
       'Lorem ipsum dolor sit amet, consetetur sadipscing',
     ],
-    stripePriceId: STRIPE_PRICE_ID_1,
+    stripePriceId: STRIPE_PRICE_ID_pro,
   },
   {
     id: PLAN_IDS.proplus,
@@ -145,16 +145,16 @@ export const PRICING_PLANS: PricingPlan[] = [
       'Lorem ipsum dolor sit amet, consetetur sadipscingl',
       'Lorem ipsum dolor sit amet, consetetur sadipscing',
     ],
-    stripePriceId: STRIPE_PRICE_ID_2,
+    stripePriceId: STRIPE_PRICE_ID_proplus,
   },  
 ]
 
 export const RENEWAL_REMINDER_DAYS_BEFORE = 32
-export const CREDIT_REMINDER_THRESHOLD = 10
+export const CREDIT_REMINDER_THRESHOLD = 4
 // ✅ Subscription Renewal
 export const SUBSCRIPTION_RENEWAL_CREDIT_THRESHOLD = 20
 export const ENABLE_EMAILS = true
-export const CHECK_DISPOSABLE_EMAILS = false
+export const CHECK_DISPOSABLE_EMAILS = true
 export const INVITE_EXPIRATION_MS = 60 * 60 * 1000
 
 // ✅ Multi-Tenancy Limits & Configuration
