@@ -3,7 +3,7 @@
 'use server'
 
 import prisma from '@/app/lib/db'
-import { sendCancellationEmail } from '@/app/lib/email'
+
 import { stripe } from '@/app/lib/stripe'
 import { createClient } from '@/app/lib/supabase/server'
 import { requireOrgRole } from '@/lib/auth/guards'
@@ -356,8 +356,7 @@ export async function deleteOrganization(orgId: string, transferToOrgId?: string
       return { success: false, error: 'Default Organization cannot be deleted' }
     }
 
-    let transferredCredits: number | null = null
-    let transferTargetName: string | null = null
+
 
     // 2. Credit Transfer (Wallet Move)
     if (transferToOrgId) {
@@ -403,8 +402,7 @@ export async function deleteOrganization(orgId: string, transferToOrgId?: string
             })
           }
 
-          transferredCredits = creditsToMove
-          transferTargetName = target.name
+
         })
       } catch (err) {
         const msg = err instanceof Error ? err.message : 'Failed to transfer credits'
@@ -412,7 +410,7 @@ export async function deleteOrganization(orgId: string, transferToOrgId?: string
       }
     }
 
-    const hadStripeSubscriptionId = !!org.subscription?.stripeSubscriptionId
+
     if (org.subscription?.stripeSubscriptionId) {
       try {
         const stripeSub = await stripe.subscriptions.retrieve(org.subscription.stripeSubscriptionId)

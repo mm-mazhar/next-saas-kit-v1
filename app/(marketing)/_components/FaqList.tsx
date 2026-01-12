@@ -73,7 +73,7 @@ const faqItems: FaqItem[] = [
   },
   {
     id: '12',
-    question: 'If I upgrade to the Pro Plan, does my whole team get access?',
+    question: 'If I upgrade to the Pro/Pro Plus Plan, does my whole team get access?',
     answer:
       'Yes! The subscription applies to the entire Organization. Once you upgrade an Organization to Pro, all members (Owners, Admins, and Members) gain access to Pro features and the 100 shared monthly credits.',
     category: 'pricing',
@@ -82,7 +82,7 @@ const faqItems: FaqItem[] = [
     id: '13',
     question: 'What happens if I create a second Organization?',
     answer:
-      'Secondary organizations start with 0 credits. To use them, you must purchase credits or upgrade that specific organization to Pro. This allows you to keep billing separate for different clients or projects.',
+      'Secondary organizations start with 0 credits. To use them, you must upgrade that specific organization to Pro/Pro Plus plans. This allows you to keep billing separate for different clients or projects.',
     category: 'pricing',
   },
   {
@@ -121,6 +121,20 @@ const faqItems: FaqItem[] = [
     answer:
       'Yes. Owners and Admins can promote or demote members via the Organization Settings page. However, an Admin cannot demote an Owner.',
     category: 'roles',
+  },
+  {
+    id: '19',
+    question: 'What happens if I run out of credits before my billing cycle ends?',
+    answer:
+      'If your balance drops below 20 credits, you have two options: renew your current plan immediately or upgrade to the Pro Plus plan. Doing so will start a new billing cycle instantly and replenish your credits. Please note that while your credits top up, any remaining days from your previous billing period are not carried over.',
+    category: 'pricing',
+  },
+  {
+    id: '20',
+    question: 'What happens when I upgrade to the Pro Plus plan?',
+    answer:
+      'Upgrading immediately ends your current Pro subscription and starts a new Pro Plus billing cycle. Your new credit allowance will be added to your account, and any unused credits from your previous plan will roll over. However, any remaining time from your previous billing cycle will be forfeited.',
+    category: 'pricing',
   },
 ];
 
