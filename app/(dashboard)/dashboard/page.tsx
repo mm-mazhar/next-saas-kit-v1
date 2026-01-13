@@ -4,8 +4,7 @@ import { CreateProjectDialog } from '@/app/(dashboard)/_components/create-projec
 import { ProjectActions } from '@/app/(dashboard)/_components/project-actions'
 import { createClient } from '@/app/lib/supabase/server'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { OrganizationService } from '@/lib/services/organization-service'
-import { ProjectService } from '@/lib/services/project-service'
+import { getRPCCaller } from '@/lib/orpc/rsc-client'
 import { Folder } from 'lucide-react'
 import { unstable_noStore as noStore } from 'next/cache'
 import { cookies } from 'next/headers'
@@ -23,9 +22,11 @@ export default async function DashboardPage() {
     return redirect('/get-started')
   }
 
+  const rpc = await getRPCCaller()
+
   const cookieStore = await cookies()
   const currentOrgId = cookieStore.get('current-org-id')?.value
-  const organizations = await OrganizationService.getUserOrganizations(user.id)
+  const organizations = await rpc.org.list()
   
   // Validate that the user is actually a member of the organization in the cookie
   const isMember = currentOrgId && organizations.some(org => org.id === currentOrgId)
@@ -42,7 +43,7 @@ export default async function DashboardPage() {
     )
   }
 
-  const projects = await ProjectService.getOrganizationProjects(user.id, effectiveOrgId)
+  const projects = await rpc.project.list()
 
   return (
     <div className='flex flex-1 flex-col gap-4 p-4 pt-0'>
@@ -89,4 +90,3 @@ export default async function DashboardPage() {
     </div>
   )
 }
-

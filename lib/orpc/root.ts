@@ -4,6 +4,7 @@ import { organizationRouter } from './routers/organization'
 import { projectRouter } from './routers/project'
 import { userRouter } from './routers/user'
 import { adminRouter } from './routers/admin'
+import { billingRouter } from './routers/billing'
 
 /**
  * Root application router
@@ -14,6 +15,7 @@ export const appRouter = {
   project: projectRouter,
   user: userRouter,
   admin: adminRouter,
+  billing: billingRouter,
 }
 
 /**

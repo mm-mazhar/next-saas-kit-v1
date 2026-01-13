@@ -4,12 +4,25 @@
 
 import { AlertDialog, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog'
 import { Button } from '@/components/ui/button'
+import { useToast } from '@/components/ToastProvider'
+import { orpc } from '@/lib/orpc/client'
+import { useMutation } from '@tanstack/react-query'
 import { useState } from 'react'
-import { renewSubscription } from '../dashboard/billing/actions'
 
 export function RenewSubscriptionButton() {
-  const [loading, setLoading] = useState(false)
   const [open, setOpen] = useState(false)
+  const { show } = useToast()
+
+  const { mutate, isPending } = useMutation(
+    orpc.billing.renewSubscription.mutationOptions({
+      onSuccess: (data) => {
+        window.location.href = data.url
+      },
+      onError: (err) => {
+        show({ title: 'Error', description: err.message, variant: 'error' })
+      },
+    })
+  )
 
   return (
     <AlertDialog open={open} onOpenChange={setOpen}>
@@ -32,30 +45,12 @@ export function RenewSubscriptionButton() {
         </AlertDialogHeader>
 
         <AlertDialogFooter>
-          <AlertDialogCancel disabled={loading}>Cancel</AlertDialogCancel>
+          <AlertDialogCancel disabled={isPending}>Cancel</AlertDialogCancel>
           <Button 
-            disabled={loading} 
-            onClick={async (e: React.MouseEvent) => {
-              e.preventDefault()
-              setLoading(true)
-              try {
-                const result = await renewSubscription()
-                if (result.success && result.url) {
-                   window.location.href = result.url
-                } else {
-                   setLoading(false)
-                   console.error(result.message)
-                   alert(`Failed: ${result.message}`)
-                }
-              } catch (err) {
-                console.error(err)
-                alert('Failed to renew. Please try again or contact support.')
-              } finally {
-                setLoading(false)
-              }
-            }}
+            disabled={isPending} 
+            onClick={() => mutate({})}
           >
-            {loading ? 'Processing...' : 'Confirm Renewal'}
+            {isPending ? 'Processing...' : 'Confirm Renewal'}
           </Button>
         </AlertDialogFooter>
       </AlertDialogContent>

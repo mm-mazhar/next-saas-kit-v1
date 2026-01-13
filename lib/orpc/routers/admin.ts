@@ -16,7 +16,7 @@ export const adminRouter = {
   getDashboardStats: superAdminProcedure
     .handler(async ({ context }) => {
       const { db } = context
-      const now = new Date()
+      // const now = new Date()
       
       // System health check
       const start = performance.now()

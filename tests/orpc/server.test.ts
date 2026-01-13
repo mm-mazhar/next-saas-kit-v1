@@ -1,9 +1,9 @@
-// lib/orpc/server.test.ts
+// tests/orpc/server.test.ts
 // Feature: orpc-integration, Property 4: Domain Error Mapping
 
 import { describe, it, expect } from 'vitest'
 import fc from 'fast-check'
-import { mapDomainError } from './server'
+import { mapDomainError } from '@/lib/orpc/server'
 
 describe('Server Procedure Builder Properties', () => {
   /**

@@ -1,7 +1,7 @@
-// lib/orpc/routers/admin.test.ts
+// tests/orpc/routers/admin.test.ts
 // Feature: orpc-integration, Properties 18-19: Admin Router Tests
 
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import { describe, it, expect } from 'vitest'
 import fc from 'fast-check'
 import type { User } from '@supabase/supabase-js'
 
@@ -395,10 +395,11 @@ describe('Admin Router Properties', () => {
         fc.asyncProperty(
           fc.array(mockUserArbitrary, { minLength: 0, maxLength: 50 }),
           async (mockUsers) => {
-            const searchQuery = ''
+            const searchQuery: string = ''
             
             // Empty search should return all users
-            const filteredUsers = searchQuery 
+            // When searchQuery is empty, all users should be returned
+            const filteredUsers = searchQuery.length > 0
               ? mockUsers.filter(u => 
                   (u.name?.toLowerCase().includes(searchQuery.toLowerCase())) ||
                   u.email.toLowerCase().includes(searchQuery.toLowerCase())

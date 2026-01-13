@@ -66,10 +66,24 @@ export const organizationRouter = {
    * Get organization by ID
    */
   getById: protectedProcedure
-    .input(z.object({ id: z.string() }))
-    .handler(async ({ input }) => {
-      const org = await OrganizationService.getOrganizationById(input.id)
-      if (!org) {
+    .input(z.object({ 
+      id: z.string(),
+      includeSubscription: z.boolean().optional().default(false),
+    }))
+    .handler(async ({ input, context }) => {
+      const org = await context.db.organization.findUnique({
+        where: { id: input.id },
+        include: {
+          members: {
+            include: {
+              user: true,
+            },
+          },
+          ...(input.includeSubscription && { subscription: true }),
+        },
+      })
+      
+      if (!org || org.deletedAt) {
         throw new ORPCError('NOT_FOUND', { message: 'Organization not found' })
       }
       return org
@@ -183,6 +197,28 @@ export const organizationRouter = {
     .input(z.object({ inviteId: z.string() }))
     .handler(async ({ input }) => {
       return await InvitationService.revokeInvite(input.inviteId)
+    }),
+
+  /**
+   * Delete an invite record permanently
+   */
+  deleteInvite: adminProcedure
+    .input(z.object({ inviteId: z.string() }))
+    .handler(async ({ input }) => {
+      return await InvitationService.deleteInvite(input.inviteId)
+    }),
+
+  /**
+   * Resend an invite (regenerate token and update expiry)
+   */
+  resendInvite: adminProcedure
+    .input(z.object({ inviteId: z.string() }))
+    .handler(async ({ input }) => {
+      const invite = await InvitationService.reinvite(input.inviteId)
+      return {
+        invite,
+        inviteLink: InvitationService.getInviteLink(invite.token),
+      }
     }),
 
   /**

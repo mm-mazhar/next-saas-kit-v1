@@ -5,6 +5,7 @@ Build a production-ready, multi-tenant SaaS with:
 - Next.js 15 (App Router, Server Actions)
 - Supabase Auth + Postgres
 - Prisma ORM
+- oRPC type-safe API layer with OpenAPI documentation
 - Stripe subscriptions + usage-based credits
 - Role Based Access Control (RBAC)
 - Super Admin analytics dashboard
@@ -40,10 +41,14 @@ This README is a full, end‑to‑end setup and operations guide for this specif
     - [6. Stripe Setup](#6-stripe-setup)
       - [6.1 Local Webhook Setup](#61-local-webhook-setup)
       - [6.2  Webhook Setup in Stripe](#62--webhook-setup-in-stripe)
-    - [7. CRON Jobs \& Maintenance](#7-cron-jobs--maintenance)
-      - [7.1 Local Testing](#71-local-testing)
-      - [7.2 Vercel CRON Configuration](#72-vercel-cron-configuration)
-    - [8. Run the App](#8-run-the-app)
+    - [7. oRPC API Setup](#7-orpc-api-setup)
+      - [7.1 API Documentation](#71-api-documentation)
+      - [7.2 Client Usage](#72-client-usage)
+      - [7.3 Testing oRPC](#73-testing-orpc)
+    - [8. CRON Jobs \& Maintenance](#8-cron-jobs--maintenance)
+      - [8.1 Local Testing](#81-local-testing)
+      - [8.2 Vercel CRON Configuration](#82-vercel-cron-configuration)
+    - [9. Run the App](#9-run-the-app)
   - [Role Based Access Control (RBAC)](#role-based-access-control-rbac)
     - [Roles](#roles)
     - [High-level Rules](#high-level-rules)
@@ -58,17 +63,21 @@ This README is a full, end‑to‑end setup and operations guide for this specif
     - [Billing \& Credits](#billing--credits)
     - [Super Admin Dashboard](#super-admin-dashboard-1)
     - [Security \& RLS](#security--rls)
+    - [oRPC API \& Type Safety](#orpc-api--type-safety)
   - [Useful Commands](#useful-commands)
     - [General](#general)
+    - [Testing](#testing)
     - [Prisma](#prisma)
     - [Stripe (Local)](#stripe-local)
     - [Supabase Quick Test](#supabase-quick-test)
+    - [oRPC API Testing](#orpc-api-testing)
   - [Deployment](#deployment)
   - [Troubleshooting](#troubleshooting)
     - [Auth Issues](#auth-issues)
     - [RBAC / Permission Errors](#rbac--permission-errors)
     - [Super Admin](#super-admin)
     - [Database \& RLS](#database--rls)
+    - [oRPC API Issues](#orpc-api-issues)
 
 ---
 
@@ -79,6 +88,7 @@ This project is a multi-tenant SaaS starter built with Next.js 15 and Supabase. 
 - Authentication via Supabase (email magic links + Google OAuth)
 - Multi-organization accounts with members and projects
 - RBAC with `OWNER`, `ADMIN`, and `MEMBER` roles
+- Type-safe API layer with oRPC and auto-generated OpenAPI documentation
 - Billing via Stripe (subscriptions + credit refills)
 - A Super Admin section to monitor system-wide stats (users, orgs, revenue)
 - CRON-based background maintenance and email notifications
@@ -87,6 +97,7 @@ You can use it as a starting point for your own SaaS, or as a reference for:
 
 - How to combine Supabase Auth with Prisma
 - How to implement RBAC and multi-tenancy
+- How to build a type-safe API with oRPC
 - How to build a super admin area separate from tenant dashboards
 
 ---
@@ -123,6 +134,7 @@ You can use it as a starting point for your own SaaS, or as a reference for:
   - Tailwind CSS 4 + Shadcn UI components
   - ESLint + TypeScript strict
   - Prisma schema tuned for multi‑tenant SaaS
+  - oRPC type-safe API with auto-generated OpenAPI docs
 
 ---
 
@@ -133,6 +145,9 @@ You can use it as a starting point for your own SaaS, or as a reference for:
 - `@supabase/supabase-js`, `@supabase/ssr` – Supabase Auth + SSR helpers
 - `pg` – Postgres driver used with Prisma
 - `@prisma/client`, `prisma` – ORM + migrations
+- `@orpc/server`, `@orpc/client`, `@orpc/zod` – Type-safe RPC with Zod validation
+- `@orpc/openapi` – Auto-generated OpenAPI documentation
+- `@orpc/tanstack-query` – React Query integration for oRPC
 - `stripe` – Stripe Billing / subscriptions
 - `resend` – Transactional emails
 - `tailwindcss` + `tailwindcss-animate` + Shadcn UI (`components.json`)
@@ -145,8 +160,11 @@ Config references:
 - `prisma/schema.prisma`: data model
 - `lib/constants.ts`: RBAC roles, limits, and configuration
 - `lib/auth/guards.ts`: RBAC enforcement helpers
+- `lib/orpc/`: oRPC API layer with routers and procedures
 - `app/(dashboard)/**`: tenant dashboard
 - `app/(super-admin)/**`: super admin area
+- `app/api/rpc/`: oRPC HTTP handler
+- `tests/orpc/`: comprehensive oRPC test suite
 
 ---
 
@@ -575,7 +593,139 @@ Steps in the Stripe Dashboard
   ```
 
 
-### 7. CRON Jobs & Maintenance
+### 7. oRPC API Setup
+
+This project includes a fully-featured oRPC (OpenRPC) implementation that provides type-safe API endpoints with automatic OpenAPI documentation generation.
+
+#### 7.1 API Documentation
+
+The oRPC API automatically generates OpenAPI documentation accessible at:
+
+- **Development**: `http://localhost:3000/api/docs`
+- **Production**: `https://your-domain.com/api/docs`
+
+The API specification is available at:
+- **JSON**: `/api/openapi.json`
+
+#### 7.2 Client Usage
+
+The oRPC client is configured for both server-side and client-side usage:
+
+**Server-side (RSC):**
+```typescript
+import { rscClient } from '@/lib/orpc/rsc-client'
+
+// In a Server Component
+const organizations = await rscClient.organization.list()
+```
+
+**Client-side with React Query:**
+```typescript
+'use client'
+import { client } from '@/lib/orpc/client'
+import { useQuery } from '@tanstack/react-query'
+
+// In a Client Component
+function OrganizationList() {
+  const { data: organizations } = useQuery({
+    queryKey: ['organizations'],
+    queryFn: () => client.organization.list()
+  })
+  
+  return <div>{/* render organizations */}</div>
+}
+```
+
+#### 7.3 Testing oRPC
+
+The project includes comprehensive tests for the oRPC implementation:
+
+**Run all oRPC tests:**
+```bash
+- npm test tests/orpc
+- npx tsc --noEmit
+- npm run test
+- npx vitest run --reporter=verbose 2>&1
+```
+
+**Run specific test suites:**
+```bash
+# Test context and authentication
+npm test tests/orpc/context.test.ts
+
+# Test RBAC authorization logic
+npm test tests/orpc/rbac.test.ts
+
+# Test individual routers
+npm test tests/orpc/routers/organization.test.ts
+npm test tests/orpc/routers/project.test.ts
+npm test tests/orpc/routers/user.test.ts
+npm test tests/orpc/routers/admin.test.ts
+
+# Test server procedures and error handling
+npm test tests/orpc/procedures.test.ts
+npm test tests/orpc/server.test.ts
+```
+
+**Test with watch mode:**
+```bash
+npm run test:watch tests/orpc
+```
+
+**Available API Endpoints:**
+
+The oRPC API provides the following router endpoints:
+
+- **Organization Router** (`/api/rpc/organization.*`)
+  - `list` - List user's organizations
+  - `create` - Create new organization
+  - `update` - Update organization details
+  - `delete` - Delete organization
+  - `getMembers` - List organization members
+  - `inviteMember` - Invite new member
+  - `updateMemberRole` - Update member role
+  - `removeMember` - Remove member
+
+- **Project Router** (`/api/rpc/project.*`)
+  - `list` - List organization projects
+  - `create` - Create new project
+  - `update` - Update project details
+  - `delete` - Delete project
+
+- **User Router** (`/api/rpc/user.*`)
+  - `profile` - Get user profile
+  - `updateProfile` - Update user profile
+  - `preferences` - Get user preferences
+  - `updatePreferences` - Update preferences
+
+- **Billing Router** (`/api/rpc/billing.*`)
+  - `getSubscription` - Get subscription details
+  - `createCheckoutSession` - Create Stripe checkout
+  - `getUsage` - Get credit usage stats
+
+- **Admin Router** (`/api/rpc/admin.*`) (Super Admin only)
+  - `getStats` - System-wide statistics
+  - `getUsers` - List all users
+  - `getOrganizations` - List all organizations
+  - `getRevenue` - Revenue analytics
+
+**RBAC Integration:**
+
+All oRPC procedures automatically enforce RBAC through:
+- Context-based authentication via Supabase
+- Role-based authorization using `requireOrgRole`
+- Organization-scoped data access
+- Super admin privilege checks
+
+**Error Handling:**
+
+oRPC procedures return structured errors with:
+- HTTP status codes
+- Error messages
+- Validation details (for input errors)
+- Proper error logging
+
+### 8. CRON Jobs & Maintenance
 
 The project uses HTTP‑based CRON endpoints protected by `CRON_SECRET`:
 
@@ -594,7 +744,7 @@ Set:
 CRON_SECRET=your-generated-secret
 ```
 
-#### 7.1 Local Testing
+#### 8.1 Local Testing
 
 Notifications:
 
@@ -616,7 +766,7 @@ Expected behavior (example):
 - Credit exhaustion reminder when credits fall below a threshold and no reminder was sent
 - Daily refill of free credits and cleanup of deleted orgs
 
-#### 7.2 Vercel CRON Configuration
+#### 8.2 Vercel CRON Configuration
 
 `vercel.json:1` includes:
 
@@ -640,7 +790,7 @@ You can adjust the schedules as needed:
 - `0 0 * * *` – every day at midnight
 - `0 9 * * *` – every day at 9:00
 
-### 8. Run the App
+### 9. Run the App
 
 ```bash
 npm run dev
@@ -814,6 +964,25 @@ This section is updated to reflect RBAC and the Super Admin dashboard.
   - [ ] Invite rate limit enforced (time‑based)
   - [ ] Pending invite max enforced
 
+### oRPC API & Type Safety
+
+- [ ] oRPC API endpoints respond correctly at `/api/rpc/*`
+- [ ] OpenAPI documentation accessible at `/api/docs`
+- [ ] JSON schema available at `/api/openapi.json`
+- [ ] Client-side oRPC calls work with React Query integration
+- [ ] Server-side RSC client functions properly
+- [ ] RBAC authorization enforced in oRPC procedures:
+  - [ ] Organization-scoped data access
+  - [ ] Role-based procedure access (OWNER/ADMIN/MEMBER)
+  - [ ] Super admin procedures restricted properly
+- [ ] Error handling returns structured responses
+- [ ] Type safety maintained across client/server boundary
+- [ ] All oRPC test suites pass:
+  - [ ] Context and authentication tests
+  - [ ] RBAC authorization tests
+  - [ ] Router-specific tests (organization, project, user, admin)
+  - [ ] Procedure and server tests
+
 ---
 
 ## Useful Commands
@@ -824,6 +993,17 @@ This section is updated to reflect RBAC and the Super Admin dashboard.
 - `npm run build` – Build production assets
 - `npm run start` – Start production server
 - `npm run lint` – Run ESLint
+- `npm test` – Run all tests once
+- `npm run test:watch` – Run tests in watch mode
+
+### Testing
+
+- `npm test` – Run all tests (including oRPC)
+- `npm run test:watch` – Run tests in watch mode
+- `npm test tests/orpc` – Run only oRPC tests
+- `npm test tests/orpc/context.test.ts` – Test oRPC context
+- `npm test tests/orpc/rbac.test.ts` – Test RBAC authorization
+- `npm test tests/orpc/routers/` – Test specific routers
 
 ### Prisma
 
@@ -842,6 +1022,24 @@ This section is updated to reflect RBAC and the Super Admin dashboard.
 
 ```bash
 node -e "const { createClient } = require('@supabase/supabase-js'); const s = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY); s.auth.getSession().then(console.log);"
+```
+
+### oRPC API Testing
+
+```bash
+# Test oRPC endpoint directly
+curl -X POST http://localhost:3000/api/rpc/user.profile \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <your-session-token>"
+
+# Test OpenAPI documentation
+curl http://localhost:3000/api/openapi.json
+
+# Run comprehensive oRPC test suite
+npm test tests/orpc
+
+# Test specific oRPC functionality
+npm test tests/orpc/routers/organization.test.ts
 ```
 
 ---
@@ -909,5 +1107,34 @@ After deploy:
 - Queries returning no data unexpectedly:
   - Inspect RLS policies in Supabase
   - Temporarily test with `service_role` key (in a safe, non-client context) to isolate policy issues
+
+### oRPC API Issues
+
+- **oRPC endpoints returning 404**
+  - Ensure the API route is properly configured at `app/api/rpc/[[...rest]]/route.ts`
+  - Check that the oRPC handler is correctly set up with the app router
+  - Verify the endpoint path matches the router structure
+
+- **Type errors with oRPC client**
+  - Run `npm run build` to regenerate types
+  - Ensure oRPC client is properly imported (`@/lib/orpc/client` or `@/lib/orpc/rsc-client`)
+  - Check that procedures are properly defined in routers
+
+- **Authorization errors in oRPC procedures**
+  - Verify user is authenticated and session is valid
+  - Check organization membership for org-scoped procedures
+  - Ensure user has required role (OWNER/ADMIN/MEMBER) for the action
+  - Review RBAC test failures for specific authorization logic
+
+- **OpenAPI documentation not loading**
+  - Check that `@orpc/openapi` is properly configured
+  - Verify the OpenAPI route at `/api/openapi.json` returns valid JSON
+  - Ensure Scalar API documentation is set up correctly
+
+- **oRPC tests failing**
+  - Run tests individually to isolate issues: `npm test tests/orpc/context.test.ts`
+  - Check mock implementations match actual oRPC context structure
+  - Verify test database setup and RLS policies
+  - Review property-based test failures for edge cases
 
 If you customize the schema or flows heavily, update this README to match your new behavior so that future you—and your team—always have a single, accurate source of truth.

@@ -1,11 +1,10 @@
-// lib/orpc/procedures.test.ts
+// tests/orpc/procedures.test.ts
 // Feature: orpc-integration, Properties 5-10: Authorization Procedures Tests
 
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import { describe, it, expect } from 'vitest'
 import fc from 'fast-check'
 import type { User } from '@supabase/supabase-js'
 import { ROLES, type OrganizationRole } from '@/lib/constants'
-import { ORPCError } from '@orpc/server'
 
 // Mock the baseProcedure to avoid importing actual oRPC dependencies
 // We'll test the authorization logic directly
@@ -22,9 +21,6 @@ const userArbitrary = fc.record({
 
 // Arbitrary for organization roles
 const roleArbitrary = fc.constantFrom<OrganizationRole>(ROLES.OWNER, ROLES.ADMIN, ROLES.MEMBER)
-
-// Mock database
-const mockDb = {}
 
 // Authorization logic functions extracted for testing
 function checkPublicAccess(): boolean {
@@ -109,7 +105,7 @@ describe('Authorization Procedures Properties', () => {
           fc.option(userArbitrary, { nil: null }),
           fc.option(fc.uuid(), { nil: null }),
           fc.option(roleArbitrary, { nil: null }),
-          async (user, orgId, role) => {
+          async () => {
             const result = checkPublicAccess()
             expect(result).toBe(true)
           }

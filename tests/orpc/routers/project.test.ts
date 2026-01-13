@@ -1,4 +1,4 @@
-// lib/orpc/routers/project.test.ts
+// tests/orpc/routers/project.test.ts
 // Feature: orpc-integration, Properties 11, 16: Project Router Tests
 
 import { describe, it, expect } from 'vitest'

@@ -4,25 +4,50 @@
 
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog'
 import { Button } from '@/components/ui/button'
-import { createSubscriptionAction } from '../dashboard/billing/actions'
+import { useToast } from '@/components/ToastProvider'
+import { orpc } from '@/lib/orpc/client'
+import { type PlanId } from '@/lib/constants'
+import { useMutation } from '@tanstack/react-query'
+import { useState } from 'react'
 
 type Props = {
-  planId: string
+  planId: PlanId
   hasActiveSubscription: boolean
 }
 
 export function UpgradeSubscriptionButton({ planId, hasActiveSubscription }: Props) {
+  const [open, setOpen] = useState(false)
+  const { show } = useToast()
+
+  const { mutate, isPending } = useMutation(
+    orpc.billing.createSubscription.mutationOptions({
+      onSuccess: (data) => {
+        window.location.href = data.url
+      },
+      onError: (err) => {
+        show({ title: 'Error', description: err.message, variant: 'error' })
+      },
+    })
+  )
+
+  const handleUpgrade = () => {
+    mutate({ planId })
+  }
+
   if (!hasActiveSubscription) {
     return (
-      <form action={createSubscriptionAction}>
-        <input type='hidden' name='planId' value={planId} />
-        <Button type='submit' className='h-8 text-xs px-3'>Upgrade now</Button>
-      </form>
+      <Button 
+        onClick={handleUpgrade} 
+        disabled={isPending}
+        className='h-8 text-xs px-3'
+      >
+        {isPending ? 'Processing...' : 'Upgrade now'}
+      </Button>
     )
   }
 
   return (
-    <AlertDialog>
+    <AlertDialog open={open} onOpenChange={setOpen}>
       <AlertDialogTrigger asChild>
         <Button className='h-8 text-xs px-3'>Upgrade now</Button>
       </AlertDialogTrigger>
@@ -36,11 +61,10 @@ export function UpgradeSubscriptionButton({ planId, hasActiveSubscription }: Pro
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel>Cancel</AlertDialogCancel>
-          <form action={createSubscriptionAction} className="inline-block">
-            <input type='hidden' name='planId' value={planId} />
-            <AlertDialogAction type="submit">Confirm Upgrade</AlertDialogAction>
-          </form>
+          <AlertDialogCancel disabled={isPending}>Cancel</AlertDialogCancel>
+          <AlertDialogAction onClick={handleUpgrade} disabled={isPending}>
+            {isPending ? 'Processing...' : 'Confirm Upgrade'}
+          </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>

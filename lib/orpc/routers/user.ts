@@ -77,4 +77,31 @@ export const userRouter = {
       
       return updatedUser
     }),
+
+  /**
+   * Update user's profile (name and/or color scheme)
+   */
+  updateProfile: protectedProcedure
+    .input(z.object({ 
+      name: z.string().optional(),
+      colorScheme: z.string().optional(),
+    }))
+    .handler(async ({ input, context }) => {
+      const updatedUser = await context.db.user.update({
+        where: { id: context.user.id },
+        data: { 
+          ...(input.name !== undefined && { name: input.name }),
+          ...(input.colorScheme !== undefined && { colorScheme: input.colorScheme }),
+        },
+        select: {
+          id: true,
+          email: true,
+          name: true,
+          themePreference: true,
+          colorScheme: true,
+        },
+      })
+      
+      return updatedUser
+    }),
 }

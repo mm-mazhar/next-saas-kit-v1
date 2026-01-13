@@ -1,4 +1,4 @@
-// lib/orpc/context.test.ts
+// tests/orpc/context.test.ts
 // Feature: orpc-integration, Properties 1-3: Context Generator Tests
 
 import { describe, it, expect } from 'vitest'

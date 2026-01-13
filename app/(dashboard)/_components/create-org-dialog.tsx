@@ -6,10 +6,12 @@ import { useRouter } from 'next/navigation'
 import * as React from 'react'
 
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/app/(dashboard)/_components/ui/dialog'
-import { createOrganization } from '@/app/actions/organization'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { useToast } from '@/components/ToastProvider'
+import { orpc } from '@/lib/orpc/client'
+import { useMutation } from '@tanstack/react-query'
 
 export function CreateOrgDialog({
   open,
@@ -18,33 +20,27 @@ export function CreateOrgDialog({
   open: boolean
   onOpenChange: (open: boolean) => void
 }) {
-  const [loading, setLoading] = React.useState(false)
-  const [error, setError] = React.useState('')
   const [name, setName] = React.useState('')
   const router = useRouter()
+  const { show } = useToast()
 
-  const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setName(e.target.value)
-  }
+  const { mutate, isPending, error } = useMutation(
+    orpc.org.create.mutationOptions({
+      onSuccess: () => {
+        show({ title: 'Created', description: 'Organization created successfully', variant: 'success' })
+        onOpenChange(false)
+        setName('')
+        router.refresh()
+      },
+      onError: (err) => {
+        show({ title: 'Error', description: err.message, variant: 'error' })
+      },
+    })
+  )
 
-  async function onSubmit(event: React.FormEvent<HTMLFormElement>) {
+  function onSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
-    setLoading(true)
-    setError('')
-
-    const formData = new FormData(event.currentTarget)
-    // Slug auto-generated server-side
-
-    const res = await createOrganization(formData)
-
-    if (res.success) {
-      onOpenChange(false)
-      setName('')
-      router.refresh()
-    } else {
-      setError(res.error || 'Failed to create organization')
-    }
-    setLoading(false)
+    mutate({ name })
   }
 
   return (
@@ -64,22 +60,21 @@ export function CreateOrgDialog({
               </Label>
               <Input
                 id='name'
-                name='name'
                 placeholder='Acme Inc.'
                 className='col-span-3 focus-visible:ring-0 focus-visible:ring-offset-0'
                 required
                 maxLength={20}
                 value={name}
-                onChange={handleNameChange}
+                onChange={(e) => setName(e.target.value)}
               />
             </div>
             <p className='col-span-4 text-xs text-muted-foreground'>Up to 20 characters</p>
             
-            {error && <p className='text-red-500 text-sm'>{error}</p>}
+            {error && <p className='text-red-500 text-sm'>{error.message}</p>}
           </div>
           <DialogFooter>
-            <Button type='submit' disabled={loading} className='focus:outline-none focus-visible:outline-none focus:ring-0 focus-visible:ring-0'>
-              {loading ? 'Creating...' : 'Create Organization'}
+            <Button type='submit' disabled={isPending} className='focus:outline-none focus-visible:outline-none focus:ring-0 focus-visible:ring-0'>
+              {isPending ? 'Creating...' : 'Create Organization'}
             </Button>
           </DialogFooter>
         </form>

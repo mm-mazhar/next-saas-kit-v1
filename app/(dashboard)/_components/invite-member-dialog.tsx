@@ -22,34 +22,39 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/app/(dashboard)/_components/ui/select'
-import { inviteMember } from '@/app/actions/organization'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { useToast } from '@/components/ToastProvider'
+import { orpc } from '@/lib/orpc/client'
+import { useMutation } from '@tanstack/react-query'
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 export function InviteMemberDialog({ orgId }: { orgId: string }) {
   const [open, setOpen] = React.useState(false)
-  const [loading, setLoading] = React.useState(false)
-  const [error, setError] = React.useState('')
+  const [email, setEmail] = React.useState('')
+  const [role, setRole] = React.useState<'ADMIN' | 'MEMBER'>('MEMBER')
   const router = useRouter()
+  const { show } = useToast()
 
-  async function onSubmit(event: React.FormEvent<HTMLFormElement>) {
+  const { mutate, isPending, error } = useMutation(
+    orpc.org.inviteMember.mutationOptions({
+      onSuccess: () => {
+        show({ title: 'Invite sent', description: `Invitation sent to ${email}`, variant: 'success' })
+        setOpen(false)
+        setEmail('')
+        setRole('MEMBER')
+        router.refresh()
+      },
+      onError: (err) => {
+        show({ title: 'Error', description: err.message, variant: 'error' })
+      },
+    })
+  )
+
+  function onSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
-    setLoading(true)
-    setError('')
-
-    const formData = new FormData(event.currentTarget)
-    formData.append('orgId', orgId)
-    
-    const res = await inviteMember(formData)
-
-    if (res.success) {
-      setOpen(false)
-      router.refresh()
-    } else {
-      setError(res.error || 'Failed to invite member')
-    }
-    setLoading(false)
+    mutate({ email, role })
   }
 
   return (
@@ -75,8 +80,9 @@ export function InviteMemberDialog({ orgId }: { orgId: string }) {
               </Label>
               <Input
                 id='email'
-                name='email'
                 type='email'
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
                 placeholder='colleague@example.com'
                 className='col-span-3 focus-visible:ring-0 focus-visible:ring-offset-0'
                 required
@@ -86,7 +92,7 @@ export function InviteMemberDialog({ orgId }: { orgId: string }) {
               <Label htmlFor='role' className='text-right'>
                 Role
               </Label>
-              <Select name='role' defaultValue='MEMBER'>
+              <Select value={role} onValueChange={(v) => setRole(v as 'ADMIN' | 'MEMBER')}>
                 <SelectTrigger className='col-span-3 focus:outline-none focus-visible:outline-none focus:ring-0 focus-visible:ring-0'>
                   <SelectValue placeholder='Select a role' />
                 </SelectTrigger>
@@ -96,11 +102,11 @@ export function InviteMemberDialog({ orgId }: { orgId: string }) {
                 </SelectContent>
               </Select>
             </div>
-            {error && <p className='text-red-500 text-sm'>{error}</p>}
+            {error && <p className='text-red-500 text-sm'>{error.message}</p>}
           </div>
           <DialogFooter>
-            <Button type='submit' disabled={loading}>
-              {loading ? 'Inviting...' : 'Send Invite'}
+            <Button type='submit' disabled={isPending}>
+              {isPending ? 'Inviting...' : 'Send Invite'}
             </Button>
           </DialogFooter>
         </form>

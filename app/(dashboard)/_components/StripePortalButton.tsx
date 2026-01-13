@@ -1,0 +1,33 @@
+// app/(dashboard)/_components/StripePortalButton.tsx
+
+'use client'
+
+import { Button } from '@/components/ui/button'
+import { useToast } from '@/components/ToastProvider'
+import { orpc } from '@/lib/orpc/client'
+import { useMutation } from '@tanstack/react-query'
+
+export function StripePortalButton() {
+  const { show } = useToast()
+
+  const { mutate, isPending } = useMutation(
+    orpc.billing.createCustomerPortal.mutationOptions({
+      onSuccess: (data) => {
+        window.location.href = data.url
+      },
+      onError: (err) => {
+        show({ title: 'Error', description: err.message, variant: 'error' })
+      },
+    })
+  )
+
+  return (
+    <Button 
+      onClick={() => mutate({})} 
+      disabled={isPending}
+      className='h-8 text-xs px-3'
+    >
+      {isPending ? 'Loading...' : 'View payment details'}
+    </Button>
+  )
+}
