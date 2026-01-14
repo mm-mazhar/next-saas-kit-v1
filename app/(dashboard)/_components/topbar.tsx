@@ -173,7 +173,7 @@ export function TopBar({
             })()}
           </Tooltip>
         ) : null}
-        <Themetoggle />
+        <Themetoggle isAuthenticated={true} />
       </div>
     </header>
   )

@@ -2,6 +2,7 @@
 
 import FooterSection from '@/app/(marketing)/_components/footer'
 import { HeroHeader } from '@/app/(marketing)/_components/header'
+import { QueryProvider } from '@/components/providers/query-provider'
 
 export default function MarketingLayout({
   children,
@@ -9,10 +10,12 @@ export default function MarketingLayout({
   children: React.ReactNode
 }) {
   return (
-    <div className='flex min-h-screen flex-col'>
-      <HeroHeader />
-      <main className='flex-1'>{children}</main>
-      <FooterSection />
-    </div>
+    <QueryProvider>
+      <div className='flex min-h-screen flex-col'>
+        <HeroHeader />
+        <main className='flex-1'>{children}</main>
+        <FooterSection />
+      </div>
+    </QueryProvider>
   )
 }

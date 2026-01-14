@@ -24,6 +24,12 @@ export const billingRouter = {
    */
   createSubscription: adminProcedure
     .input(z.object({ planId: planIdSchema }))
+    .route({
+      method: 'POST',
+      path: '/billing/subscription/create',
+      summary: 'Create subscription',
+      description: 'Creates a Stripe checkout session for subscription',
+    })
     .handler(async ({ input, context }) => {
       const plan = PRICING_PLANS.find((p) => p.id === input.planId)
       
@@ -65,6 +71,12 @@ export const billingRouter = {
    * Returns Stripe checkout URL for redirect
    */
   renewSubscription: adminProcedure
+    .route({
+      method: 'POST',
+      path: '/billing/subscription/renew',
+      summary: 'Renew subscription',
+      description: 'Renews subscription early when credits are low',
+    })
     .handler(async ({ context }) => {
       const org = await context.db.organization.findUnique({
         where: { id: context.orgId },
@@ -123,6 +135,12 @@ export const billingRouter = {
    * Returns portal URL for redirect
    */
   createCustomerPortal: adminProcedure
+    .route({
+      method: 'POST',
+      path: '/billing/portal',
+      summary: 'Create customer portal',
+      description: 'Creates a Stripe customer portal session',
+    })
     .handler(async ({ context }) => {
       const org = await context.db.organization.findUnique({
         where: { id: context.orgId },

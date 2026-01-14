@@ -93,6 +93,6 @@ export const baseProcedure = base
   .use(errorMappingMiddleware)
 
 /**
- * Re-export ORPCError for use in procedures
+ * Re-export ORPCError and os for use in procedures and routers
  */
-export { ORPCError }
+export { ORPCError, os }

@@ -14,6 +14,13 @@ export const adminRouter = {
    * Returns total users, organizations, active subscriptions, and revenue metrics
    */
   getDashboardStats: superAdminProcedure
+    .route({
+      method: 'GET',
+      path: '/admin/stats',
+      summary: 'Get dashboard stats',
+      description: 'Returns system-wide statistics for super admin dashboard',
+      tags: ['Admin'],
+    })
     .handler(async ({ context }) => {
       const { db } = context
       // const now = new Date()
@@ -86,6 +93,13 @@ export const adminRouter = {
       limit: z.number().min(1).max(100).default(10),
       query: z.string().optional(),
     }))
+    .route({
+      method: 'GET',
+      path: '/admin/users',
+      summary: 'List users',
+      description: 'Returns paginated list of users with search',
+      tags: ['Admin'],
+    })
     .handler(async ({ input, context }) => {
       const { db } = context
       const { page, limit, query } = input
@@ -142,6 +156,13 @@ export const adminRouter = {
       limit: z.number().min(1).max(100).default(10),
       query: z.string().optional(),
     }))
+    .route({
+      method: 'GET',
+      path: '/admin/organizations',
+      summary: 'List organizations',
+      description: 'Returns paginated list of organizations',
+      tags: ['Admin'],
+    })
     .handler(async ({ input, context }) => {
       const { db } = context
       const { page, limit, query } = input
@@ -197,6 +218,13 @@ export const adminRouter = {
    */
   getOrganizationDetails: superAdminProcedure
     .input(z.object({ orgId: z.string() }))
+    .route({
+      method: 'GET',
+      path: '/admin/organization/{orgId}',
+      summary: 'Get organization details',
+      description: 'Returns detailed organization information',
+      tags: ['Admin'],
+    })
     .handler(async ({ input, context }) => {
       const { db } = context
       

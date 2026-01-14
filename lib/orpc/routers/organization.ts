@@ -39,6 +39,12 @@ export const organizationRouter = {
    */
   create: protectedProcedure
     .input(z.object({ name: nameSchema }))
+    .route({
+      method: 'POST',
+      path: '/org/create',
+      summary: 'Create organization',
+      description: 'Creates a new organization with the authenticated user as owner',
+    })
     .handler(async ({ input, context }) => {
       const slug = generateSlug(input.name, context.user.id)
       
@@ -60,6 +66,12 @@ export const organizationRouter = {
    * List all organizations for the current user
    */
   list: protectedProcedure
+    .route({
+      method: 'GET',
+      path: '/org/list',
+      summary: 'List organizations',
+      description: 'Returns all organizations the authenticated user is a member of',
+    })
     .handler(async ({ context }) => {
       return await OrganizationService.getUserOrganizations(context.user.id)
     }),
@@ -72,6 +84,12 @@ export const organizationRouter = {
       id: z.string(),
       includeSubscription: z.boolean().optional().default(false),
     }))
+    .route({
+      method: 'GET',
+      path: '/org/{id}',
+      summary: 'Get organization',
+      description: 'Returns organization details by ID',
+    })
     .handler(async ({ input, context }) => {
       const org = await context.db.organization.findUnique({
         where: { id: input.id },
@@ -96,6 +114,12 @@ export const organizationRouter = {
    */
   updateName: adminProcedure
     .input(z.object({ name: nameSchema }))
+    .route({
+      method: 'PATCH',
+      path: '/org/name',
+      summary: 'Update organization name',
+      description: 'Updates the organization name (requires admin role)',
+    })
     .handler(async ({ input, context }) => {
       return await OrganizationService.updateOrganization(context.orgId, { name: input.name })
     }),
@@ -109,6 +133,12 @@ export const organizationRouter = {
       targetUserId: z.string(),
       newRole: z.enum([ROLES.ADMIN, ROLES.MEMBER]),
     }))
+    .route({
+      method: 'PATCH',
+      path: '/org/member/role',
+      summary: 'Update member role',
+      description: 'Updates a member\'s role within the organization',
+    })
     .handler(async ({ input, context }) => {
       // Check if target is an OWNER
       const targetMember = await context.db.organizationMember.findUnique({
@@ -146,6 +176,12 @@ export const organizationRouter = {
       email: z.string().email(),
       role: z.enum([ROLES.ADMIN, ROLES.MEMBER]).default(ROLES.MEMBER),
     }))
+    .route({
+      method: 'POST',
+      path: '/org/invite',
+      summary: 'Invite member',
+      description: 'Sends an invitation to join the organization',
+    })
     .handler(async ({ input, context }) => {
       console.log('🚀 inviteMember handler called with:', input)
       
@@ -223,6 +259,12 @@ export const organizationRouter = {
    * Get all invites for the organization
    */
   getInvites: adminProcedure
+    .route({
+      method: 'GET',
+      path: '/org/invites',
+      summary: 'List invites',
+      description: 'Returns all pending invitations for the organization',
+    })
     .handler(async ({ context }) => {
       return await InvitationService.getOrganizationInvites(context.orgId)
     }),
@@ -232,6 +274,12 @@ export const organizationRouter = {
    */
   revokeInvite: adminProcedure
     .input(z.object({ inviteId: z.string() }))
+    .route({
+      method: 'POST',
+      path: '/org/invite/revoke',
+      summary: 'Revoke invite',
+      description: 'Revokes a pending invitation',
+    })
     .handler(async ({ input }) => {
       return await InvitationService.revokeInvite(input.inviteId)
     }),
@@ -241,6 +289,12 @@ export const organizationRouter = {
    */
   deleteInvite: adminProcedure
     .input(z.object({ inviteId: z.string() }))
+    .route({
+      method: 'DELETE',
+      path: '/org/invite/{inviteId}',
+      summary: 'Delete invite',
+      description: 'Permanently deletes an invitation record',
+    })
     .handler(async ({ input }) => {
       return await InvitationService.deleteInvite(input.inviteId)
     }),
@@ -250,6 +304,12 @@ export const organizationRouter = {
    */
   resendInvite: adminProcedure
     .input(z.object({ inviteId: z.string() }))
+    .route({
+      method: 'POST',
+      path: '/org/invite/resend',
+      summary: 'Resend invite',
+      description: 'Resends an invitation with a new token',
+    })
     .handler(async ({ input, context }) => {
       const invite = await InvitationService.reinvite(input.inviteId)
       const inviteLink = InvitationService.getInviteLink(invite.token)
@@ -280,6 +340,12 @@ export const organizationRouter = {
    */
   removeMember: adminProcedure
     .input(z.object({ targetUserId: z.string() }))
+    .route({
+      method: 'DELETE',
+      path: '/org/member/{targetUserId}',
+      summary: 'Remove member',
+      description: 'Removes a member from the organization',
+    })
     .handler(async ({ input, context }) => {
       try {
         return await OrganizationService.removeMember(context.orgId, input.targetUserId)
@@ -300,6 +366,12 @@ export const organizationRouter = {
     .input(z.object({ 
       transferToOrgId: z.string().optional() 
     }))
+    .route({
+      method: 'DELETE',
+      path: '/org',
+      summary: 'Delete organization',
+      description: 'Soft deletes the organization and optionally transfers credits',
+    })
     .handler(async ({ input, context }) => {
       const org = await OrganizationService.getOrganizationById(context.orgId)
       

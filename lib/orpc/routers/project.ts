@@ -32,6 +32,12 @@ export const projectRouter = {
    */
   create: orgProcedure
     .input(z.object({ name: nameSchema }))
+    .route({
+      method: 'POST',
+      path: '/project/create',
+      summary: 'Create project',
+      description: 'Creates a new project in the current organization',
+    })
     .handler(async ({ input, context }) => {
       const slug = generateProjectSlug(input.name, context.user.id)
       
@@ -57,6 +63,12 @@ export const projectRouter = {
    * List all projects in the current organization
    */
   list: orgProcedure
+    .route({
+      method: 'GET',
+      path: '/project/list',
+      summary: 'List projects',
+      description: 'Returns all projects in the current organization',
+    })
     .handler(async ({ context }) => {
       return await ProjectService.getOrganizationProjects(context.user.id, context.orgId)
     }),
@@ -66,6 +78,12 @@ export const projectRouter = {
    */
   getBySlug: orgProcedure
     .input(z.object({ slug: z.string() }))
+    .route({
+      method: 'GET',
+      path: '/project/{slug}',
+      summary: 'Get project',
+      description: 'Returns project details by slug',
+    })
     .handler(async ({ input, context }) => {
       const project = await ProjectService.getProjectBySlug(
         context.user.id,
@@ -88,6 +106,12 @@ export const projectRouter = {
       projectId: z.string(),
       name: nameSchema 
     }))
+    .route({
+      method: 'PATCH',
+      path: '/project/{projectId}/name',
+      summary: 'Update project name',
+      description: 'Updates the project name (requires admin role)',
+    })
     .handler(async ({ input, context }) => {
       try {
         return await ProjectService.updateProject(
@@ -109,6 +133,12 @@ export const projectRouter = {
    */
   delete: adminProcedure
     .input(z.object({ projectId: z.string() }))
+    .route({
+      method: 'DELETE',
+      path: '/project/{projectId}',
+      summary: 'Delete project',
+      description: 'Deletes a project (requires admin role)',
+    })
     .handler(async ({ input, context }) => {
       try {
         return await ProjectService.deleteProject(context.user.id, input.projectId)
