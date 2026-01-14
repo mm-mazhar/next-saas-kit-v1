@@ -13,8 +13,8 @@ const generator = new OpenAPIGenerator({
 /**
  * Generate OpenAPI spec from the app router
  */
-function generateOpenAPISpec() {
-  return generator.generate(appRouter, {
+async function generateOpenAPISpec() {
+  return await generator.generate(appRouter, {
     info: {
       title: 'SaaS Kit API',
       version: '1.0.0',
@@ -30,7 +30,7 @@ function generateOpenAPISpec() {
 }
 
 export async function GET() {
-  const spec = generateOpenAPISpec()
+  const spec = await generateOpenAPISpec()
   
   return new Response(JSON.stringify(spec, null, 2), {
     headers: {
