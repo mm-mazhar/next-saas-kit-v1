@@ -124,7 +124,7 @@ describe('Abuse Prevention & Guardrails', () => {
       await setupUserWithPrimaryOrg()
 
       // Create multiple additional organizations
-      // const org2 = await setupSecondaryOrg()
+      const org2 = await setupSecondaryOrg()
       const org3 = await OrganizationService.createOrganization(
         ownerUserId,
         'Third Org',
@@ -147,7 +147,9 @@ describe('Abuse Prevention & Guardrails', () => {
       expect(secondaryOrgs).toHaveLength(2)
       expect(primaryOrgs[0].id).toBe(primaryOrgId)
 
-      // Cleanup third org
+      // Cleanup additional orgs
+      await testDb.organizationMember.deleteMany({ where: { organizationId: org2.id } })
+      await testDb.organization.deleteMany({ where: { id: org2.id } })
       await testDb.organizationMember.deleteMany({ where: { organizationId: org3.id } })
       await testDb.organization.deleteMany({ where: { id: org3.id } })
     })

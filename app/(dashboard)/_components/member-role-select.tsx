@@ -48,7 +48,7 @@ export function MemberRoleSelect({
         })
         router.refresh()
       },
-      onError: (err) => {
+      onError: (err: Error) => {
         setRole(initialRole) // Revert on error
         show({
           title: 'Error',
