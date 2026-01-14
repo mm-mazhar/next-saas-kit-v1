@@ -2,8 +2,7 @@
 
 import 'server-only'
 
-import { createRouterClient } from '@orpc/server'
-import type { RouterClient } from '@orpc/server'
+import { createRouterClient, type RouterClient } from '@orpc/server'
 import { appRouter, type AppRouter } from './root'
 import { createContext } from './context'
 
@@ -25,7 +24,8 @@ import { createContext } from './context'
  * }
  * ```
  */
-export async function getRPCCaller(): Promise<RouterClient<AppRouter>> {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export async function getRPCCaller(): Promise<any> {
   // Create context with current request's auth and org info
   const context = await createContext()
   

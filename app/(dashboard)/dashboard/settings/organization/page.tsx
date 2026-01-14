@@ -39,10 +39,10 @@ export default async function OrganizationSettingsPage() {
   
   const cookieStore = await cookies()
   const currentOrgId = cookieStore.get('current-org-id')?.value
-  const organizations = await rpc.org.list()
+  const organizations = await rpc.org.list() as { id: string; name: string; slug: string; members: { role: string }[] }[]
   
   // Validate membership
-  const isMember = currentOrgId && organizations.some(org => org.id === currentOrgId)
+  const isMember = currentOrgId && organizations.some((org: { id: string }) => org.id === currentOrgId)
   const effectiveOrgId = isMember ? currentOrgId : (organizations[0]?.id ?? null)
 
   if (!effectiveOrgId) {
@@ -70,11 +70,11 @@ export default async function OrganizationSettingsPage() {
     )
   }
 
-  const currentUserMembership = org.members.find(m => m.userId === user.id)
+  const currentUserMembership = org.members.find((m: { userId: string }) => m.userId === user.id)
 
   const invites = await rpc.org.getInvites()
 
-  const ownedOrganizations = organizations.filter((o) => o.members[0]?.role === 'OWNER')
+  const ownedOrganizations = organizations.filter((o: { members: { role: string }[] }) => o.members[0]?.role === 'OWNER')
   const transferTargets = ownedOrganizations
     .filter((o) => o.id !== org.id)
     .map((o) => ({ id: o.id, name: o.name }))
@@ -116,7 +116,7 @@ export default async function OrganizationSettingsPage() {
                 </p>
               ) : (
                 <>
-                  {org.members.find((m) => m.userId === user.id)?.role ===
+                  {org.members.find((m: { userId: string; role: string }) => m.userId === user.id)?.role ===
                   'OWNER' ? (
                     <DeleteOrgButton
                       orgId={org.id}
@@ -152,7 +152,7 @@ export default async function OrganizationSettingsPage() {
             </CardHeader>
             <CardContent>
               <div className='space-y-4'>
-                {org.members.map((member) => (
+                {org.members.map((member: { id: string; userId: string; role: string; user?: { name?: string; email?: string } }) => (
                   <div
                     key={member.id}
                     className='flex items-center justify-between space-x-4'
@@ -198,7 +198,7 @@ export default async function OrganizationSettingsPage() {
               </CardHeader>
               <CardContent>
                 <PendingInvitesList
-                  invites={invites.map((i) => ({
+                  invites={invites.map((i: { id: string; email: string; invitee: { name: string }; role: string; status: string; expiresAt: Date; token: string }) => ({
                     id: i.id,
                     email: i.email,
                     name: i.invitee.name,

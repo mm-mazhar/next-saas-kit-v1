@@ -79,8 +79,9 @@ function initializeClients() {
 /**
  * oRPC client for direct procedure calls
  * Note: Uses any to avoid type errors with proxy and mocks.
+ * Cast to any to allow dynamic property access on the proxy.
  */
-export const client = new Proxy({}, {
+export const client: any = new Proxy({}, {
   get(_target, prop) {
     const { client } = initializeClients()
     return client[prop as string]
@@ -90,8 +91,9 @@ export const client = new Proxy({}, {
 /**
  * TanStack Query utilities for oRPC
  * Note: Uses any to avoid type errors with proxy and mocks.
+ * Cast to any to allow dynamic property access on the proxy.
  */
-export const orpc = new Proxy({}, {
+export const orpc: any = new Proxy({}, {
   get(_target, prop) {
     const { orpc } = initializeClients()
     return orpc[prop as string]

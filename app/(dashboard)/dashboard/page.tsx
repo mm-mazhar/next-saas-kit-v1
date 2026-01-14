@@ -26,13 +26,13 @@ export default async function DashboardPage() {
 
   const cookieStore = await cookies()
   const currentOrgId = cookieStore.get('current-org-id')?.value
-  const organizations = await rpc.org.list()
+  const organizations = await rpc.org.list() as { id: string; members: { role: string }[] }[]
   
   // Validate that the user is actually a member of the organization in the cookie
-  const isMember = currentOrgId && organizations.some(org => org.id === currentOrgId)
+  const isMember = currentOrgId && organizations.some((org: { id: string }) => org.id === currentOrgId)
   const effectiveOrgId = isMember ? currentOrgId : (organizations[0]?.id ?? null)
 
-  const effectiveOrg = effectiveOrgId ? organizations.find(o => o.id === effectiveOrgId) : null
+  const effectiveOrg = effectiveOrgId ? organizations.find((o: { id: string }) => o.id === effectiveOrgId) : null
   const userRole = effectiveOrg?.members[0]?.role
 
   if (!effectiveOrgId) {
@@ -43,7 +43,7 @@ export default async function DashboardPage() {
     )
   }
 
-  const projects = await rpc.project.list()
+  const projects = await rpc.project.list() as { id: string; name: string; slug: string; updatedAt: Date }[]
 
   return (
     <div className='flex flex-1 flex-col gap-4 p-4 pt-0'>
@@ -67,7 +67,7 @@ export default async function DashboardPage() {
         </div>
       ) : (
         <div className='grid gap-4 md:grid-cols-2 lg:grid-cols-3'>
-          {projects.map((project) => (
+          {projects.map((project: { id: string; name: string; slug: string; updatedAt: Date }) => (
             <Card key={project.id} className='hover:bg-muted/50 transition-colors'>
               <CardHeader className='flex flex-row items-center justify-between space-y-0 pb-2'>
                 <CardTitle className='text-sm font-medium'>

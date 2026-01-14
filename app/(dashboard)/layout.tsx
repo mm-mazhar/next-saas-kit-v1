@@ -55,7 +55,7 @@ async function DashboardGroupLayout({ children }: { children: ReactNode }) {
   // const { OrganizationService } = await import('@/lib/services/organization-service')
   
   const rpc = await getRPCCaller()
-  let organizations = await rpc.org.list()
+  let organizations = await rpc.org.list() as { id: string; name: string; slug: string; members: { role: string }[] }[]
   
   // Only attempt to create default organization if the user exists in DB (has createdAt)
   if (organizations.length === 0 && userRow?.createdAt) {
@@ -77,7 +77,7 @@ async function DashboardGroupLayout({ children }: { children: ReactNode }) {
   }
   
   const currentOrgId = cookieStore.get('current-org-id')?.value
-  let currentOrganization = organizations.find(org => org.id === currentOrgId)
+  let currentOrganization = organizations.find((org: { id: string }) => org.id === currentOrgId)
   
   if (!currentOrganization && organizations.length > 0) {
     currentOrganization = organizations[0]
