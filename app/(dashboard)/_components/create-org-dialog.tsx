@@ -12,7 +12,7 @@ import { Label } from '@/components/ui/label'
 import { useToast } from '@/components/ToastProvider'
 import { orpc } from '@/lib/orpc/client'
 import { useORPCMutation } from '@/hooks/use-orpc-mutation'
-import { switchOrganization, setCurrentOrganization } from '@/app/actions/cookie-actions'
+import { setCurrentOrganization } from '@/app/actions/cookie-actions'
 
 export function CreateOrgDialog({
   open,

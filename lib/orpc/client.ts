@@ -30,7 +30,7 @@ function initializeClients() {
     } catch (error) {
       console.error('Failed to create oRPC client:', error)
       // Fallback to mock clients if creation fails
-      const createDeepProxy = (path: string[] = []): any => {
+      const createDeepProxy = (path: string[] = []): unknown => {
         return new Proxy(() => {}, {
           get(target, prop) {
             if (typeof prop === 'string') {
@@ -49,7 +49,7 @@ function initializeClients() {
     }
   } else {
     // SSR environment - create deep mock objects
-    const createDeepProxy = (path: string[] = []): any => {
+    const createDeepProxy = (path: string[] = []): unknown => {
       return new Proxy(() => {}, {
         get(target, prop) {
           if (typeof prop === 'string') {
