@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 // lib/orpc/client.ts
 
 'use client'
@@ -5,15 +6,15 @@
 import { createORPCClient } from '@orpc/client'
 import { RPCLink } from '@orpc/client/fetch'
 import { createTanstackQueryUtils } from '@orpc/tanstack-query'
-import type { RouterClient } from '@orpc/server'
 import type { AppRouter } from './root'
 
 /**
  * Lazy initialization to avoid SSR issues
+ * Note: _client is typed as any to avoid type errors with proxies and mocks.
  */
-let _client: RouterClient<AppRouter> | null = null
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-let _orpc: any | null = null
+
+let _client: any = null
+let _orpc: any = null
 let _initialized = false
 
 function initializeClients() {
@@ -28,11 +29,9 @@ function initializeClients() {
         url: `${window.location.origin}/api/rpc`,
       })
       
-      // @ts-expect-error - oRPC createORPCClient returns DecoratedProcedure types incompatible with RouterClient
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      _client = createORPCClient<AppRouter>(link) as any
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      _orpc = createTanstackQueryUtils(_client as any) as any
+      // oRPC createORPCClient returns types incompatible with RouterClient, so use any
+      _client = createORPCClient(link)
+      _orpc = createTanstackQueryUtils(_client)
     } catch (error) {
       console.error('Failed to create oRPC client:', error)
       // Fallback to mock clients if creation fails
@@ -50,7 +49,7 @@ function initializeClients() {
         })
       }
 
-      _client = createDeepProxy(['client']) as RouterClient<AppRouter>
+      _client = createDeepProxy(['client'])
       _orpc = createDeepProxy(['orpc'])
     }
   } else {
@@ -69,7 +68,7 @@ function initializeClients() {
       })
     }
 
-    _client = createDeepProxy(['client']) as RouterClient<AppRouter>
+    _client = createDeepProxy(['client'])
     _orpc = createDeepProxy(['orpc'])
   }
 
@@ -78,26 +77,24 @@ function initializeClients() {
 }
 
 /**
- * Type-safe oRPC client for direct procedure calls
+ * oRPC client for direct procedure calls
+ * Note: Uses any to avoid type errors with proxy and mocks.
  */
-export const client = new Proxy({} as RouterClient<AppRouter>, {
+export const client = new Proxy({}, {
   get(_target, prop) {
     const { client } = initializeClients()
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    return (client as any)[prop as string]
+    return client[prop as string]
   }
-}) as RouterClient<AppRouter>
+})
 
 /**
  * TanStack Query utilities for oRPC
- * Note: Using any type here due to complex oRPC type inference issues
+ * Note: Uses any to avoid type errors with proxy and mocks.
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export const orpc = new Proxy({} as any, {
+export const orpc = new Proxy({}, {
   get(_target, prop) {
     const { orpc } = initializeClients()
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    return (orpc as any)[prop as string]
+    return orpc[prop as string]
   }
 })
 

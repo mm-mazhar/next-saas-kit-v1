@@ -34,8 +34,9 @@ export function CreateOrgDialog({
 
   const { mutate, isPending, error } = useMutation({
     mutationFn: async (input: { name: string }) => {
-      return await client.org.create(input) as CreateOrgResponse
-    },
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return (await (client as any).org.create(input)) as CreateOrgResponse
+  },
     onSuccess: async (data) => {
       show({ title: 'Created', description: 'Organization created successfully', variant: 'success' })
       onOpenChange(false)
