@@ -6,6 +6,8 @@ import { InvitationService } from '@/lib/services/invitation-service'
 import { protectedProcedure, adminProcedure, ownerProcedure } from '../procedures'
 import { ORPCError } from '../server'
 import { ROLES } from '@/lib/constants'
+import { sendInviteEmail } from '@/app/lib/email'
+import { isDisposableEmail } from '@/lib/email-validator'
 
 // Rate limiting state (in-memory for simplicity - in production use Redis)
 const inviteRateLimits = new Map<string, number>()
@@ -145,33 +147,68 @@ export const organizationRouter = {
       role: z.enum([ROLES.ADMIN, ROLES.MEMBER]).default(ROLES.MEMBER),
     }))
     .handler(async ({ input, context }) => {
+      console.log('🚀 inviteMember handler called with:', input)
+      
+      // Check for disposable email
+      if (isDisposableEmail(input.email)) {
+        throw new ORPCError('BAD_REQUEST', { 
+          message: 'Disposable emails cannot be invited to organizations. Please use a permanent email address.' 
+        })
+      }
+      
       // Rate limit check
       const rateLimitKey = `${context.orgId}:${context.user.id}`
       const lastInviteTime = inviteRateLimits.get(rateLimitKey)
       
       if (lastInviteTime && Date.now() - lastInviteTime < RATE_LIMIT_MS) {
         const remainingSeconds = Math.ceil((RATE_LIMIT_MS - (Date.now() - lastInviteTime)) / 1000)
+        console.log(`⏱️ Rate limit hit for ${context.user.email}: ${remainingSeconds}s remaining`)
         throw new ORPCError('PRECONDITION_FAILED', { 
           message: `Please wait ${remainingSeconds} seconds before sending another invite.` 
         })
       }
 
       try {
+        console.log('📧 Creating invite...')
         const invite = await InvitationService.createInvite(
           context.user.id,
           context.orgId,
           input.email,
           input.role
         )
+        console.log('✅ Invite created successfully:', invite.id)
+
+        console.log('🔗 Generating invite link...')
+        const inviteLink = InvitationService.getInviteLink(invite.token)
+        console.log('✅ Invite link generated:', inviteLink)
+
+        // Send invite email
+        console.log('📨 Sending invite email...')
+        try {
+          await sendInviteEmail({
+            to: input.email,
+            organizationName: invite.organization?.name,
+            inviteLink,
+            role: input.role,
+            inviterName: invite.inviter?.name || context.user.email,
+            expiresAt: invite.expiresAt,
+          })
+          console.log('✅ Invite email sent successfully')
+        } catch (emailError) {
+          console.error('⚠️ Failed to send invite email:', emailError)
+          // Don't throw - invite was created successfully, email failure shouldn't block
+        }
 
         // Update rate limit
         inviteRateLimits.set(rateLimitKey, Date.now())
 
+        console.log('🎉 Returning invite response')
         return {
           invite,
-          inviteLink: InvitationService.getInviteLink(invite.token),
+          inviteLink,
         }
       } catch (error) {
+        console.error('❌ Error in inviteMember handler:', error)
         if (error instanceof Error && error.message.includes('Limit reached')) {
           throw new ORPCError('PRECONDITION_FAILED', { message: error.message })
         }
@@ -213,11 +250,28 @@ export const organizationRouter = {
    */
   resendInvite: adminProcedure
     .input(z.object({ inviteId: z.string() }))
-    .handler(async ({ input }) => {
+    .handler(async ({ input, context }) => {
       const invite = await InvitationService.reinvite(input.inviteId)
+      const inviteLink = InvitationService.getInviteLink(invite.token)
+      
+      // Send invite email
+      try {
+        await sendInviteEmail({
+          to: invite.email,
+          organizationName: invite.organization?.name,
+          inviteLink,
+          role: invite.role,
+          inviterName: invite.inviter?.name || context.user.email,
+          expiresAt: invite.expiresAt,
+        })
+        console.log('✅ Resend invite email sent successfully')
+      } catch (emailError) {
+        console.error('⚠️ Failed to resend invite email:', emailError)
+      }
+      
       return {
         invite,
-        inviteLink: InvitationService.getInviteLink(invite.token),
+        inviteLink,
       }
     }),
 

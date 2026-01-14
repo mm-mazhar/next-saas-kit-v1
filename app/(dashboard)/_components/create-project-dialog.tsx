@@ -5,7 +5,6 @@
 import { Plus } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import * as React from 'react'
-import { useMutation } from '@tanstack/react-query'
 
 import {
   Dialog,
@@ -21,7 +20,9 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { useToast } from '@/components/ToastProvider'
 import { orpc } from '@/lib/orpc/client'
+import { useORPCMutation } from '@/hooks/use-orpc-mutation'
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 export function CreateProjectDialog({ orgId }: { orgId: string }) {
   const [open, setOpen] = React.useState(false)
   const [error, setError] = React.useState('')
@@ -30,7 +31,7 @@ export function CreateProjectDialog({ orgId }: { orgId: string }) {
   const { show } = useToast()
 
   // oRPC mutation hook for creating projects
-  const createProjectMutation = useMutation(
+  const createProjectMutation = useORPCMutation(() =>
     orpc.project.create.mutationOptions({
       onSuccess: () => {
         show({

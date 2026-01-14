@@ -1,9 +1,9 @@
 // lib/constants.ts
 
 // ✅ NEXT APP
-export const LOCAL_SITE_URL = process.env.LOCAL_SITE_URL as string
-export const PRODUCTION_URL = process.env.PRODUCTION_URL as string
-export const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL as string
+export const LOCAL_SITE_URL = process.env.LOCAL_SITE_URL || 'http://localhost:3000'
+export const PRODUCTION_URL = process.env.PRODUCTION_URL || ''
+export const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || ''
 
 // ✅ COLOR SCHEME AND MODE
 export const DEFAULT_COLOR_SCHEME = `theme-neutral` as string
@@ -160,7 +160,7 @@ export const INVITE_EXPIRATION_MS = 60 * 60 * 1000
 // ✅ Multi-Tenancy Limits & Configuration
 export const LIMITS = {
   MAX_ORGANIZATIONS_PER_USER: 5,
-  MAX_PROJECTS_PER_ORGANIZATION: 10,
+  MAX_PROJECTS_PER_ORGANIZATION: 5,
   MAX_MEMBERS_PER_ORGANIZATION: 5,
   MAX_PENDING_INVITES_PER_ORG: 3
 } as const

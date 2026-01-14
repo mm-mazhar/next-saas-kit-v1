@@ -17,3 +17,13 @@ export async function switchOrganization(orgId: string) {
   revalidatePath('/dashboard')
   redirect('/dashboard')
 }
+
+/**
+ * Set the current organization without redirecting
+ * Use this when you want to handle navigation client-side
+ */
+export async function setCurrentOrganization(orgId: string) {
+  const cookieStore = await cookies()
+  cookieStore.set('current-org-id', orgId)
+  revalidatePath('/dashboard')
+}

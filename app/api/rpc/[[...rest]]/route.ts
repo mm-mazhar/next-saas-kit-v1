@@ -21,12 +21,17 @@ const handler = new RPCHandler(appRouter, {
  * Creates context with authenticated user and organization info
  */
 async function handleRequest(request: Request) {
-  const { response } = await handler.handle(request, {
-    prefix: '/api/rpc',
-    context: await createContext(request),
-  })
+  try {
+    const { response } = await handler.handle(request, {
+      prefix: '/api/rpc',
+      context: await createContext(request),
+    })
 
-  return response ?? new Response('Not found', { status: 404 })
+    return response ?? new Response('Not found', { status: 404 })
+  } catch (error) {
+    console.error('[oRPC] Handler error:', error)
+    return new Response('Internal server error', { status: 500 })
+  }
 }
 
 // Export handlers for all HTTP methods

@@ -52,7 +52,14 @@ export default async function BillingPage() {
   }
 
   const rpc = await getRPCCaller()
-  const org = await rpc.org.getById({ id: currentOrgId, includeSubscription: true })
+  
+  let org
+  try {
+    org = await rpc.org.getById({ id: currentOrgId, includeSubscription: true })
+  } catch {
+    // Org not found or deleted - redirect to dashboard which will auto-switch to valid org
+    return redirect('/dashboard')
+  }
 
   if (!org) return redirect('/dashboard')
 

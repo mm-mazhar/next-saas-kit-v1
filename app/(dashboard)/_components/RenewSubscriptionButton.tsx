@@ -6,14 +6,14 @@ import { AlertDialog, AlertDialogCancel, AlertDialogContent, AlertDialogDescript
 import { Button } from '@/components/ui/button'
 import { useToast } from '@/components/ToastProvider'
 import { orpc } from '@/lib/orpc/client'
-import { useMutation } from '@tanstack/react-query'
+import { useORPCMutation } from '@/hooks/use-orpc-mutation'
 import { useState } from 'react'
 
 export function RenewSubscriptionButton() {
   const [open, setOpen] = useState(false)
   const { show } = useToast()
 
-  const { mutate, isPending } = useMutation(
+  const { mutate, isPending } = useORPCMutation(() =>
     orpc.billing.renewSubscription.mutationOptions({
       onSuccess: (data) => {
         window.location.href = data.url

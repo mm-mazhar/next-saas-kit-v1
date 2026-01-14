@@ -5,12 +5,12 @@
 import { Button } from '@/components/ui/button'
 import { useToast } from '@/components/ToastProvider'
 import { orpc } from '@/lib/orpc/client'
-import { useMutation } from '@tanstack/react-query'
+import { useORPCMutation } from '@/hooks/use-orpc-mutation'
 
 export function StripePortalButton() {
   const { show } = useToast()
 
-  const { mutate, isPending } = useMutation(
+  const { mutate, isPending } = useORPCMutation(() =>
     orpc.billing.createCustomerPortal.mutationOptions({
       onSuccess: (data) => {
         window.location.href = data.url

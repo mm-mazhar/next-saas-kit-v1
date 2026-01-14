@@ -16,7 +16,7 @@ import {
 } from '@/components/ui/tooltip'
 import { useToast } from '@/components/ToastProvider'
 import { orpc } from '@/lib/orpc/client'
-import { useMutation } from '@tanstack/react-query'
+import { useORPCMutation } from '@/hooks/use-orpc-mutation'
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 
@@ -38,7 +38,7 @@ export function MemberRoleSelect({
   const { show } = useToast()
   const router = useRouter()
 
-  const { mutate, isPending } = useMutation(
+  const { mutate, isPending } = useORPCMutation(() =>
     orpc.org.updateMemberRole.mutationOptions({
       onSuccess: () => {
         show({

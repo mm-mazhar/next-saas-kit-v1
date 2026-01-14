@@ -52,7 +52,7 @@ async function DashboardGroupLayout({ children }: { children: ReactNode }) {
   
   // Multi-tenancy: Fetch organizations using oRPC RSC client
   const { getRPCCaller } = await import('@/lib/orpc/rsc-client')
-  const { OrganizationService } = await import('@/lib/services/organization-service')
+  // const { OrganizationService } = await import('@/lib/services/organization-service')
   
   const rpc = await getRPCCaller()
   let organizations = await rpc.org.list()

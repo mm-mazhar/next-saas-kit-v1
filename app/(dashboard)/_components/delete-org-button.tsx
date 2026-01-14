@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { useToast } from '@/components/ToastProvider'
 import { orpc } from '@/lib/orpc/client'
-import { useMutation } from '@tanstack/react-query'
+import { useORPCMutation } from '@/hooks/use-orpc-mutation'
 import { AlertTriangle } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import * as React from 'react'
@@ -32,7 +32,7 @@ export function DeleteOrgButton({ orgName, credits, transferTargets }: DeleteOrg
   const hasTransferTargets = transferTargets.length > 0
   const canTransferCredits = hasCreditsToTransfer && hasTransferTargets
 
-  const { mutate, isPending, error } = useMutation(
+  const { mutate, isPending, error } = useORPCMutation(() =>
     orpc.org.delete.mutationOptions({
       onSuccess: () => {
         show({ title: 'Deleted', description: 'Organization deleted successfully', variant: 'success' })

@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from '@/app/(dashboard)/_components/ui/select'
 import { useToast } from '@/components/ToastProvider'
 import { orpc } from '@/lib/orpc/client'
-import { useMutation } from '@tanstack/react-query'
+import { useORPCMutation } from '@/hooks/use-orpc-mutation'
 import { useRouter } from 'next/navigation'
 import * as React from 'react'
 
@@ -24,7 +24,7 @@ export function UserSettingsForm({ defaultName, defaultEmail, defaultColorScheme
   const { show } = useToast()
   const router = useRouter()
 
-  const { mutate, isPending } = useMutation(
+  const { mutate, isPending } = useORPCMutation(() =>
     orpc.user.updateProfile.mutationOptions({
       onSuccess: () => {
         show({ title: 'Saved', description: 'Settings updated successfully', variant: 'success' })

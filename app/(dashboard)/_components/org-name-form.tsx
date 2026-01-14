@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { useToast } from '@/components/ToastProvider'
 import { orpc } from '@/lib/orpc/client'
-import { useMutation } from '@tanstack/react-query'
+import { useORPCMutation } from '@/hooks/use-orpc-mutation'
 import { useRouter } from 'next/navigation'
 import * as React from 'react'
 
@@ -14,7 +14,7 @@ export function OrgNameForm({ defaultName }: { orgId: string; defaultName: strin
   const router = useRouter()
   const [name, setName] = React.useState(defaultName)
 
-  const { mutate, isPending } = useMutation(
+  const { mutate, isPending } = useORPCMutation(() =>
     orpc.org.updateName.mutationOptions({
       onSuccess: () => {
         show({ title: 'Saved', description: 'Organization name updated', variant: 'success' })

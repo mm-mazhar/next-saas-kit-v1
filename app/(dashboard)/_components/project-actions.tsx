@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { useToast } from '@/components/ToastProvider'
 import { orpc } from '@/lib/orpc/client'
-import { useMutation } from '@tanstack/react-query'
+import { useORPCMutation } from '@/hooks/use-orpc-mutation'
 import { MoreVertical } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import * as React from 'react'
@@ -21,7 +21,7 @@ export function ProjectActions({ projectId, defaultName, userRole }: { projectId
   const router = useRouter()
   const { show } = useToast()
 
-  const updateMutation = useMutation(
+  const updateMutation = useORPCMutation(() =>
     orpc.project.updateName.mutationOptions({
       onSuccess: () => {
         show({ title: 'Saved', description: 'Project renamed successfully', variant: 'success' })
@@ -34,7 +34,7 @@ export function ProjectActions({ projectId, defaultName, userRole }: { projectId
     })
   )
 
-  const deleteMutation = useMutation(
+  const deleteMutation = useORPCMutation(() =>
     orpc.project.delete.mutationOptions({
       onSuccess: () => {
         show({ title: 'Deleted', description: 'Project deleted successfully', variant: 'success' })

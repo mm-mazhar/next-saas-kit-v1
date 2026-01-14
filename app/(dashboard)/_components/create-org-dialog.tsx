@@ -11,7 +11,8 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { useToast } from '@/components/ToastProvider'
 import { orpc } from '@/lib/orpc/client'
-import { useMutation } from '@tanstack/react-query'
+import { useORPCMutation } from '@/hooks/use-orpc-mutation'
+import { switchOrganization, setCurrentOrganization } from '@/app/actions/cookie-actions'
 
 export function CreateOrgDialog({
   open,
@@ -24,12 +25,16 @@ export function CreateOrgDialog({
   const router = useRouter()
   const { show } = useToast()
 
-  const { mutate, isPending, error } = useMutation(
+  const { mutate, isPending, error } = useORPCMutation(() =>
     orpc.org.create.mutationOptions({
-      onSuccess: () => {
+      onSuccess: async (data) => {
         show({ title: 'Created', description: 'Organization created successfully', variant: 'success' })
         onOpenChange(false)
         setName('')
+        // Set the current org without redirecting to avoid NEXT_REDIRECT error
+        await setCurrentOrganization(data.id)
+        // Then navigate client-side
+        router.push('/dashboard')
         router.refresh()
       },
       onError: (err) => {

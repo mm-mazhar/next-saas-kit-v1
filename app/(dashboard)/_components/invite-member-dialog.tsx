@@ -27,7 +27,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { useToast } from '@/components/ToastProvider'
 import { orpc } from '@/lib/orpc/client'
-import { useMutation } from '@tanstack/react-query'
+import { useORPCMutation } from '@/hooks/use-orpc-mutation'
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 export function InviteMemberDialog({ orgId }: { orgId: string }) {
@@ -37,9 +37,10 @@ export function InviteMemberDialog({ orgId }: { orgId: string }) {
   const router = useRouter()
   const { show } = useToast()
 
-  const { mutate, isPending, error } = useMutation(
+  const { mutate, isPending, error } = useORPCMutation(() =>
     orpc.org.inviteMember.mutationOptions({
       onSuccess: () => {
+        console.log('✅ Invite mutation successful')
         show({ title: 'Invite sent', description: `Invitation sent to ${email}`, variant: 'success' })
         setOpen(false)
         setEmail('')
@@ -47,13 +48,27 @@ export function InviteMemberDialog({ orgId }: { orgId: string }) {
         router.refresh()
       },
       onError: (err) => {
-        show({ title: 'Error', description: err.message, variant: 'error' })
+        // Log different error types appropriately
+        if (err.code === 'PRECONDITION_FAILED') {
+          console.log('⏱️ Invite rate limited:', err.message)
+        } else if (err.code === 'BAD_REQUEST' && err.message.includes('Disposable emails')) {
+          console.log('🚫 Disposable email blocked:', err.message)
+        } else {
+          console.error('❌ Invite mutation error:', err)
+        }
+        
+        // Only show toast for unexpected errors (not rate limiting or disposable email validation)
+        if (err.code !== 'PRECONDITION_FAILED' && !(err.code === 'BAD_REQUEST' && err.message.includes('Disposable emails'))) {
+          show({ title: 'Error', description: err.message, variant: 'error' })
+        }
+        // Rate limiting and disposable email errors will only show inline in the dialog
       },
     })
   )
 
   function onSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
+    console.log('🚀 Submitting invite form with:', { email, role })
     mutate({ email, role })
   }
 

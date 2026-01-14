@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button'
 import { useToast } from '@/components/ToastProvider'
 import { orpc } from '@/lib/orpc/client'
 import { type PlanId } from '@/lib/constants'
-import { useMutation } from '@tanstack/react-query'
+import { useORPCMutation } from '@/hooks/use-orpc-mutation'
 import { useState } from 'react'
 
 type Props = {
@@ -19,7 +19,7 @@ export function UpgradeSubscriptionButton({ planId, hasActiveSubscription }: Pro
   const [open, setOpen] = useState(false)
   const { show } = useToast()
 
-  const { mutate, isPending } = useMutation(
+  const { mutate, isPending } = useORPCMutation(() =>
     orpc.billing.createSubscription.mutationOptions({
       onSuccess: (data) => {
         window.location.href = data.url

@@ -7,7 +7,7 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { orpc } from '@/lib/orpc/client'
-import { useMutation } from '@tanstack/react-query'
+import { useORPCMutation } from '@/hooks/use-orpc-mutation'
 import { Copy } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import * as React from 'react'
@@ -26,7 +26,7 @@ export function PendingInvitesList({ invites }: { invites: InviteRow[] }) {
   const router = useRouter()
   const { show } = useToast()
 
-  const revokeMutation = useMutation(
+  const revokeMutation = useORPCMutation(() =>
     orpc.org.revokeInvite.mutationOptions({
       onSuccess: (_, variables) => {
         const invite = invites.find(i => i.id === variables.inviteId)
@@ -39,7 +39,7 @@ export function PendingInvitesList({ invites }: { invites: InviteRow[] }) {
     })
   )
 
-  const deleteMutation = useMutation(
+  const deleteMutation = useORPCMutation(() =>
     orpc.org.deleteInvite.mutationOptions({
       onSuccess: () => {
         show({ title: 'Invite removed', description: 'Invite removed from list', duration: 2500 })
@@ -51,7 +51,7 @@ export function PendingInvitesList({ invites }: { invites: InviteRow[] }) {
     })
   )
 
-  const resendMutation = useMutation(
+  const resendMutation = useORPCMutation(() =>
     orpc.org.resendInvite.mutationOptions({
       onSuccess: (_, variables) => {
         const invite = invites.find(i => i.id === variables.inviteId)

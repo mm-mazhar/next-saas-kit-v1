@@ -7,44 +7,89 @@ import type { RouterClient } from '@orpc/server'
 import type { AppRouter } from './root'
 
 /**
- * RPC link configuration for client-side requests
- * Points to the /api/rpc endpoint
+ * Lazy initialization to avoid SSR issues
  */
-const link = new RPCLink({
-  url: '/api/rpc',
-  // Headers are automatically included by the browser (cookies, etc.)
-})
+let _client: RouterClient<AppRouter> | null = null
+let _orpc: ReturnType<typeof createTanstackQueryUtils> | null = null
+let _initialized = false
+
+function initializeClients() {
+  if (_initialized) {
+    return { client: _client!, orpc: _orpc! }
+  }
+
+  if (typeof window !== 'undefined') {
+    // Browser environment - create real clients with proper URL
+    try {
+      const link = new RPCLink({
+        url: `${window.location.origin}/api/rpc`,
+      })
+      
+      _client = createORPCClient<AppRouter>(link)
+      _orpc = createTanstackQueryUtils(_client)
+    } catch (error) {
+      console.error('Failed to create oRPC client:', error)
+      // Fallback to mock clients if creation fails
+      const createDeepProxy = (path: string[] = []): any => {
+        return new Proxy(() => {}, {
+          get(target, prop) {
+            if (typeof prop === 'string') {
+              return createDeepProxy([...path, prop])
+            }
+            return undefined
+          },
+          apply() {
+            throw new Error(`oRPC client failed to initialize: ${error}`)
+          }
+        })
+      }
+
+      _client = createDeepProxy(['client']) as RouterClient<AppRouter>
+      _orpc = createDeepProxy(['orpc']) as ReturnType<typeof createTanstackQueryUtils>
+    }
+  } else {
+    // SSR environment - create deep mock objects
+    const createDeepProxy = (path: string[] = []): any => {
+      return new Proxy(() => {}, {
+        get(target, prop) {
+          if (typeof prop === 'string') {
+            return createDeepProxy([...path, prop])
+          }
+          return undefined
+        },
+        apply() {
+          throw new Error(`oRPC client method ${path.join('.')} can only be used in browser environment`)
+        }
+      })
+    }
+
+    _client = createDeepProxy(['client']) as RouterClient<AppRouter>
+    _orpc = createDeepProxy(['orpc']) as ReturnType<typeof createTanstackQueryUtils>
+  }
+
+  _initialized = true
+  return { client: _client!, orpc: _orpc! }
+}
 
 /**
  * Type-safe oRPC client for direct procedure calls
- * Use this for imperative calls outside of React components
- * 
- * @example
- * ```ts
- * const orgs = await client.org.list()
- * ```
  */
-export const client: RouterClient<AppRouter> = createORPCClient(link)
+export const client: RouterClient<AppRouter> = new Proxy({} as RouterClient<AppRouter>, {
+  get(target, prop) {
+    const { client } = initializeClients()
+    return client[prop as keyof RouterClient<AppRouter>]
+  }
+})
 
 /**
  * TanStack Query utilities for oRPC
- * Provides React hooks for queries and mutations with automatic caching
- * 
- * @example
- * ```tsx
- * // Query
- * const { data, isLoading } = useQuery(orpc.org.list.queryOptions())
- * 
- * // Mutation
- * const mutation = useMutation(orpc.org.create.mutationOptions({
- *   onSuccess: () => {
- *     queryClient.invalidateQueries({ queryKey: orpc.org.key() })
- *   }
- * }))
- * mutation.mutate({ name: 'New Org' })
- * ```
  */
-export const orpc = createTanstackQueryUtils(client)
+export const orpc = new Proxy({} as ReturnType<typeof createTanstackQueryUtils>, {
+  get(target, prop) {
+    const { orpc } = initializeClients()
+    return orpc[prop as keyof ReturnType<typeof createTanstackQueryUtils>]
+  }
+})
 
 /**
  * Re-export types for convenience
