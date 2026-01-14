@@ -1,3 +1,4 @@
+// tests/integration/setup.ts
 // Load environment variables first
 import './env-setup'
 import { beforeAll, afterAll } from 'vitest'

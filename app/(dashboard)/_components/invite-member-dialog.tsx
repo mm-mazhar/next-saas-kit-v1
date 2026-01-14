@@ -47,7 +47,7 @@ export function InviteMemberDialog({ orgId }: { orgId: string }) {
         setRole('MEMBER')
         router.refresh()
       },
-      onError: (err) => {
+      onError: (err: { code: string; message: string }) => {
         // Log different error types appropriately
         if (err.code === 'PRECONDITION_FAILED') {
           console.log('⏱️ Invite rate limited:', err.message)
@@ -117,7 +117,11 @@ export function InviteMemberDialog({ orgId }: { orgId: string }) {
                 </SelectContent>
               </Select>
             </div>
-            {error && <p className='text-red-500 text-sm'>{error.message}</p>}
+            {Boolean(error) && (
+              <p className='text-red-500 text-sm'>
+                {error instanceof Error ? error.message : 'An error occurred'}
+              </p>
+            )}
           </div>
           <DialogFooter>
             <Button type='submit' disabled={isPending}>

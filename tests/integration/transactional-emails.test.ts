@@ -1,7 +1,8 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 // tests/integration/transactional-emails.test.ts
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
-import { TestUtils, testDb } from './setup'
+import { TestUtils } from './setup'
 import { OrganizationService } from '@/lib/services/organization-service'
 import { InvitationService } from '@/lib/services/invitation-service'
 import { ROLES } from '@/lib/constants'

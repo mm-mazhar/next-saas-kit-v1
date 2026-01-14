@@ -28,7 +28,7 @@ export function ProjectActions({ projectId, defaultName, userRole }: { projectId
         setOpenRename(false)
         router.refresh()
       },
-      onError: (err) => {
+      onError: (err: Error) => {
         show({ title: 'Error', description: err.message, variant: 'error' })
       },
     })
@@ -41,7 +41,7 @@ export function ProjectActions({ projectId, defaultName, userRole }: { projectId
         setOpenDelete(false)
         router.refresh()
       },
-      onError: (err) => {
+      onError: (err: Error) => {
         show({ title: 'Error', description: err.message, variant: 'error' })
       },
     })

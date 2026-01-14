@@ -1,7 +1,9 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 // tests/integration/disposable-email-blocking.test.ts
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
-import { TestUtils, DatabaseHelpers, testDb } from './setup'
+import { TestUtils } from './setup'
+// import { DatabaseHelpers, testDb } from './setup'
 import { isDisposableEmail } from '@/lib/email-validator'
 import { validateEmail } from '@/app/actions/auth-check'
 import { InvitationService } from '@/lib/services/invitation-service'
@@ -9,6 +11,7 @@ import { OrganizationService } from '@/lib/services/organization-service'
 import { ROLES } from '@/lib/constants'
 
 describe('Disposable Email Blocking', () => {
+  
   let testUser: any
   let testOrg: any
 
@@ -175,8 +178,10 @@ describe('Disposable Email Blocking', () => {
         expect.fail('Should have thrown an error')
       } catch (error) {
         expect(error).toBeInstanceOf(Error)
-        expect(error.message).toContain('Disposable emails cannot be invited to organizations')
-        expect(error.message).toContain('permanent email address')
+        if (error instanceof Error) {
+          expect(error.message).toContain('Disposable emails cannot be invited to organizations')
+          expect(error.message).toContain('permanent email address')
+        }
       }
     })
 

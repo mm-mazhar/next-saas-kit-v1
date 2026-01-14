@@ -44,7 +44,7 @@ export function CreateProjectDialog({ orgId }: { orgId: string }) {
         setError('')
         router.refresh()
       },
-      onError: (err) => {
+      onError: (err: Error) => {
         const errorMessage = err instanceof Error ? err.message : 'Failed to create project'
         setError(errorMessage)
         show({

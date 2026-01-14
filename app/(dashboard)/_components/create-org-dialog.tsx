@@ -10,9 +10,16 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { useToast } from '@/components/ToastProvider'
-import { orpc } from '@/lib/orpc/client'
-import { useORPCMutation } from '@/hooks/use-orpc-mutation'
+import { client } from '@/lib/orpc/client'
 import { setCurrentOrganization } from '@/app/actions/cookie-actions'
+import { useMutation } from '@tanstack/react-query'
+
+interface CreateOrgResponse {
+  id: string
+  name: string
+  slug: string
+  createdAt: Date
+}
 
 export function CreateOrgDialog({
   open,
@@ -25,23 +32,24 @@ export function CreateOrgDialog({
   const router = useRouter()
   const { show } = useToast()
 
-  const { mutate, isPending, error } = useORPCMutation(() =>
-    orpc.org.create.mutationOptions({
-      onSuccess: async (data) => {
-        show({ title: 'Created', description: 'Organization created successfully', variant: 'success' })
-        onOpenChange(false)
-        setName('')
-        // Set the current org without redirecting to avoid NEXT_REDIRECT error
-        await setCurrentOrganization(data.id)
-        // Then navigate client-side
-        router.push('/dashboard')
-        router.refresh()
-      },
-      onError: (err) => {
-        show({ title: 'Error', description: err.message, variant: 'error' })
-      },
-    })
-  )
+  const { mutate, isPending, error } = useMutation({
+    mutationFn: async (input: { name: string }) => {
+      return await client.org.create(input) as CreateOrgResponse
+    },
+    onSuccess: async (data) => {
+      show({ title: 'Created', description: 'Organization created successfully', variant: 'success' })
+      onOpenChange(false)
+      setName('')
+      // Set the current org without redirecting to avoid NEXT_REDIRECT error
+      await setCurrentOrganization(data.id)
+      // Then navigate client-side
+      router.push('/dashboard')
+      router.refresh()
+    },
+    onError: (err: Error) => {
+      show({ title: 'Error', description: err.message, variant: 'error' })
+    },
+  })
 
   function onSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -75,7 +83,7 @@ export function CreateOrgDialog({
             </div>
             <p className='col-span-4 text-xs text-muted-foreground'>Up to 20 characters</p>
             
-            {error && <p className='text-red-500 text-sm'>{error.message}</p>}
+            {error && <p className='text-red-500 text-sm'>{(error as Error).message}</p>}
           </div>
           <DialogFooter>
             <Button type='submit' disabled={isPending} className='focus:outline-none focus-visible:outline-none focus:ring-0 focus-visible:ring-0'>

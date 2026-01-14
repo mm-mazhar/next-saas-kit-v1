@@ -28,12 +28,12 @@ export function PendingInvitesList({ invites }: { invites: InviteRow[] }) {
 
   const revokeMutation = useORPCMutation(() =>
     orpc.org.revokeInvite.mutationOptions({
-      onSuccess: (_, variables) => {
+      onSuccess: (_: unknown, variables: { inviteId: string }) => {
         const invite = invites.find(i => i.id === variables.inviteId)
         show({ title: 'Invite revoked', description: invite?.email, duration: 2500 })
         router.refresh()
       },
-      onError: (err) => {
+      onError: (err: Error) => {
         show({ title: 'Error', description: err.message, duration: 3000 })
       },
     })
@@ -45,7 +45,7 @@ export function PendingInvitesList({ invites }: { invites: InviteRow[] }) {
         show({ title: 'Invite removed', description: 'Invite removed from list', duration: 2500 })
         router.refresh()
       },
-      onError: (err) => {
+      onError: (err: Error) => {
         show({ title: 'Error', description: err.message, duration: 3000 })
       },
     })
@@ -53,12 +53,12 @@ export function PendingInvitesList({ invites }: { invites: InviteRow[] }) {
 
   const resendMutation = useORPCMutation(() =>
     orpc.org.resendInvite.mutationOptions({
-      onSuccess: (_, variables) => {
+      onSuccess: (_: unknown, variables: { inviteId: string }) => {
         const invite = invites.find(i => i.id === variables.inviteId)
         show({ title: 'Invite re-sent', description: `Email sent to ${invite?.email}`, duration: 2500 })
         router.refresh()
       },
-      onError: (err) => {
+      onError: (err: Error) => {
         show({ title: 'Error', description: err.message, duration: 3000 })
       },
     })
@@ -78,9 +78,9 @@ export function PendingInvitesList({ invites }: { invites: InviteRow[] }) {
   }
 
   const isLoading = (inviteId: string, action: 'revoke' | 'delete' | 'resend') => {
-    if (action === 'revoke') return revokeMutation.isPending && revokeMutation.variables?.inviteId === inviteId
-    if (action === 'delete') return deleteMutation.isPending && deleteMutation.variables?.inviteId === inviteId
-    if (action === 'resend') return resendMutation.isPending && resendMutation.variables?.inviteId === inviteId
+    if (action === 'revoke') return revokeMutation.isPending && (revokeMutation.variables as { inviteId: string } | undefined)?.inviteId === inviteId
+    if (action === 'delete') return deleteMutation.isPending && (deleteMutation.variables as { inviteId: string } | undefined)?.inviteId === inviteId
+    if (action === 'resend') return resendMutation.isPending && (resendMutation.variables as { inviteId: string } | undefined)?.inviteId === inviteId
     return false
   }
 

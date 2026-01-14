@@ -1,3 +1,5 @@
+// tests/integration/onboarding-multi-tenancy.test.ts
+
 import { describe, it, expect, afterEach } from 'vitest'
 import { OrganizationService } from '@/lib/services/organization-service'
 import { ROLES } from '@/lib/constants'

@@ -40,7 +40,7 @@ export function DeleteOrgButton({ orgName, credits, transferTargets }: DeleteOrg
         router.push('/dashboard')
         router.refresh()
       },
-      onError: (err) => {
+      onError: (err: Error) => {
         show({ title: 'Error', description: err.message, variant: 'error' })
       },
     })
@@ -110,7 +110,11 @@ export function DeleteOrgButton({ orgName, credits, transferTargets }: DeleteOrg
             </div>
           )}
 
-          {error && <p className="text-sm text-destructive font-medium">{error.message}</p>}
+          {Boolean(error) && (
+            <p className="text-sm text-destructive font-medium">
+              {error instanceof Error ? error.message : 'An error occurred'}
+            </p>
+          )}
         </div>
         
         <div className="space-y-2">

@@ -1,3 +1,5 @@
+// app/(dashboard)/_components/org-name-form.tsx
+
 'use client'
 
 import { Button } from '@/components/ui/button'
@@ -20,7 +22,7 @@ export function OrgNameForm({ defaultName }: { orgId: string; defaultName: strin
         show({ title: 'Saved', description: 'Organization name updated', variant: 'success' })
         router.refresh()
       },
-      onError: (err) => {
+      onError: (err: Error) => {
         show({ title: 'Error', description: err.message, variant: 'error', duration: 3000 })
       },
     })

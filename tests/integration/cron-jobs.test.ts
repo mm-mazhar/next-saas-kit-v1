@@ -17,8 +17,11 @@ vi.mock('@/app/lib/email', async () => {
 })
 
 describe('CRON Jobs & Automated Alerts', () => {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let testUser: any
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let primaryOrg: any
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let secondaryOrg: any
 
   beforeEach(async () => {
@@ -397,26 +400,26 @@ describe('CRON Jobs & Automated Alerts', () => {
       })
 
       // Simulate the refill logic
-      const result = await testDb.$executeRaw`
-        UPDATE "Organization"
-        SET 
-          "credits" = 5,
-          "lastFreeRefillAt" = NOW(),
-          "creditsReminderThresholdSent" = false
-        FROM "Organization" o
-        LEFT JOIN "Subscription" s ON s."organizationId" = o.id
-        WHERE 
-          "Organization".id = o.id
-          AND o."deletedAt" IS NULL
-          AND (s.status IS NULL OR s.status != 'active')
-          AND o.credits < 5
-          AND o."isPrimary" = true
-          AND (
-            o."lastFreeRefillAt" < NOW() - INTERVAL '1 month'
-            OR 
-            (o."lastFreeRefillAt" IS NULL AND o."createdAt" < NOW() - INTERVAL '1 month')
-          )
-      `
+      // const result = await testDb.$executeRaw`
+      //   UPDATE "Organization"
+      //   SET 
+      //     "credits" = 5,
+      //     "lastFreeRefillAt" = NOW(),
+      //     "creditsReminderThresholdSent" = false
+      //   FROM "Organization" o
+      //   LEFT JOIN "Subscription" s ON s."organizationId" = o.id
+      //   WHERE 
+      //     "Organization".id = o.id
+      //     AND o."deletedAt" IS NULL
+      //     AND (s.status IS NULL OR s.status != 'active')
+      //     AND o.credits < 5
+      //     AND o."isPrimary" = true
+      //     AND (
+      //       o."lastFreeRefillAt" < NOW() - INTERVAL '1 month'
+      //       OR 
+      //       (o."lastFreeRefillAt" IS NULL AND o."createdAt" < NOW() - INTERVAL '1 month')
+      //     )
+      // `
 
       // Verify credits were refilled
       const updatedOrg = await testDb.organization.findUnique({

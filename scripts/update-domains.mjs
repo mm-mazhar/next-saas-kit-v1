@@ -1,3 +1,5 @@
+// scripts/update-domains.mjs
+
 import fs from 'node:fs/promises'
 import https from 'node:https'
 import path from 'node:path'

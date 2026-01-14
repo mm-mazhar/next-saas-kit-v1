@@ -30,7 +30,7 @@ export function UserSettingsForm({ defaultName, defaultEmail, defaultColorScheme
         show({ title: 'Saved', description: 'Settings updated successfully', variant: 'success' })
         router.refresh()
       },
-      onError: (err) => {
+      onError: (err: Error) => {
         show({ title: 'Error', description: err.message, variant: 'error' })
       },
     })

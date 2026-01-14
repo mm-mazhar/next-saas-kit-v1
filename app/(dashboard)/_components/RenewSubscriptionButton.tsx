@@ -15,10 +15,10 @@ export function RenewSubscriptionButton() {
 
   const { mutate, isPending } = useORPCMutation(() =>
     orpc.billing.renewSubscription.mutationOptions({
-      onSuccess: (data) => {
+      onSuccess: (data: { url: string }) => {
         window.location.href = data.url
       },
-      onError: (err) => {
+      onError: (err: Error) => {
         show({ title: 'Error', description: err.message, variant: 'error' })
       },
     })

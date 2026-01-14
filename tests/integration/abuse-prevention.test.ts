@@ -1,4 +1,6 @@
-import { describe, it, expect, afterEach, beforeEach, vi } from 'vitest'
+// tests/integration/abuse-prevention.test.ts
+
+import { describe, it, expect, afterEach } from 'vitest'
 import { OrganizationService } from '@/lib/services/organization-service'
 import { InvitationService } from '@/lib/services/invitation-service'
 import { ROLES, LIMITS } from '@/lib/constants'
@@ -122,7 +124,7 @@ describe('Abuse Prevention & Guardrails', () => {
       await setupUserWithPrimaryOrg()
 
       // Create multiple additional organizations
-      const org2 = await setupSecondaryOrg()
+      // const org2 = await setupSecondaryOrg()
       const org3 = await OrganizationService.createOrganization(
         ownerUserId,
         'Third Org',

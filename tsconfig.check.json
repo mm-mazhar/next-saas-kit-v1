@@ -1,3 +1,5 @@
+// tsconfig.check.json
+
 {
   "extends": "./tsconfig.json",
   "include": ["lib/orpc/**/*"]

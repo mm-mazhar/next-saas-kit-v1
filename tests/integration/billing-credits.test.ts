@@ -1,6 +1,8 @@
-import { describe, it, expect, afterEach, beforeEach, vi } from 'vitest'
+// tests/integration/billing-credits.test.ts
+
+import { describe, it, expect, afterEach, vi } from 'vitest'
 import { OrganizationService } from '@/lib/services/organization-service'
-import { ROLES, PRICING_PLANS, PLAN_IDS } from '@/lib/constants'
+import { PRICING_PLANS, PLAN_IDS } from '@/lib/constants'
 import { TestUtils, testDb } from './setup'
 
 // Mock Stripe for testing
@@ -235,7 +237,11 @@ describe('Billing, Credits & Subscriptions', () => {
       const org2 = await setupSecondOrganization()
 
       // Create Pro Plus subscription for second org
-      const proPlusPlan = PRICING_PLANS.find(p => p.id === PLAN_IDS.proplus)!
+      const proPlusPlan = PRICING_PLANS.find(p => p.id === PLAN_IDS.proplus)
+      if (!proPlusPlan?.stripePriceId) {
+        throw new Error('Pro Plus plan not found or has no Stripe price ID')
+      }
+      
       await testDb.subscription.create({
         data: {
           organizationId: org2.id,
@@ -396,7 +402,7 @@ describe('Billing, Credits & Subscriptions', () => {
 
   describe('Test 3.5: Subscription Status Management', () => {
     it('should update subscription status correctly', async () => {
-      const { org, subscription } = await setupOrganizationWithSubscription(PLAN_IDS.pro)
+      const { subscription } = await setupOrganizationWithSubscription(PLAN_IDS.pro)
 
       // Update subscription status
       await testDb.subscription.update({

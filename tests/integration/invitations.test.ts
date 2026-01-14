@@ -1,3 +1,5 @@
+// tests/integration/invitations.test.ts
+
 import { describe, it, expect, afterEach } from 'vitest'
 import { OrganizationService } from '@/lib/services/organization-service'
 import { InvitationService } from '@/lib/services/invitation-service'

@@ -1,4 +1,7 @@
+// tests/integration/env-setup.ts
+
 // Load environment variables before any other imports
+
 import { config } from 'dotenv'
 import path from 'path'
 

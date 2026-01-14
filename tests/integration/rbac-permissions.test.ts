@@ -1,10 +1,11 @@
-import { describe, it, expect, afterEach, beforeEach } from 'vitest'
+// tests/integration/rbac-permissions.test.ts
+
+import { describe, it, expect, afterEach } from 'vitest'
 import { OrganizationService } from '@/lib/services/organization-service'
-import { InvitationService } from '@/lib/services/invitation-service'
-import { ROLES, OrganizationRole } from '@/lib/constants'
+import { ROLES } from '@/lib/constants'
 import { getCurrentOrgContext, requireOrgRole } from '@/lib/auth/guards'
-import { can, hasPermission } from '@/lib/auth/permissions'
-import { TestUtils, DatabaseHelpers, testDb } from './setup'
+import { can } from '@/lib/auth/permissions'
+import { TestUtils, testDb } from './setup'
 
 describe('RBAC (Roles & Permissions)', () => {
   let ownerUserId: string

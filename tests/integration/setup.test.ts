@@ -1,3 +1,5 @@
+// tests/integration/setup.test.ts
+
 import { describe, it, expect } from 'vitest'
 import { testDb, TestUtils } from './setup'
 
