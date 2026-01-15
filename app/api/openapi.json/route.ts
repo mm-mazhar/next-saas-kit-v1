@@ -1,6 +1,8 @@
 import { OpenAPIGenerator } from '@orpc/openapi'
 import { ZodToJsonSchemaConverter } from '@orpc/zod'
 import { appRouter } from '@/lib/orpc/root'
+import { createClient } from '@/app/lib/supabase/server'
+import { NextResponse } from 'next/server'
 
 /**
  * OpenAPI specification generator for the oRPC API
@@ -9,6 +11,8 @@ import { appRouter } from '@/lib/orpc/root'
 const generator = new OpenAPIGenerator({
   schemaConverters: [new ZodToJsonSchemaConverter()],
 })
+
+const SUPER_ADMINS = process.env.SUPER_ADMIN_EMAILS?.split(',').map(e => e.trim()) || []
 
 /**
  * Generate OpenAPI spec from the app router
@@ -30,6 +34,25 @@ async function generateOpenAPISpec() {
 }
 
 export async function GET() {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+
+  // Require authentication
+  if (!user) {
+    return NextResponse.json(
+      { error: 'Unauthorized' },
+      { status: 401 }
+    )
+  }
+
+  // Require super admin access
+  if (!user.email || !SUPER_ADMINS.includes(user.email)) {
+    return NextResponse.json(
+      { error: 'Forbidden: Super admin access required' },
+      { status: 403 }
+    )
+  }
+
   const spec = await generateOpenAPISpec()
   
   return new Response(JSON.stringify(spec, null, 2), {

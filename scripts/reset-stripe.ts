@@ -43,6 +43,7 @@ async function resetStripe() {
             refundCount++
           } catch (err) {
              // Ignore if already refunded or other minor errors
+             console.error(`\nError refunding charge ${charge.id}:`, err)
           }
         }
       })
@@ -77,6 +78,7 @@ async function resetStripe() {
           deletedCount++
         } catch (err) {
           // Ignore
+          console.error(`\nError deleting customer ${customer.id}:`, err)
         }
       })
     )
