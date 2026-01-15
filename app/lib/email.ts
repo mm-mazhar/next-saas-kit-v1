@@ -347,7 +347,7 @@ export async function sendLowCreditsEmail(params: LowCreditsEmailParams) {
 
         <p style="margin:0 0 16px 0">Top up credits or upgrade your plan to continue uninterrupted.</p>
         
-        ${getButtonHtml('Get Credits', billingUrl)}
+        ${getButtonHtml('Subscribe', billingUrl)}
       </div>
       ${getFooterHtml(ctx)}
     </div>

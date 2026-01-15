@@ -48,7 +48,7 @@ export async function GET() {
   // Require super admin access
   if (!user.email || !SUPER_ADMINS.includes(user.email)) {
     return NextResponse.json(
-      { error: 'Forbidden: Super admin access required' },
+      { error: 'Forbidden: Administrative access required' },
       { status: 403 }
     )
   }

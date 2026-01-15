@@ -104,7 +104,7 @@ export const superAdminProcedure = protectedProcedure.use(async ({ context, next
   
   if (!context.user.email || !superAdminEmails.includes(context.user.email)) {
     throw new ORPCError('FORBIDDEN', { 
-      message: 'Super admin access required' 
+      message: 'Administrative access required' 
     })
   }
   
