@@ -3,7 +3,7 @@
 import prisma from '@/app/lib/db'
 import { sendCancellationEmail, sendPaymentConfirmationEmail } from '@/app/lib/email'
 import { stripe } from '@/app/lib/stripe'
-import { PRICING_PLANS } from '@/lib/constants'
+import { ENABLE_EMAILS, PRICING_PLANS } from '@/lib/constants'
 import { headers } from 'next/headers'
 import Stripe from 'stripe'
 
@@ -56,18 +56,17 @@ export async function POST(req: Request) {
   // ============================================================
   if (event.type === 'checkout.session.completed') {
     const session = event.data.object as Stripe.Checkout.Session
-
     const customerId = String(session.customer || '')
     const refId = (session.client_reference_id as string | null) || (typeof session.metadata?.organizationId === 'string' ? session.metadata.organizationId : null)
 
     let orgId = refId
     if (!orgId && customerId) {
-       const found = await prisma.organization.findUnique({ where: { stripeCustomerId: customerId }, select: { id: true } })
-       orgId = found?.id || null
+      const found = await prisma.organization.findUnique({ where: { stripeCustomerId: customerId }, select: { id: true } })
+      orgId = found?.id || null
     }
 
     if (!orgId) {
-        return new Response(null, { status: 200 })
+      return new Response(null, { status: 200 })
     }
 
     const subscriptionId = session.subscription as string
@@ -76,46 +75,43 @@ export async function POST(req: Request) {
     // 1. Fetch Org
     const currentOrg = await prisma.organization.findUnique({ where: { id: orgId } })
     if (!currentOrg) {
-        console.log(`[Stripe Webhook] Organization ${orgId} not found`)
-        return new Response(null, { status: 200 })
+      console.log(`[Stripe Webhook] Organization ${orgId} not found`)
+      return new Response(null, { status: 200 })
     }
 
     // 2. Fetch Existing Subscription explicitly
     const existingSub = await prisma.subscription.findUnique({
-        where: { organizationId: orgId }
+      where: { organizationId: orgId }
     })
-
     console.log(`[Stripe Webhook] Existing DB Subscription for Org:`, existingSub)
 
     // 3. Robust Cancellation via Stripe API
     // We strictly enforce 1 Active Subscription per Organization (Customer)
     if (customerId) {
-        try {
-            console.log(`[Stripe Webhook] checking for conflicting subscriptions for customer ${customerId}`)
-            const subscriptions = await stripe.subscriptions.list({
-                customer: customerId,
-                status: 'all',
-                limit: 100,
-            })
+      try {
+        console.log(`[Stripe Webhook] checking for conflicting subscriptions for customer ${customerId}`)
+        const subscriptions = await stripe.subscriptions.list({
+          customer: customerId,
+          status: 'all',
+          limit: 100,
+        })
 
-            const activeStatuses = ['active', 'trialing', 'past_due']
-
-            for (const sub of subscriptions.data) {
-                 if (sub.id === subscriptionId) continue
-
-                 if (activeStatuses.includes(sub.status)) {
-                     console.log(`[Stripe Webhook] Found conflicting subscription ${sub.id} (${sub.status}) - Cancelling...`)
-                     await stripe.subscriptions.cancel(sub.id)
-                     console.log(`[Stripe Webhook] Cancelled conflicting subscription ${sub.id}`)
-                 }
-            }
-        } catch (error) {
-             console.error('[Stripe Webhook] Failed to clean up old subscriptions', error)
+        const activeStatuses = ['active', 'trialing', 'past_due']
+        for (const sub of subscriptions.data) {
+          if (sub.id === subscriptionId) continue
+          if (activeStatuses.includes(sub.status)) {
+            console.log(`[Stripe Webhook] Found conflicting subscription ${sub.id} (${sub.status}) - Cancelling...`)
+            await stripe.subscriptions.cancel(sub.id)
+            console.log(`[Stripe Webhook] Cancelled conflicting subscription ${sub.id}`)
+          }
         }
+      } catch (error) {
+        console.error('[Stripe Webhook] Failed to clean up old subscriptions', error)
+      }
     }
 
     if (!currentOrg.stripeCustomerId && customerId) {
-        await prisma.organization.update({ where: { id: orgId }, data: { stripeCustomerId: customerId } })
+      await prisma.organization.update({ where: { id: orgId }, data: { stripeCustomerId: customerId } })
     }
 
     const subscription = (await stripe.subscriptions.retrieve(subscriptionId)) as Stripe.Subscription
@@ -146,63 +142,8 @@ export async function POST(req: Request) {
       },
     })
 
-    // Add credits for new subscription (this is the reliable place since we have orgId)
-    const priceId = subscription.items.data[0].price.id
-    const plan = PRICING_PLANS.find((pl) => pl.stripePriceId === priceId)
-    const credits = plan?.credits ?? 0
-    
-    if (credits > 0) {
-      await prisma.organization.update({
-        where: { id: orgId },
-        data: { credits: { increment: credits }, creditsReminderThresholdSent: false },
-      })
-      console.log(`[Stripe Webhook] Credits added in checkout.session.completed for org ${orgId}: +${credits}`)
-      
-      // Send payment confirmation email
-      const owner = await getOrgOwner(orgId)
-      if (owner?.email) {
-        try {
-          const sp = subscription as unknown as PeriodFields
-          // Get amount from subscription price (unit_amount is in cents)
-          const priceAmount = subscription.items.data[0].price.unit_amount ?? 0
-          const currency = subscription.items.data[0].price.currency ?? 'usd'
-          
-          // Get the latest invoice for this subscription
-          let invoiceUrl = process.env.NEXT_PUBLIC_SITE_URL || ''
-          let invoiceNumber = null
-          try {
-            const invoices = await stripe.invoices.list({
-              subscription: subscription.id,
-              limit: 1,
-            })
-            if (invoices.data.length > 0) {
-              const latestInvoice = invoices.data[0]
-              invoiceUrl = latestInvoice.hosted_invoice_url || invoiceUrl
-              invoiceNumber = latestInvoice.number
-            }
-          } catch (invoiceError) {
-            console.error('[Stripe Webhook] Failed to fetch invoice for email:', invoiceError)
-          }
-          
-          await sendPaymentConfirmationEmail({
-            to: owner.email,
-            name: owner.name || 'Customer',
-            orgName: currentOrg.name,
-            amountPaid: priceAmount,
-            currency,
-            invoiceUrl,
-            invoiceNumber,
-            planTitle: plan?.title ?? 'Subscription',
-            periodEnd: sp.current_period_end ?? currentEnd,
-            portalUrl: null,
-            finalCredits: (currentOrg.credits || 0) + credits,
-          })
-          console.log(`[Stripe Webhook] Payment confirmation email sent to ${owner.email}`)
-        } catch (emailError) {
-          console.error('[Stripe Webhook] Failed to send payment confirmation email:', emailError)
-        }
-      }
-    }
+    // Credits and emails are now handled in invoice.payment_succeeded event
+    // This ensures they are only processed once
   }
 
   // ============================================================
@@ -232,53 +173,66 @@ export async function POST(req: Request) {
           },
         })
 
-        // Add credits for successful payment (only for renewals, new subs handled in checkout.session.completed)
+        // Add credits for successful payment
         const custId = String(subscription.customer || '')
-        const isRenewal = invoice.billing_reason !== 'subscription_create'
-        
-        if (custId && isRenewal) {
+        if (custId) {
           const priceId = subscription.items.data[0].price.id
           const plan = PRICING_PLANS.find((pl) => pl.stripePriceId === priceId)
           const credits = plan?.credits ?? 0
-          
-          console.log(`[Stripe Webhook] Adding ${credits} credits for renewal, customer ${custId}, plan: ${plan?.title || 'Unknown'}, priceId: ${priceId}`)
-          
-          // First try to find org by stripeCustomerId
-          let org = await prisma.organization.findUnique({
+
+          console.log(`[Stripe Webhook] Adding ${credits} credits for customer ${custId}, plan: ${plan?.title || 'Unknown'}`)
+
+          await prisma.organization.update({
             where: { stripeCustomerId: custId },
-            select: { id: true, name: true, credits: true }
+            data: { credits: { increment: credits }, creditsReminderThresholdSent: false },
           })
-          
-          // If not found, try to find via subscription record
-          if (!org) {
-            console.log(`[Stripe Webhook] Org not found by stripeCustomerId, trying via subscription record`)
-            const subRecord = await prisma.subscription.findUnique({
-              where: { stripeSubscriptionId: subscription.id },
-              include: { organization: { select: { id: true, name: true, credits: true } } }
+
+          // Send payment confirmation email ONLY for new subscriptions (not renewals)
+          if (invoice.billing_reason === 'subscription_create') {
+            console.log(`[Stripe Webhook] Sending payment confirmation email for new subscription`)
+
+            const org = await prisma.organization.findUnique({
+              where: { stripeCustomerId: custId },
+              select: { id: true, name: true, credits: true }
             })
-            org = subRecord?.organization || null
-            
-            // Also update the stripeCustomerId on the org if found
-            if (org && custId) {
-              await prisma.organization.update({
-                where: { id: org.id },
-                data: { stripeCustomerId: custId }
-              })
-              console.log(`[Stripe Webhook] Updated stripeCustomerId on org ${org.id}`)
+
+            if (org) {
+              const owner = await getOrgOwner(org.id)
+              const to = invoice.customer_email || owner?.email
+
+              if (to) {
+                const amount = typeof invoice.amount_paid === 'number' ? invoice.amount_paid : 0
+                const currency = invoice.currency || 'usd'
+                const invUrl = invoice.hosted_invoice_url || ''
+                const invNum = (invoice.number as string | null) || null
+                const planTitle = plan?.title ?? 'Subscription'
+                const currentEnd = sp.current_period_end ?? Math.floor(Date.now() / 1000) + 30 * 24 * 60 * 60
+
+                try {
+                  if (ENABLE_EMAILS) {
+                    await sendPaymentConfirmationEmail({
+                      to,
+                      name: owner?.name || 'Customer',
+                      orgName: org.name,
+                      amountPaid: amount,
+                      currency,
+                      invoiceUrl: invUrl || (process.env.NEXT_PUBLIC_SITE_URL || ''),
+                      invoiceNumber: invNum,
+                      planTitle,
+                      periodEnd: currentEnd,
+                      portalUrl: null,
+                      finalCredits: org.credits,
+                    })
+                  }
+                } catch (error) {
+                  console.error('[Stripe Webhook] Failed to send payment confirmation email', {
+                    subscriptionId,
+                    error,
+                  })
+                }
+              }
             }
           }
-          
-          if (org && credits > 0) {
-            await prisma.organization.update({
-              where: { id: org.id },
-              data: { credits: { increment: credits }, creditsReminderThresholdSent: false },
-            })
-            console.log(`[Stripe Webhook] Credits updated for org ${org.id}: +${credits}`)
-          } else if (!org) {
-            console.error(`[Stripe Webhook] Could not find organization for customer ${custId} or subscription ${subscription.id}`)
-          }
-        } else if (!isRenewal) {
-          console.log(`[Stripe Webhook] Skipping credit add for new subscription (handled in checkout.session.completed)`)
         }
       } catch (error) {
         console.error('[Stripe Webhook] Failed to process invoice.payment_succeeded', {
@@ -295,6 +249,7 @@ export async function POST(req: Request) {
   if (event.type === 'customer.subscription.updated') {
     const sub = event.data.object as Stripe.Subscription
     const fresh = (await stripe.subscriptions.retrieve(sub.id)) as Stripe.Subscription
+
     try {
       const sp = fresh as unknown as PeriodFields
       await prisma.subscription.update({
@@ -337,29 +292,34 @@ export async function POST(req: Request) {
 
     if (newlyScheduled && !immediateCanceled && !scheduledCancellationNotified.has(fresh.id)) {
       scheduledCancellationNotified.add(fresh.id)
+
       try {
         const subRecord = await prisma.subscription.findUnique({
           where: { stripeSubscriptionId: fresh.id },
           include: { organization: true },
         })
+
         if (subRecord?.organization) {
           const owner = await getOrgOwner(subRecord.organization.id)
           if (owner?.email) {
             const priceId = fresh.items.data[0].price.id
             const plan = PRICING_PLANS.find((pl) => pl.stripePriceId === priceId)
             const planTitle = plan?.title ?? 'Subscription'
-            await sendCancellationEmail({
-              to: owner.email,
-              name: owner.name,
-              orgName: subRecord.organization.name,
-              planTitle,
-              effectiveDate:
-                typeof fresh.cancel_at === 'number'
-                  ? fresh.cancel_at
-                  : ((fresh as unknown as PeriodFields).current_period_end as number | undefined),
-              final: false,
-              creditsRemaining: subRecord.organization.credits,
-            })
+
+            if (ENABLE_EMAILS) {
+              await sendCancellationEmail({
+                to: owner.email,
+                name: owner.name,
+                orgName: subRecord.organization.name,
+                planTitle,
+                effectiveDate:
+                  typeof fresh.cancel_at === 'number'
+                    ? fresh.cancel_at
+                    : ((fresh as unknown as PeriodFields).current_period_end as number | undefined),
+                final: false,
+                creditsRemaining: subRecord.organization.credits,
+              })
+            }
           }
         }
       } catch (error) {
@@ -374,6 +334,7 @@ export async function POST(req: Request) {
   if (event.type === 'customer.subscription.deleted') {
     const sub = event.data.object as Stripe.Subscription
     const customerId = String(sub.customer || '')
+
     try {
       await prisma.subscription.update({
         where: { stripeSubscriptionId: sub.id },
@@ -398,25 +359,25 @@ export async function POST(req: Request) {
         where: { stripeCustomerId: customerId },
         select: { id: true, name: true, credits: true, deletedAt: true },
       })
-      if (org) {
+
+      if (org && !org.deletedAt) {
         const owner = await getOrgOwner(org.id)
         if (owner?.email) {
           const priceId = sub.items.data[0].price.id
           const plan = PRICING_PLANS.find((pl) => pl.stripePriceId === priceId)
           const planTitle = plan?.title ?? 'Subscription'
-          
-          // Send cancellation email regardless of whether org is deleted
-          // (org deletion triggers subscription cancellation)
-          await sendCancellationEmail({
-            to: owner.email,
-            name: owner.name,
-            orgName: org.name,
-            planTitle,
-            effectiveDate: (sub as unknown as PeriodFields).current_period_end ?? undefined,
-            final: true,
-            creditsRemaining: org.credits,
-          })
-          console.log(`[Stripe Webhook] Cancellation email sent to ${owner.email} for ${org.deletedAt ? 'deleted' : 'active'} org`)
+
+          if (ENABLE_EMAILS) {
+            await sendCancellationEmail({
+              to: owner.email,
+              name: owner.name,
+              orgName: org.name,
+              planTitle,
+              effectiveDate: (sub as unknown as PeriodFields).current_period_end ?? undefined,
+              final: true,
+              creditsRemaining: org.credits,
+            })
+          }
         }
       }
     } catch (error) {
