@@ -155,7 +155,7 @@ export function NavUser({
                   {currentPlanId === PLAN_IDS.pro
                     ? (
                       <>
-                        <span className="text-primary font-semibold">Pro</span>, Upgrade to <span className="text-primary font-semibold">Pro Plus</span>
+                        <span className="text-primary font-semibold">Pro,</span>Upgrade to <span className="text-primary font-semibold">Pro Plus</span>
                       </>
                     )
                     : currentPlanId === PLAN_IDS.proplus

@@ -16,7 +16,8 @@ function getBaseUrl() {
   if (process.env.NODE_ENV === 'development') {
     return process.env.LOCAL_SITE_URL || 'http://localhost:3000'
   }
-  return process.env.NEXT_PUBLIC_SITE_URL || ''
+  // return process.env.NEXT_PUBLIC_SITE_URL || process.env.PRODUCTION_URL || 'http://localhost:3000'
+  return process.env.PRODUCTION_URL || 'http://localhost:3000'
 }
 
 function getEmailContext(fromOverride?: string) {
@@ -24,14 +25,25 @@ function getEmailContext(fromOverride?: string) {
   const origin = getBaseUrl()
   
   const isLocal = process.env.NODE_ENV === 'development'
-  let logoUrl = origin ? new URL(SITE_LOGO_PATH, origin).href : ''
+  let logoUrl = ''
   
-  if (isLocal) {
+  if (origin) {
+    try {
+      logoUrl = new URL(SITE_LOGO_PATH, origin).href
+    } catch (error) {
+      console.error('Failed to construct logo URL:', error, { SITE_LOGO_PATH, origin })
+      logoUrl = ''
+    }
+  }
+  
+  if (isLocal && logoUrl) {
     try {
       const filePath = path.join(process.cwd(), 'public', SITE_LOGO_PATH.replace(/^\//, ''))
       const buf = fs.readFileSync(filePath)
       logoUrl = `data:image/png;base64,${buf.toString('base64')}`
-    } catch {}
+    } catch {
+      // Keep the URL-based logo if file reading fails
+    }
   }
 
   return { fromAddress, origin, logoUrl }
@@ -335,7 +347,7 @@ export async function sendLowCreditsEmail(params: LowCreditsEmailParams) {
 
         <p style="margin:0 0 16px 0">Top up credits or upgrade your plan to continue uninterrupted.</p>
         
-        ${getButtonHtml('Get Credits', billingUrl)}
+        ${getButtonHtml('Subscribe', billingUrl)}
       </div>
       ${getFooterHtml(ctx)}
     </div>

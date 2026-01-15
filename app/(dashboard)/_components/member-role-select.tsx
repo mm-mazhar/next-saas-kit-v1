@@ -2,7 +2,6 @@
 
 'use client'
 
-import { updateMemberRoleAction } from '@/app/actions/organization'
 import {
   Select,
   SelectContent,
@@ -16,7 +15,10 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip'
 import { useToast } from '@/components/ToastProvider'
-import { useState, useTransition } from 'react'
+import { orpc } from '@/lib/orpc/client'
+import { useORPCMutation } from '@/hooks/use-orpc-mutation'
+import { useRouter } from 'next/navigation'
+import { useState } from 'react'
 
 interface MemberRoleSelectProps {
   memberId: string
@@ -31,11 +33,31 @@ export function MemberRoleSelect({
   initialRole,
   currentUserId,
   currentUserRole,
-  orgId
 }: MemberRoleSelectProps) {
   const [role, setRole] = useState(initialRole)
-  const [isPending, startTransition] = useTransition()
   const { show } = useToast()
+  const router = useRouter()
+
+  const { mutate, isPending } = useORPCMutation(() =>
+    orpc.org.updateMemberRole.mutationOptions({
+      onSuccess: () => {
+        show({
+          title: 'Role updated',
+          description: `Member role updated to ${role}`,
+          variant: 'success'
+        })
+        router.refresh()
+      },
+      onError: (err: Error) => {
+        setRole(initialRole) // Revert on error
+        show({
+          title: 'Error',
+          description: err.message,
+          variant: 'error',
+        })
+      },
+    })
+  )
 
   // 1. Target is OWNER -> Static Text
   if (initialRole === 'OWNER') {
@@ -75,30 +97,10 @@ export function MemberRoleSelect({
 
   const handleValueChange = (newRole: string) => {
     // Optimistic update
-    const previousRole = role
     setRole(newRole)
-    
-    startTransition(async () => {
-      const formData = new FormData()
-      formData.append('orgId', orgId)
-      formData.append('targetUserId', memberId)
-      formData.append('newRole', newRole)
-      
-      const result = await updateMemberRoleAction(formData)
-      if (result.success) {
-        show({
-          title: 'Role updated',
-          description: `Member role updated to ${newRole}`,
-          variant: 'success'
-        })
-      } else {
-        setRole(previousRole) // Revert
-        show({
-          title: 'Error',
-          description: result.error || 'Failed to update role',
-          variant: 'error',
-        })
-      }
+    mutate({ 
+      targetUserId: memberId, 
+      newRole: newRole as 'ADMIN' | 'MEMBER' 
     })
   }
 

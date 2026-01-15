@@ -1,9 +1,7 @@
 // app/(dashboard)/dashboard/billing/page.tsx
 
-import prisma from '@/app/lib/db'
 import { stripe } from '@/app/lib/stripe'
 import { createClient } from '@/app/lib/supabase/server'
-import { Button } from '@/components/ui/button'
 import {
   Card,
   CardContent,
@@ -14,13 +12,14 @@ import {
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { requireOrgRole } from '@/lib/auth/guards'
 import { PLAN_IDS, PRICING_PLANS, SUBSCRIPTION_RENEWAL_CREDIT_THRESHOLD, type PlanId, type PricingPlan } from '@/lib/constants'
+import { getRPCCaller } from '@/lib/orpc/rsc-client'
 import { unstable_noStore as noStore } from 'next/cache'
 import { cookies } from 'next/headers'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { RenewSubscriptionButton } from '../../_components/RenewSubscriptionButton'
+import { StripePortalButton } from '../../_components/StripePortalButton'
 import { UpgradeSubscriptionButton } from '../../_components/UpgradeSubscriptionButton'
-import { createCustomerPortal } from './actions'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
@@ -52,10 +51,15 @@ export default async function BillingPage() {
       return redirect('/dashboard')
   }
 
-  const org = await prisma.organization.findUnique({
-      where: { id: currentOrgId },
-      include: { subscription: true }
-  })
+  const rpc = await getRPCCaller()
+  
+  let org
+  try {
+    org = await rpc.org.getById({ id: currentOrgId, includeSubscription: true })
+  } catch {
+    // Org not found or deleted - redirect to dashboard which will auto-switch to valid org
+    return redirect('/dashboard')
+  }
 
   if (!org) return redirect('/dashboard')
 
@@ -68,10 +72,6 @@ export default async function BillingPage() {
   }
 
   const resolvedCurrent = await resolvePlanId(data.planId)
-  // const proCredits = PRICING_PLANS.find((p) => p.id === PLAN_IDS.proplus)?.credits ?? 0
-  // const proExhausted = (data.status === 'active' && resolvedCurrent === PLAN_IDS.proplus)
-  //   ? ((data.org.credits ?? 0) >= proCredits)
-  //   : false
 
   const isSubActive = data.status === 'active'
 
@@ -223,9 +223,7 @@ export default async function BillingPage() {
                 </CardDescription>
               </CardHeader>
               <CardContent className='px-2 pb-2 mt-auto'>
-                <form action={createCustomerPortal}>
-                  <Button type='submit' className='h-8 text-xs px-3'>View payment details</Button>
-                </form>
+                <StripePortalButton />
               </CardContent>
             </Card>
 
@@ -331,8 +329,6 @@ export default async function BillingPage() {
             </CardContent>
           </Card>
         ) : null}
-
-        {/* Upgrade card moved into top row */}
 
         {null}
       </div>

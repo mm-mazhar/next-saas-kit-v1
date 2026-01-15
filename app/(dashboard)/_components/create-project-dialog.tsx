@@ -15,17 +15,46 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/app/(dashboard)/_components/ui/dialog'
-import { createProject } from '@/app/actions/project'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { useToast } from '@/components/ToastProvider'
+import { orpc } from '@/lib/orpc/client'
+import { useORPCMutation } from '@/hooks/use-orpc-mutation'
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 export function CreateProjectDialog({ orgId }: { orgId: string }) {
   const [open, setOpen] = React.useState(false)
-  const [loading, setLoading] = React.useState(false)
   const [error, setError] = React.useState('')
   const [name, setName] = React.useState('')
   const router = useRouter()
+  const { show } = useToast()
+
+  // oRPC mutation hook for creating projects
+  const createProjectMutation = useORPCMutation(() =>
+    orpc.project.create.mutationOptions({
+      onSuccess: () => {
+        show({
+          title: 'Project created',
+          description: 'Your new project has been created successfully.',
+          variant: 'success',
+        })
+        setOpen(false)
+        setName('')
+        setError('')
+        router.refresh()
+      },
+      onError: (err: Error) => {
+        const errorMessage = err instanceof Error ? err.message : 'Failed to create project'
+        setError(errorMessage)
+        show({
+          title: 'Error',
+          description: errorMessage,
+          variant: 'error',
+        })
+      },
+    })
+  )
 
   const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setName(e.target.value)
@@ -33,23 +62,10 @@ export function CreateProjectDialog({ orgId }: { orgId: string }) {
 
   async function onSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
-    setLoading(true)
     setError('')
-
-    const formData = new FormData(event.currentTarget)
-    formData.append('orgId', orgId)
-    // Slug auto-generated server-side
-
-    const res = await createProject(formData)
-
-    if (res.success) {
-      setOpen(false)
-      setName('')
-      router.refresh()
-    } else {
-      setError(res.error || 'Failed to create project')
-    }
-    setLoading(false)
+    
+    // Use oRPC mutation to create project
+    createProjectMutation.mutate({ name })
   }
 
   return (
@@ -89,8 +105,8 @@ export function CreateProjectDialog({ orgId }: { orgId: string }) {
             {error && <p className='text-red-500 text-sm'>{error}</p>}
           </div>
           <DialogFooter>
-            <Button type='submit' disabled={loading}>
-              {loading ? 'Creating...' : 'Create Project'}
+            <Button type='submit' disabled={createProjectMutation.isPending}>
+              {createProjectMutation.isPending ? 'Creating...' : 'Create Project'}
             </Button>
           </DialogFooter>
         </form>

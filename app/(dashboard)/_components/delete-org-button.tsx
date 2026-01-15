@@ -4,10 +4,12 @@
 
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/app/(dashboard)/_components/ui/dialog'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/app/(dashboard)/_components/ui/select'
-import { deleteOrganization } from '@/app/actions/organization'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { useToast } from '@/components/ToastProvider'
+import { orpc } from '@/lib/orpc/client'
+import { useORPCMutation } from '@/hooks/use-orpc-mutation'
 import { AlertTriangle } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import * as React from 'react'
@@ -19,38 +21,36 @@ interface DeleteOrgButtonProps {
   transferTargets: { id: string; name: string }[]
 }
 
-export function DeleteOrgButton({ orgId, orgName, credits, transferTargets }: DeleteOrgButtonProps) {
+export function DeleteOrgButton({ orgName, credits, transferTargets }: DeleteOrgButtonProps) {
   const [open, setOpen] = React.useState(false)
-  const [loading, setLoading] = React.useState(false)
   const [confirmName, setConfirmName] = React.useState('')
-  const [error, setError] = React.useState('')
   const [transferOrgId, setTransferOrgId] = React.useState<string | null>(null)
   const router = useRouter()
+  const { show } = useToast()
 
   const hasCreditsToTransfer = credits > 0
   const hasTransferTargets = transferTargets.length > 0
   const canTransferCredits = hasCreditsToTransfer && hasTransferTargets
 
-  const handleDelete = async () => {
+  const { mutate, isPending, error } = useORPCMutation(() =>
+    orpc.org.delete.mutationOptions({
+      onSuccess: () => {
+        show({ title: 'Deleted', description: 'Organization deleted successfully', variant: 'success' })
+        setOpen(false)
+        router.push('/dashboard')
+        router.refresh()
+      },
+      onError: (err: Error) => {
+        show({ title: 'Error', description: err.message, variant: 'error' })
+      },
+    })
+  )
+
+  const handleDelete = () => {
     if (confirmName !== `delete ${orgName}`) return
     if (canTransferCredits && !transferOrgId) return
     
-    setLoading(true)
-    setError('')
-    
-    try {
-      const res = await deleteOrganization(orgId, transferOrgId || undefined)
-      if (res.success) {
-        setOpen(false)
-        router.refresh()
-      } else {
-        setError(res.error || 'Failed to delete organization')
-      }
-    } catch {
-      setError('An unexpected error occurred')
-    } finally {
-      setLoading(false)
-    }
+    mutate({ transferToOrgId: transferOrgId || undefined })
   }
 
   return (
@@ -110,7 +110,11 @@ export function DeleteOrgButton({ orgId, orgName, credits, transferTargets }: De
             </div>
           )}
 
-          {error && <p className="text-sm text-destructive font-medium">{error}</p>}
+          {Boolean(error) && (
+            <p className="text-sm text-destructive font-medium">
+              {error instanceof Error ? error.message : 'An error occurred'}
+            </p>
+          )}
         </div>
         
         <div className="space-y-2">
@@ -130,7 +134,7 @@ export function DeleteOrgButton({ orgId, orgName, credits, transferTargets }: De
           <Button
             variant="outline"
             onClick={() => setOpen(false)}
-            disabled={loading}
+            disabled={isPending}
           >
             Cancel
           </Button>
@@ -138,12 +142,12 @@ export function DeleteOrgButton({ orgId, orgName, credits, transferTargets }: De
             variant="destructive"
             onClick={handleDelete}
             disabled={
-              loading ||
+              isPending ||
               confirmName !== `delete ${orgName}` ||
               (canTransferCredits && !transferOrgId)
             }
           >
-            {loading ? 'Deleting...' : 'Delete Organization'}
+            {isPending ? 'Deleting...' : 'Delete Organization'}
           </Button>
         </DialogFooter>
       </DialogContent>

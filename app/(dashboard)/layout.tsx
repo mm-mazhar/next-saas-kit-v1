@@ -3,6 +3,7 @@
 import { ClientAppSidebar } from '@/app/(dashboard)/_components/ClientAppSidebar'
 import { SidebarProvider } from '@/app/(dashboard)/_components/sidebar'
 import { ToastProvider } from '@/components/ToastProvider'
+import { QueryProvider } from '@/components/providers/query-provider'
 import { TopBar } from '@/app/(dashboard)/_components/topbar'
 import { getData } from '@/app/lib/db'
 import { createClient } from '@/app/lib/supabase/server'
@@ -48,19 +49,20 @@ async function DashboardGroupLayout({ children }: { children: ReactNode }) {
 
   const cookieStore = await cookies()
   const initialOpen = cookieStore.get('sidebar_state')?.value === 'true'
-  // Multi-tenancy: Fetch organizations
-  const { OrganizationService } = await import('@/lib/services/organization-service')
-  let organizations = await OrganizationService.getUserOrganizations(user.id)
+  
+  // Multi-tenancy: Fetch organizations using oRPC RSC client
+  const { getRPCCaller } = await import('@/lib/orpc/rsc-client')
+  // const { OrganizationService } = await import('@/lib/services/organization-service')
+  
+  const rpc = await getRPCCaller()
+  let organizations = await rpc.org.list() as { id: string; name: string; slug: string; members: { role: string }[] }[]
   
   // Only attempt to create default organization if the user exists in DB (has createdAt)
   if (organizations.length === 0 && userRow?.createdAt) {
     const defaultOrgName = 'Default Organization'
     try {
-      const newOrg = await OrganizationService.createOrganization(
-        user.id,
-        defaultOrgName,
-        slugify(`${defaultOrgName}-${user.id.substring(0, 8)}`)
-      )
+      // Use oRPC to create the organization
+      const newOrg = await rpc.org.create({ name: defaultOrgName })
       const defaultProjectName = 'Default Project'
       await ProjectService.createProject(
         user.id,
@@ -75,7 +77,7 @@ async function DashboardGroupLayout({ children }: { children: ReactNode }) {
   }
   
   const currentOrgId = cookieStore.get('current-org-id')?.value
-  let currentOrganization = organizations.find(org => org.id === currentOrgId)
+  let currentOrganization = organizations.find((org: { id: string }) => org.id === currentOrgId)
   
   if (!currentOrganization && organizations.length > 0) {
     currentOrganization = organizations[0]
@@ -144,9 +146,10 @@ async function DashboardGroupLayout({ children }: { children: ReactNode }) {
   } : null
 
   return (
-    <ToastProvider>
-      <SidebarProvider defaultOpen={initialOpen}>
-        <ClientAppSidebar
+    <QueryProvider>
+      <ToastProvider>
+        <SidebarProvider defaultOpen={initialOpen}>
+          <ClientAppSidebar
           user={{
             name:
               (userRow?.name as string) ||
@@ -181,8 +184,9 @@ async function DashboardGroupLayout({ children }: { children: ReactNode }) {
             {children}
           </div>
         </main>
-      </SidebarProvider>
-    </ToastProvider>
+        </SidebarProvider>
+      </ToastProvider>
+    </QueryProvider>
   )
 }
 

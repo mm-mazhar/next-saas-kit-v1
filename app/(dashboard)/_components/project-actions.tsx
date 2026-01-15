@@ -3,11 +3,13 @@
 'use client'
 
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/app/(dashboard)/_components/ui/dialog'
-import { deleteProject, updateProjectName } from '@/app/actions/project'
 import { Button } from '@/components/ui/button'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { useToast } from '@/components/ToastProvider'
+import { orpc } from '@/lib/orpc/client'
+import { useORPCMutation } from '@/hooks/use-orpc-mutation'
 import { MoreVertical } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import * as React from 'react'
@@ -15,20 +17,46 @@ import * as React from 'react'
 export function ProjectActions({ projectId, defaultName, userRole }: { projectId: string; defaultName: string; userRole?: string }) {
   const [openRename, setOpenRename] = React.useState(false)
   const [openDelete, setOpenDelete] = React.useState(false)
-  const [loading, setLoading] = React.useState(false)
+  const [name, setName] = React.useState(defaultName)
   const router = useRouter()
+  const { show } = useToast()
 
-  async function onSubmit(event: React.FormEvent<HTMLFormElement>) {
+  const updateMutation = useORPCMutation(() =>
+    orpc.project.updateName.mutationOptions({
+      onSuccess: () => {
+        show({ title: 'Saved', description: 'Project renamed successfully', variant: 'success' })
+        setOpenRename(false)
+        router.refresh()
+      },
+      onError: (err: Error) => {
+        show({ title: 'Error', description: err.message, variant: 'error' })
+      },
+    })
+  )
+
+  const deleteMutation = useORPCMutation(() =>
+    orpc.project.delete.mutationOptions({
+      onSuccess: () => {
+        show({ title: 'Deleted', description: 'Project deleted successfully', variant: 'success' })
+        setOpenDelete(false)
+        router.refresh()
+      },
+      onError: (err: Error) => {
+        show({ title: 'Error', description: err.message, variant: 'error' })
+      },
+    })
+  )
+
+  function onSubmitRename(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
-    setLoading(true)
-    const formData = new FormData(event.currentTarget)
-    const res = await updateProjectName(projectId, formData)
-    if (res?.success) {
-      setOpenRename(false)
-      router.refresh()
-    }
-    setLoading(false)
+    updateMutation.mutate({ projectId, name })
   }
+
+  function onSubmitDelete(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    deleteMutation.mutate({ projectId })
+  }
+
   return (
     <div className='relative'>
       <DropdownMenu>
@@ -57,18 +85,23 @@ export function ProjectActions({ projectId, defaultName, userRole }: { projectId
         <DialogContent className='sm:max-w-[425px]'>
           <DialogHeader>
             <DialogTitle>Rename Project</DialogTitle>
-            <DialogDescription>Update this project’s name.</DialogDescription>
+            <DialogDescription>Update this project&apos;s name.</DialogDescription>
           </DialogHeader>
-          <form onSubmit={onSubmit}>
+          <form onSubmit={onSubmitRename}>
             <div className='grid gap-4 py-4'>
               <div className='grid grid-cols-4 items-center gap-4'>
                 <Label htmlFor='name' className='text-right'>Name</Label>
-                <Input id='name' name='name' defaultValue={defaultName} className='col-span-3 border-input focus:outline-none focus-visible:outline-none focus:ring-0 focus-visible:ring-0 focus-visible:border-input' />
+                <Input 
+                  id='name' 
+                  value={name} 
+                  onChange={(e) => setName(e.target.value)}
+                  className='col-span-3 border-input focus:outline-none focus-visible:outline-none focus:ring-0 focus-visible:ring-0 focus-visible:border-input' 
+                />
               </div>
             </div>
             <DialogFooter>
-              <Button type='submit' size='sm' disabled={loading} className='focus:outline-none focus-visible:outline-none focus:ring-0 focus-visible:ring-0'>
-                {loading ? 'Saving...' : 'Save'}
+              <Button type='submit' size='sm' disabled={updateMutation.isPending} className='focus:outline-none focus-visible:outline-none focus:ring-0 focus-visible:ring-0'>
+                {updateMutation.isPending ? 'Saving...' : 'Save'}
               </Button>
             </DialogFooter>
           </form>
@@ -81,21 +114,10 @@ export function ProjectActions({ projectId, defaultName, userRole }: { projectId
             <DialogTitle>Delete Project</DialogTitle>
             <DialogDescription>This action cannot be undone.</DialogDescription>
           </DialogHeader>
-          <form
-            onSubmit={async (e) => {
-              e.preventDefault()
-              setLoading(true)
-              const res = await deleteProject(projectId)
-              if (res?.success) {
-                setOpenDelete(false)
-                router.refresh()
-              }
-              setLoading(false)
-            }}
-          >
+          <form onSubmit={onSubmitDelete}>
             <DialogFooter>
-              <Button type='submit' variant='destructive' size='sm' disabled={loading}>
-                {loading ? 'Deleting...' : 'Delete'}
+              <Button type='submit' variant='destructive' size='sm' disabled={deleteMutation.isPending}>
+                {deleteMutation.isPending ? 'Deleting...' : 'Delete'}
               </Button>
             </DialogFooter>
           </form>

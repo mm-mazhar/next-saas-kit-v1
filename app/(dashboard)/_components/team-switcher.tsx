@@ -12,7 +12,7 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from '@/app/(dashboard)/_components/sidebar'
-import { switchOrganization } from '@/app/actions/organization'
+import { switchOrganization } from '@/app/actions/cookie-actions'
 import {
   DropdownMenu,
   DropdownMenuContent,

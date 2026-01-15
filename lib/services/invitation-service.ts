@@ -2,24 +2,48 @@
 
 import prisma from '@/app/lib/db'
 import { randomBytes } from 'crypto'
-import { INVITE_EXPIRATION_MS, LIMITS, LOCAL_SITE_URL, OrganizationRole, PRODUCTION_URL, ROLES, SITE_URL } from '../constants'
+import { INVITE_EXPIRATION_MS, LIMITS, LOCAL_SITE_URL, OrganizationRole, PRODUCTION_URL, ROLES, SITE_URL, CHECK_DISPOSABLE_EMAILS } from '../constants'
+import { isDisposableEmail } from '../email-validator'
 
 export class InvitationService {
   static resolveOrigin() {
     const env = process.env.NODE_ENV
+    
     if (env === 'development') {
       return LOCAL_SITE_URL || SITE_URL || 'http://localhost:3000'
     }
+    
+    // For production, try multiple sources and clean up any quotes
     const vercelUrl = process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : ''
-    return PRODUCTION_URL || SITE_URL || vercelUrl || ''
+    const productionUrl = PRODUCTION_URL?.replace(/['"]/g, '') || ''
+    const siteUrl = SITE_URL?.replace(/['"]/g, '') || ''
+    
+    return productionUrl || siteUrl || vercelUrl || 'http://localhost:3000'
   }
 
   static getInviteLink(token: string) {
     const origin = InvitationService.resolveOrigin()
-    return origin ? new URL(`/invite/${token}`, origin).href : `/invite/${token}`
+    
+    // Ensure we have a valid origin before constructing URL
+    if (!origin) {
+      console.warn('No origin found for invite link, using relative path')
+      return `/invite/${token}`
+    }
+    
+    try {
+      return new URL(`/invite/${token}`, origin).href
+    } catch (error) {
+      console.error('Failed to construct invite URL:', error, { origin, token })
+      return `/invite/${token}`
+    }
   }
   static async createInvite(inviterId: string, organizationId: string, email: string, role: OrganizationRole = ROLES.MEMBER) {
-    // 1. Check Limits
+    // 1. Check for disposable email
+    if (CHECK_DISPOSABLE_EMAILS && isDisposableEmail(email)) {
+      throw new Error('Disposable emails cannot be invited to organizations. Please use a permanent email address.')
+    }
+
+    // 2. Check Limits
     const pendingInvites = await prisma.organizationInvite.count({
       where: {
         organizationId,
@@ -31,7 +55,7 @@ export class InvitationService {
       throw new Error(`Limit reached: Organization can only have ${LIMITS.MAX_PENDING_INVITES_PER_ORG} pending invites.`)
     }
 
-    // 2. Check if user is already a member
+    // 3. Check if user is already a member
     const existingMember = await prisma.organizationMember.findFirst({
       where: {
         organizationId,
@@ -45,7 +69,7 @@ export class InvitationService {
       throw new Error('User is already a member of this organization.')
     }
 
-    // 3. Create Invite
+    // 4. Create Invite
     const token = randomBytes(32).toString('hex')
     const expiresAt = new Date(Date.now() + INVITE_EXPIRATION_MS)
 

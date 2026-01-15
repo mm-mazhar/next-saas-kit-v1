@@ -1,39 +1,54 @@
+// app/(dashboard)/_components/org-name-form.tsx
+
 'use client'
 
-import { SubmitButton } from '@/app/(dashboard)/_components/Submitbuttons'
+import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { useToast } from '@/components/ToastProvider'
+import { orpc } from '@/lib/orpc/client'
+import { useORPCMutation } from '@/hooks/use-orpc-mutation'
+import { useRouter } from 'next/navigation'
 import * as React from 'react'
-import { useActionState } from 'react'
-import { updateOrganizationNameAction } from '@/app/actions/organization'
 
-export function OrgNameForm({ orgId, defaultName }: { orgId: string; defaultName: string }) {
+export function OrgNameForm({ defaultName }: { orgId: string; defaultName: string }) {
   const { show } = useToast()
-  const [state, formAction] = useActionState(updateOrganizationNameAction, null)
-  const hasDisplayedRef = React.useRef(false)
+  const router = useRouter()
+  const [name, setName] = React.useState(defaultName)
 
-  React.useEffect(() => {
-    if (!state) return
-    if (hasDisplayedRef.current) return
-    if (state.success) {
-      show({ title: 'Saved', description: 'Organization name updated', variant: 'success' })
-      hasDisplayedRef.current = true
-    } else if (state.error) {
-      show({ title: 'Error', description: state.error, variant: 'error', duration: 3000 })
-      hasDisplayedRef.current = true
-    }
-  }, [state, show])
+  const { mutate, isPending } = useORPCMutation(() =>
+    orpc.org.updateName.mutationOptions({
+      onSuccess: () => {
+        show({ title: 'Saved', description: 'Organization name updated', variant: 'success' })
+        router.refresh()
+      },
+      onError: (err: Error) => {
+        show({ title: 'Error', description: err.message, variant: 'error', duration: 3000 })
+      },
+    })
+  )
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    mutate({ name })
+  }
 
   return (
-    <form action={formAction} className='space-y-4'>
-      <input type='hidden' name='orgId' value={orgId} />
+    <form onSubmit={handleSubmit} className='space-y-4'>
       <div className='grid gap-1'>
         <Label htmlFor='name'>Name</Label>
-        <Input id='name' name='name' defaultValue={defaultName} className='max-w-md' maxLength={20} />
+        <Input 
+          id='name' 
+          value={name} 
+          onChange={(e) => setName(e.target.value)}
+          className='max-w-md' 
+          maxLength={20} 
+        />
       </div>
 
-      <SubmitButton />
+      <Button type='submit' disabled={isPending}>
+        {isPending ? 'Saving...' : 'Save'}
+      </Button>
     </form>
   )
 }

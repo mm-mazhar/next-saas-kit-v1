@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 // components/Themetoggle.tsx
 
 'use client'
@@ -15,16 +16,33 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 
-// ✅ 1. Import your server action
-import { updateThemePreference } from '@/app/actions'
+import { orpc } from '@/lib/orpc/client'
+import { useORPCMutation } from '@/hooks/use-orpc-mutation'
 
-export function Themetoggle() {
+interface ThemeToggleProps {
+  isAuthenticated?: boolean
+}
+
+export function Themetoggle({ isAuthenticated = false }: ThemeToggleProps) {
   const { setTheme } = useTheme()
   const { show, update } = useToast()
   const [mounted, setMounted] = React.useState(false)
+  
   React.useEffect(() => {
     setMounted(true)
-  }, [])
+    console.log('[ThemeToggle] Mounted with isAuthenticated:', isAuthenticated)
+  }, [isAuthenticated])
+
+  const { mutate } = useORPCMutation(() => 
+    orpc.user.updateTheme.mutationOptions({
+      onSuccess: () => {
+        // Theme update succeeded - toast is handled in persistTheme
+      },
+      onError: (_err: Error) => {
+        // Error handling is done in persistTheme
+      }
+    })
+  )
 
   const applyImmediateTheme = (value: 'light' | 'dark' | 'system') => {
     const el = document.documentElement
@@ -34,21 +52,41 @@ export function Themetoggle() {
     el.classList.add(target)
   }
 
-  // This function now calls the server action directly
-  const persistTheme = async (value: 'light' | 'dark' | 'system') => {
-    try {
-      const id = show({ title: 'Saving theme…', variant: 'info', duration: 4000 })
-      await updateThemePreference(value)
-      update(id, {
-        title: 'Theme updated',
-        description: value === 'system' ? 'System theme saved' : `${value} theme saved`,
-        variant: 'success',
-        duration: 2000,
-      })
-    } catch {
-      const id = show({ title: 'Saving theme…', variant: 'info', duration: 4000 })
-      update(id, { title: 'Failed to save theme', variant: 'error', duration: 2500 })
+  // This function now calls the oRPC mutation only if user is authenticated
+  const persistTheme = (value: 'light' | 'dark' | 'system') => {
+    // Only persist to server if user is authenticated
+    if (!isAuthenticated) {
+      // Silently skip server persistence for unauthenticated users
+      console.log('[ThemeToggle] Skipping server persistence - user not authenticated')
+      return
     }
+
+    const id = show({ title: 'Saving theme…', variant: 'info', duration: 4000 })
+    
+    mutate(
+      { theme: value },
+      {
+        onSuccess: () => {
+          update(id, {
+            title: 'Theme updated',
+            description: value === 'system' ? 'System theme saved' : `${value} theme saved`,
+            variant: 'success',
+            duration: 2000,
+          })
+        },
+        onError: (err: unknown) => {
+          // Gracefully handle authentication errors
+          const errorMessage = err instanceof Error ? err.message : String(err)
+          const isAuthError = errorMessage.includes('Authentication') || errorMessage.includes('Unauthorized')
+          update(id, { 
+            title: isAuthError ? 'Theme changed locally' : 'Failed to save theme', 
+            description: isAuthError ? 'Sign in to save your preference' : undefined,
+            variant: isAuthError ? 'info' : 'error', 
+            duration: 2500 
+          })
+        }
+      }
+    )
   }
 
   return (

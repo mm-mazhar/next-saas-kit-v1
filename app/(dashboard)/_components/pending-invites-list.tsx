@@ -2,11 +2,12 @@
 
 'use client'
 
-import { resendInvite, revokeInvite, deleteInvite } from '@/app/actions/organization'
 import { useToast } from '@/components/ToastProvider'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { orpc } from '@/lib/orpc/client'
+import { useORPCMutation } from '@/hooks/use-orpc-mutation'
 import { Copy } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import * as React from 'react'
@@ -24,7 +25,44 @@ type InviteRow = {
 export function PendingInvitesList({ invites }: { invites: InviteRow[] }) {
   const router = useRouter()
   const { show } = useToast()
-  const [loading, setLoading] = React.useState<{ id: string | null; action: 'revoke' | 'resend' | 'delete' | null }>({ id: null, action: null })
+
+  const revokeMutation = useORPCMutation(() =>
+    orpc.org.revokeInvite.mutationOptions({
+      onSuccess: (_: unknown, variables: { inviteId: string }) => {
+        const invite = invites.find(i => i.id === variables.inviteId)
+        show({ title: 'Invite revoked', description: invite?.email, duration: 2500 })
+        router.refresh()
+      },
+      onError: (err: Error) => {
+        show({ title: 'Error', description: err.message, duration: 3000 })
+      },
+    })
+  )
+
+  const deleteMutation = useORPCMutation(() =>
+    orpc.org.deleteInvite.mutationOptions({
+      onSuccess: () => {
+        show({ title: 'Invite removed', description: 'Invite removed from list', duration: 2500 })
+        router.refresh()
+      },
+      onError: (err: Error) => {
+        show({ title: 'Error', description: err.message, duration: 3000 })
+      },
+    })
+  )
+
+  const resendMutation = useORPCMutation(() =>
+    orpc.org.resendInvite.mutationOptions({
+      onSuccess: (_: unknown, variables: { inviteId: string }) => {
+        const invite = invites.find(i => i.id === variables.inviteId)
+        show({ title: 'Invite re-sent', description: `Email sent to ${invite?.email}`, duration: 2500 })
+        router.refresh()
+      },
+      onError: (err: Error) => {
+        show({ title: 'Error', description: err.message, duration: 3000 })
+      },
+    })
+  )
 
   function statusVariant(status: string): React.ComponentProps<typeof Badge>['variant'] {
     switch (status) {
@@ -39,9 +77,15 @@ export function PendingInvitesList({ invites }: { invites: InviteRow[] }) {
     }
   }
 
-  function displayStatus(status: string): string {
-    return status
+  const isLoading = (inviteId: string, action: 'revoke' | 'delete' | 'resend') => {
+    if (action === 'revoke') return revokeMutation.isPending && (revokeMutation.variables as { inviteId: string } | undefined)?.inviteId === inviteId
+    if (action === 'delete') return deleteMutation.isPending && (deleteMutation.variables as { inviteId: string } | undefined)?.inviteId === inviteId
+    if (action === 'resend') return resendMutation.isPending && (resendMutation.variables as { inviteId: string } | undefined)?.inviteId === inviteId
+    return false
   }
+
+  const isAnyLoading = (inviteId: string) => 
+    isLoading(inviteId, 'revoke') || isLoading(inviteId, 'delete') || isLoading(inviteId, 'resend')
 
   return (
     <div className='space-y-4'>
@@ -78,77 +122,36 @@ export function PendingInvitesList({ invites }: { invites: InviteRow[] }) {
           </div>
           <div className='flex items-center gap-2'>
             <Badge variant={statusVariant(invite.status)} className='h-6 px-3 leading-none'>
-              <span className='relative top-[1px]'>{displayStatus(invite.status)}</span>
+              <span className='relative top-[1px]'>{invite.status}</span>
             </Badge>
             <Button
               variant='outline'
               size='sm'
               className='focus:outline-none focus-visible:outline-none focus:ring-0 focus-visible:ring-0 focus-visible:ring-offset-0'
-              disabled={
-                loading.id === invite.id || (invite.status !== 'PENDING' && invite.status !== 'ACCEPTED')
-              }
-              onClick={async () => {
-                setLoading({ id: invite.id, action: 'revoke' })
-                try {
-                  const res = await revokeInvite(invite.id)
-                  if (res?.success) {
-                    show({ title: 'Invite revoked', description: invite.email, duration: 2500 })
-                    router.refresh()
-                  } else {
-                    show({ title: 'Error', description: res?.error || 'Failed to revoke invite', duration: 3000 })
-                  }
-                } finally {
-                  setLoading({ id: null, action: null })
-                }
-              }}
+              disabled={isAnyLoading(invite.id) || (invite.status !== 'PENDING' && invite.status !== 'ACCEPTED')}
+              onClick={() => revokeMutation.mutate({ inviteId: invite.id })}
             >
-              {loading.id === invite.id && loading.action === 'revoke' ? 'Revoking...' : 'Revoke'}
+              {isLoading(invite.id, 'revoke') ? 'Revoking...' : 'Revoke'}
             </Button>
             {invite.status === 'REVOKED' && (
               <Button
                 variant='outline'
                 size='sm'
                 className='focus:outline-none focus-visible:outline-none focus:ring-0 focus-visible:ring-0 focus-visible:ring-offset-0 text-red-500 hover:text-red-600'
-                disabled={loading.id === invite.id}
-                onClick={async () => {
-                  setLoading({ id: invite.id, action: 'delete' })
-                  try {
-                    const res = await deleteInvite(invite.id)
-                    if (res?.success) {
-                      show({ title: 'Invite removed', description: 'Invite removed from list', duration: 2500 })
-                      router.refresh()
-                    } else {
-                      show({ title: 'Error', description: res?.error || 'Failed to remove invite', duration: 3000 })
-                    }
-                  } finally {
-                    setLoading({ id: null, action: null })
-                  }
-                }}
+                disabled={isAnyLoading(invite.id)}
+                onClick={() => deleteMutation.mutate({ inviteId: invite.id })}
               >
-                {loading.id === invite.id && loading.action === 'delete' ? 'Removing...' : 'Remove from list'}
+                {isLoading(invite.id, 'delete') ? 'Removing...' : 'Remove from list'}
               </Button>
             )}
             <Button
               variant='secondary'
               size='sm'
               className='focus:outline-none focus-visible:outline-none focus:ring-0 focus-visible:ring-0 focus-visible:ring-offset-0'
-              disabled={loading.id === invite.id || invite.status === 'ACCEPTED'}
-              onClick={async () => {
-                setLoading({ id: invite.id, action: 'resend' })
-                try {
-                  const res = await resendInvite(invite.id)
-                  if (res?.success) {
-                    show({ title: 'Invite re-sent', description: `Email sent to ${invite.email}`, duration: 2500 })
-                    router.refresh()
-                  } else {
-                    show({ title: 'Error', description: res?.error || 'Failed to resend email', duration: 3000 })
-                  }
-                } finally {
-                  setLoading({ id: null, action: null })
-                }
-              }}
+              disabled={isAnyLoading(invite.id) || invite.status === 'ACCEPTED'}
+              onClick={() => resendMutation.mutate({ inviteId: invite.id })}
             >
-              {loading.id === invite.id && loading.action === 'resend' ? 'Re-Inviting...' : 'Re-Invite'}
+              {isLoading(invite.id, 'resend') ? 'Re-Inviting...' : 'Re-Invite'}
             </Button>
           </div>
         </div>
@@ -156,4 +159,3 @@ export function PendingInvitesList({ invites }: { invites: InviteRow[] }) {
     </div>
   )
 }
-

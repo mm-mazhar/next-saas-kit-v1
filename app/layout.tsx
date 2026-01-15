@@ -39,7 +39,7 @@ const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
   // ✅ Sets the canonical URL for your site. Crucial for SEO.
-  metadataBase: new URL(SITE_URL),
+  metadataBase: new URL(SITE_URL || 'http://localhost:3000'),
 
   // ✅ Creates a dynamic title template. `%s` is replaced by page-specific titles.
   title: {

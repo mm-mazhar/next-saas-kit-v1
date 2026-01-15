@@ -141,7 +141,7 @@ export const HeroHeader = () => {
                       <LogoutButton />
                       
                       <ToastProvider>
-                        <Themetoggle />
+                        <Themetoggle isAuthenticated={true} />
                       </ToastProvider>
                     </>
                   ) : (
@@ -188,7 +188,7 @@ export const HeroHeader = () => {
                         </Link>
                       </Button>
                        <ToastProvider>
-                        <Themetoggle />
+                        <Themetoggle isAuthenticated={false} />
                       </ToastProvider>
                     </>
                   )}
