@@ -47,7 +47,7 @@ export async function updateSession(request: NextRequest) {
   } = await supabase.auth.getUser()
 
   const pathname = request.nextUrl.pathname
-  const isApiRoute = pathname.startsWith('/api/')
+  const isApiRoute = pathname.startsWith('/api/') || pathname.startsWith('/docs/api')
   const requiresSuperAdmin = isSuperAdminRoute(pathname)
 
   // Not authenticated

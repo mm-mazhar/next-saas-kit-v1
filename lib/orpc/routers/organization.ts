@@ -81,7 +81,7 @@ export const organizationRouter = {
    */
   getById: protectedProcedure
     .input(z.object({ 
-      orgId: z.string(),
+      id: z.string(),
       includeSubscription: z.boolean().optional(),
     }))
     .route({
@@ -92,7 +92,7 @@ export const organizationRouter = {
     })
     .handler(async ({ input, context }) => {
       const org = await context.db.organization.findUnique({
-        where: { id: input.orgId },
+        where: { id: input.id },
         include: {
           members: {
             include: {

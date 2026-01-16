@@ -40,14 +40,21 @@ export default async function BillingPage() {
   const cookieStore = await cookies()
   const currentOrgId = cookieStore.get('current-org-id')?.value
 
+  // Debug: Log the org ID being checked
+  console.log('[Billing] currentOrgId from cookie:', currentOrgId)
+  console.log('[Billing] user.id:', user.id)
+
   if (!currentOrgId) {
+      console.log('[Billing] No currentOrgId cookie - redirecting to dashboard')
       return redirect('/dashboard')
   }
 
   // Security Check: Only ADMIN/OWNER can access billing
   try {
-      await requireOrgRole(currentOrgId, user.id, 'ADMIN')
-  } catch {
+      const role = await requireOrgRole(currentOrgId, user.id, 'ADMIN')
+      console.log('[Billing] User role:', role)
+  } catch (error) {
+      console.log('[Billing] requireOrgRole failed:', error)
       return redirect('/dashboard')
   }
 
