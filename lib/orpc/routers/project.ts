@@ -80,7 +80,7 @@ export const projectRouter = {
     .input(z.object({ slug: z.string() }))
     .route({
       method: 'GET',
-      path: '/project/{slug}',
+      path: '/project/by-slug',
       summary: 'Get project',
       description: 'Returns project details by slug',
     })
@@ -108,7 +108,7 @@ export const projectRouter = {
     }))
     .route({
       method: 'PATCH',
-      path: '/project/{projectId}/name',
+      path: '/project/update-name',
       summary: 'Update project name',
       description: 'Updates the project name (requires admin role)',
     })
@@ -135,7 +135,7 @@ export const projectRouter = {
     .input(z.object({ projectId: z.string() }))
     .route({
       method: 'DELETE',
-      path: '/project/{projectId}',
+      path: '/project/delete',
       summary: 'Delete project',
       description: 'Deletes a project (requires admin role)',
     })

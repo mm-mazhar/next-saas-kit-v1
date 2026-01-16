@@ -81,18 +81,18 @@ export const organizationRouter = {
    */
   getById: protectedProcedure
     .input(z.object({ 
-      id: z.string(),
-      includeSubscription: z.boolean().optional().default(false),
+      orgId: z.string(),
+      includeSubscription: z.boolean().optional(),
     }))
     .route({
       method: 'GET',
-      path: '/org/{id}',
+      path: '/org/details',
       summary: 'Get organization',
       description: 'Returns organization details by ID',
     })
     .handler(async ({ input, context }) => {
       const org = await context.db.organization.findUnique({
-        where: { id: input.id },
+        where: { id: input.orgId },
         include: {
           members: {
             include: {
@@ -291,7 +291,7 @@ export const organizationRouter = {
     .input(z.object({ inviteId: z.string() }))
     .route({
       method: 'DELETE',
-      path: '/org/invite/{inviteId}',
+      path: '/org/invite/delete',
       summary: 'Delete invite',
       description: 'Permanently deletes an invitation record',
     })
@@ -342,7 +342,7 @@ export const organizationRouter = {
     .input(z.object({ targetUserId: z.string() }))
     .route({
       method: 'DELETE',
-      path: '/org/member/{targetUserId}',
+      path: '/org/member/remove',
       summary: 'Remove member',
       description: 'Removes a member from the organization',
     })

@@ -220,7 +220,7 @@ export const adminRouter = {
     .input(z.object({ orgId: z.string() }))
     .route({
       method: 'GET',
-      path: '/admin/organization/{orgId}',
+      path: '/admin/organization/details',
       summary: 'Get organization details',
       description: 'Returns detailed organization information',
       tags: ['Admin'],
