@@ -180,7 +180,7 @@ export async function POST(req: Request) {
   // 2. INVOICE PAID
   // Purpose: Add credits and send confirmation email
   // This is the ONLY place where credits are added
-  // Strategy: Use customer ID to find subscription in our database
+  // Strategy: Multiple fallback strategies to find organization
   // Note: We use ONLY invoice.paid (not invoice.payment_succeeded) 
   //       because Stripe sends both events and we'd process twice
   // ============================================================
@@ -204,21 +204,21 @@ export async function POST(req: Request) {
 
     try {
       // For first-time purchases, stripeCustomerId won't be linked yet
-      // We need to find the organization through subscription metadata
+      // We need to find the organization through multiple strategies
       
       let org: { id: string; name: string; credits: number } | null = null
       let orgId: string | null = null
 
-      // Strategy 1: Get organizationId from Stripe subscription metadata (most reliable for new purchases)
       console.log(`[Stripe Webhook] 🔍 Looking up organization...`)
       
       // Get subscription from Stripe
       const subs = await stripe.subscriptions.list({ customer: customerId, limit: 1, status: 'all' })
       const subscription = subs.data[0]
       
+      // Strategy 1: Get organizationId from Stripe subscription metadata
       if (subscription?.metadata?.organizationId) {
         orgId = subscription.metadata.organizationId
-        console.log(`  Found organizationId in subscription metadata: ${orgId}`)
+        console.log(`  Strategy 1: Found organizationId in subscription metadata: ${orgId}`)
       }
 
       // Strategy 2: Try to find by stripeCustomerId (works for renewals/existing customers)
@@ -229,20 +229,59 @@ export async function POST(req: Request) {
         })
         if (orgByCustomer) {
           orgId = orgByCustomer.id
-          console.log(`  Found organization by stripeCustomerId: ${orgId}`)
+          console.log(`  Strategy 2: Found organization by stripeCustomerId: ${orgId}`)
         }
       }
 
-      // Strategy 3: Check checkout session metadata via subscription's latest_invoice
+      // Strategy 3: Find the checkout session that created this subscription
+      // This is the most reliable for first-time purchases when invoice.paid arrives before checkout.session.completed
       if (!orgId && subscription) {
-        // The subscription was created from a checkout session that has the organizationId
-        // We stored it in subscription metadata in checkout.session.completed
-        // But if that failed, we need another approach
-        console.log(`  Subscription found but no organizationId in metadata`)
+        console.log(`  Strategy 3: Looking for checkout session...`)
+        try {
+          // List checkout sessions for this customer, find the one that created this subscription
+          const sessions = await stripe.checkout.sessions.list({
+            customer: customerId,
+            limit: 5,
+          })
+          
+          for (const session of sessions.data) {
+            if (session.subscription === subscription.id) {
+              // Found the checkout session that created this subscription
+              const sessionOrgId = session.metadata?.organizationId || session.client_reference_id
+              if (sessionOrgId) {
+                orgId = sessionOrgId
+                console.log(`  Strategy 3: Found organizationId from checkout session: ${orgId}`)
+                
+                // Also store it in subscription metadata for future use
+                await stripe.subscriptions.update(subscription.id, {
+                  metadata: { organizationId: orgId }
+                })
+                console.log(`  Strategy 3: Stored organizationId in subscription metadata`)
+                break
+              }
+            }
+          }
+        } catch (sessionError) {
+          console.error(`  Strategy 3: Failed to lookup checkout session:`, sessionError)
+        }
+      }
+
+      // Strategy 4: Check our database subscription table by stripeSubscriptionId
+      if (!orgId && subscription) {
+        const dbSub = await prisma.subscription.findUnique({
+          where: { stripeSubscriptionId: subscription.id },
+          select: { organizationId: true }
+        })
+        if (dbSub?.organizationId) {
+          orgId = dbSub.organizationId
+          console.log(`  Strategy 4: Found organizationId from DB subscription: ${orgId}`)
+        }
       }
 
       if (!orgId) {
         console.error(`[Stripe Webhook] ❌ Could not determine organizationId for customer ${customerId}`)
+        console.error(`  Subscription ID: ${subscription?.id}`)
+        console.error(`  Subscription metadata: ${JSON.stringify(subscription?.metadata)}`)
         // Return 500 to trigger Stripe retry - checkout.session.completed might still be processing
         return new Response('Organization not found, will retry', { status: 500 })
       }
@@ -297,45 +336,68 @@ export async function POST(req: Request) {
         select: { stripeSubscriptionId: true, planId: true }
       })
 
+      // Also try to find by stripeSubscriptionId (in case organizationId lookup fails)
       if (!subRecord) {
-        console.log(`[Stripe Webhook] 📝 Creating subscription record (invoice.paid arrived before checkout)`)
-        
-        // Store organizationId in Stripe subscription metadata if not already there
-        if (!stripeSubscription.metadata?.organizationId) {
-          await stripe.subscriptions.update(subscriptionId, {
-            metadata: { organizationId: org.id }
+        subRecord = await prisma.subscription.findUnique({
+          where: { stripeSubscriptionId: subscriptionId },
+          select: { stripeSubscriptionId: true, planId: true }
+        })
+      }
+
+      try {
+        if (!subRecord) {
+          console.log(`[Stripe Webhook] 📝 Creating subscription record (invoice.paid arrived before checkout)`)
+          
+          // Store organizationId in Stripe subscription metadata if not already there
+          if (!stripeSubscription.metadata?.organizationId) {
+            await stripe.subscriptions.update(subscriptionId, {
+              metadata: { organizationId: org.id }
+            })
+          }
+
+          // Use upsert to handle race condition where checkout.session.completed just created it
+          await prisma.subscription.upsert({
+            where: { organizationId: org.id },
+            update: {
+              stripeSubscriptionId: subscriptionId,
+              currentPeriodStart: sp.current_period_start ?? Math.floor(Date.now() / 1000),
+              currentPeriodEnd: sp.current_period_end ?? Math.floor(Date.now() / 1000) + 30 * 24 * 60 * 60,
+              status: stripeSubscription.status,
+              planId: priceId,
+              interval: String(stripeSubscription.items.data[0].price.recurring?.interval || 'month'),
+              periodEndReminderSent: false,
+            },
+            create: {
+              stripeSubscriptionId: subscriptionId,
+              organizationId: org.id,
+              currentPeriodStart: sp.current_period_start ?? Math.floor(Date.now() / 1000),
+              currentPeriodEnd: sp.current_period_end ?? Math.floor(Date.now() / 1000) + 30 * 24 * 60 * 60,
+              status: stripeSubscription.status,
+              planId: priceId,
+              interval: String(stripeSubscription.items.data[0].price.recurring?.interval || 'month'),
+              periodEndReminderSent: false,
+            },
+          })
+          console.log(`[Stripe Webhook] 💾 Subscription record created/updated`)
+          
+          subRecord = { stripeSubscriptionId: subscriptionId, planId: priceId }
+        } else {
+          // Update existing subscription record
+          await prisma.subscription.update({
+            where: { stripeSubscriptionId: subRecord.stripeSubscriptionId },
+            data: {
+              currentPeriodStart: sp.current_period_start ?? undefined,
+              currentPeriodEnd: sp.current_period_end ?? undefined,
+              status: stripeSubscription.status,
+              planId: priceId,
+              interval: String(stripeSubscription.items.data[0].price.recurring?.interval || 'month'),
+              periodEndReminderSent: false,
+            },
           })
         }
-
-        // Create the subscription record
-        await prisma.subscription.create({
-          data: {
-            stripeSubscriptionId: subscriptionId,
-            organizationId: org.id,
-            currentPeriodStart: sp.current_period_start ?? Math.floor(Date.now() / 1000),
-            currentPeriodEnd: sp.current_period_end ?? Math.floor(Date.now() / 1000) + 30 * 24 * 60 * 60,
-            status: stripeSubscription.status,
-            planId: priceId,
-            interval: String(stripeSubscription.items.data[0].price.recurring?.interval || 'month'),
-            periodEndReminderSent: false,
-          },
-        })
-        console.log(`[Stripe Webhook] 💾 Subscription record created`)
-        
-        subRecord = { stripeSubscriptionId: subscriptionId, planId: priceId }
-      } else {
-        // Update existing subscription record
-        await prisma.subscription.update({
-          where: { stripeSubscriptionId: subRecord.stripeSubscriptionId },
-          data: {
-            currentPeriodStart: sp.current_period_start ?? undefined,
-            currentPeriodEnd: sp.current_period_end ?? undefined,
-            status: stripeSubscription.status,
-            planId: priceId,
-            interval: String(stripeSubscription.items.data[0].price.recurring?.interval || 'month'),
-            periodEndReminderSent: false,
-          },
-        })
+      } catch (subError) {
+        console.error(`[Stripe Webhook] ⚠️ Subscription upsert error (continuing anyway):`, subError)
+        // Continue anyway - credits are more important than subscription record
       }
 
       console.log(`  Subscription: ${subscriptionId}`)
