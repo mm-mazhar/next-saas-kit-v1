@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
+ 
 // tests/integration/disposable-email-blocking.test.ts
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'

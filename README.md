@@ -2,7 +2,7 @@
 
 Build a production-ready, multi-tenant SaaS with:
 
-- Next.js 15 (App Router, Server Actions)
+- Next.js 16 (App Router, Server Actions)
 - Supabase Auth + Postgres
 - Prisma ORM
 - oRPC type-safe API layer with OpenAPI documentation
@@ -83,7 +83,7 @@ This README is a full, end‑to‑end setup and operations guide for this specif
 
 ## Overview
 
-This project is a multi-tenant SaaS starter built with Next.js 15 and Supabase. It supports:
+This project is a multi-tenant SaaS starter built with Next.js 16 and Supabase. It supports:
 
 - Authentication via Supabase (email magic links + Google OAuth)
 - Multi-organization accounts with members and projects
@@ -140,7 +140,7 @@ You can use it as a starting point for your own SaaS, or as a reference for:
 
 ## Tech Stack
 
-- `next` – Next.js 15 (App Router, RSC, Server Actions)
+- `next` – Next.js 16 (App Router, RSC, Server Actions)
 - `react`, `react-dom` – React 19
 - `@supabase/supabase-js`, `@supabase/ssr` – Supabase Auth + SSR helpers
 - `pg` – Postgres driver used with Prisma

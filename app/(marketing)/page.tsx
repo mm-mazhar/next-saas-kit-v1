@@ -1,5 +1,5 @@
 // app/(marketing)/page.tsx
-/* eslint-disable @typescript-eslint/no-unused-vars */
+ 
 
 import { getData } from '@/app/lib/db'
 import { createClient } from '@/app/lib/supabase/server'

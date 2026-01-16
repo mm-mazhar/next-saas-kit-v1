@@ -22,7 +22,7 @@ import { useToast } from '@/components/ToastProvider'
 import { orpc } from '@/lib/orpc/client'
 import { useORPCMutation } from '@/hooks/use-orpc-mutation'
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
+ 
 export function CreateProjectDialog({ orgId }: { orgId: string }) {
   const [open, setOpen] = React.useState(false)
   const [error, setError] = React.useState('')

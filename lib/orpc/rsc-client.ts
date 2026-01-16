@@ -24,7 +24,7 @@ import { createContext } from './context'
  * }
  * ```
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+ 
 export async function getRPCCaller(): Promise<any> {
   // Create context with current request's auth and org info
   const context = await createContext()

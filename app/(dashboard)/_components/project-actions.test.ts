@@ -84,7 +84,7 @@ describe('ProjectActions Mutation Behavior Properties', () => {
             projectId: fc.uuid(),
             projectName: fc.string({ minLength: 1, maxLength: 50 }),
           }),
-          // eslint-disable-next-line @typescript-eslint/no-unused-vars
+           
           async ({ projectId, projectName }) => {
             const showToast = vi.fn()
             const setOpenRename = vi.fn()
@@ -105,7 +105,7 @@ describe('ProjectActions Mutation Behavior Properties', () => {
       await fc.assert(
         fc.asyncProperty(
           fc.uuid(), // projectId
-          // eslint-disable-next-line @typescript-eslint/no-unused-vars
+           
           async (projectId) => {
             const showToast = vi.fn()
             const setOpenDelete = vi.fn()
@@ -129,7 +129,7 @@ describe('ProjectActions Mutation Behavior Properties', () => {
             projectId: fc.uuid(),
             errorMessage: fc.string({ minLength: 1 }),
           }),
-          // eslint-disable-next-line @typescript-eslint/no-unused-vars
+           
           async ({ projectId, errorMessage }) => {
             const showToast = vi.fn()
             const setOpenRename = vi.fn()
@@ -154,7 +154,7 @@ describe('ProjectActions Mutation Behavior Properties', () => {
             projectName: fc.string({ minLength: 1, maxLength: 50 }),
             mutationType: fc.constantFrom('rename', 'delete'),
           }),
-          // eslint-disable-next-line @typescript-eslint/no-unused-vars
+           
           async ({ projectId, projectName, mutationType }) => {
             const showToast = vi.fn()
             const setOpenDialog = vi.fn()
@@ -184,7 +184,7 @@ describe('ProjectActions Mutation Behavior Properties', () => {
       await fc.assert(
         fc.asyncProperty(
           fc.uuid(),
-          // eslint-disable-next-line @typescript-eslint/no-unused-vars
+           
           async (projectId) => {
             const showToast = vi.fn()
             const setOpenRename = vi.fn()
@@ -205,7 +205,7 @@ describe('ProjectActions Mutation Behavior Properties', () => {
       await fc.assert(
         fc.asyncProperty(
           fc.uuid(),
-          // eslint-disable-next-line @typescript-eslint/no-unused-vars
+           
           async (projectId) => {
             const showToast = vi.fn()
             const setOpenDelete = vi.fn()
@@ -232,7 +232,7 @@ describe('ProjectActions Mutation Behavior Properties', () => {
       await fc.assert(
         fc.asyncProperty(
           fc.uuid(),
-          // eslint-disable-next-line @typescript-eslint/no-unused-vars
+           
           async (projectId) => {
             const toastCalls: ToastParams[] = []
             const showToast = vi.fn((params: ToastParams) => {
@@ -258,7 +258,7 @@ describe('ProjectActions Mutation Behavior Properties', () => {
       await fc.assert(
         fc.asyncProperty(
           fc.uuid(),
-          // eslint-disable-next-line @typescript-eslint/no-unused-vars
+           
           async (projectId) => {
             const toastCalls: ToastParams[] = []
             const showToast = vi.fn((params: ToastParams) => {

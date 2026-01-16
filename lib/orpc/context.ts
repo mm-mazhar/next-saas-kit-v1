@@ -76,7 +76,7 @@ export async function createContextWithDeps(deps: ContextDependencies): Promise<
  * @param req - Optional Request object (used in route handlers)
  * @returns Promise<ORPCContext> - The context object for procedure execution
  */
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
+ 
 export async function createContext(_req?: Request): Promise<ORPCContext> {
   const deps: ContextDependencies = {
     getUser: async () => {

@@ -17,11 +17,11 @@ vi.mock('@/app/lib/email', async () => {
 })
 
 describe('CRON Jobs & Automated Alerts', () => {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+   
   let testUser: any
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+   
   let primaryOrg: any
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+   
   let secondaryOrg: any
 
   beforeEach(async () => {

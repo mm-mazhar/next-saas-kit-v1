@@ -3,7 +3,11 @@
 'use client'
 
 import { useMutation, type UseMutationOptions } from '@tanstack/react-query'
-import { useEffect, useState } from 'react'
+import { useSyncExternalStore } from 'react'
+
+const emptySubscribe = () => () => {}
+const getClientSnapshot = () => true
+const getServerSnapshot = () => false
 
 /**
  * Custom hook that wraps useMutation with oRPC client safety
@@ -12,15 +16,18 @@ import { useEffect, useState } from 'react'
 export function useORPCMutation<TData, TError, TVariables, TContext>(
   getMutationOptions: () => UseMutationOptions<TData, TError, TVariables, TContext>
 ) {
-  const [mounted, setMounted] = useState(false)
-
-  useEffect(() => {
-    setMounted(true)
-  }, [])
+  // This returns true only on the client, after hydration
+  const isMounted = useSyncExternalStore(
+    emptySubscribe,
+    getClientSnapshot,
+    getServerSnapshot
+  )
 
   return useMutation(
-    mounted ? getMutationOptions() : {
-      mutationFn: () => Promise.reject(new Error('Component not mounted')),
-    } as UseMutationOptions<TData, TError, TVariables, TContext>
+    isMounted
+      ? getMutationOptions()
+      : ({
+          mutationFn: () => Promise.reject(new Error('Component not mounted')),
+        } as UseMutationOptions<TData, TError, TVariables, TContext>)
   )
 }

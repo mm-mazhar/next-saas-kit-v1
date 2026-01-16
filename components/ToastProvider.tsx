@@ -26,17 +26,17 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
   const [toasts, setToasts] = React.useState<ToastItem[]>([])
   const timersRef = React.useRef<Map<number, number>>(new Map())
   const [mounted, setMounted] = React.useState(false)
-  const portalElRef = React.useRef<HTMLElement | null>(null)
+  // CHANGED: Use state instead of ref for the portal element
+  const [portalEl, setPortalEl] = React.useState<HTMLElement | null>(null)
   React.useEffect(() => {
     const el = document.createElement('div')
     el.setAttribute('data-toast-root', '')
     document.body.appendChild(el)
-    portalElRef.current = el
+    setPortalEl(el)
     setMounted(true)
     return () => {
-      if (portalElRef.current) {
-        document.body.removeChild(portalElRef.current)
-        portalElRef.current = null
+      if (document.body.contains(el)) {
+        document.body.removeChild(el)
       }
     }
   }, [])
@@ -78,7 +78,8 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
   return (
     <ToastContext.Provider value={{ show, update, dismiss }}>
       {children}
-      {mounted && portalElRef.current
+      {/* Use portalEl state here instead of ref.current */}
+      {portalEl
         ? createPortal(
             <div className='fixed bottom-4 right-4 z-50 flex flex-col items-end gap-2'>
               {toasts.map((t) => (
@@ -95,7 +96,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
                 </div>
               ))}
             </div>,
-            portalElRef.current
+            portalEl
           )
         : null}
     </ToastContext.Provider>

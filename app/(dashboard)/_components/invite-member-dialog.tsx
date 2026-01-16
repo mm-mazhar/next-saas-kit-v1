@@ -29,7 +29,7 @@ import { useToast } from '@/components/ToastProvider'
 import { orpc } from '@/lib/orpc/client'
 import { useORPCMutation } from '@/hooks/use-orpc-mutation'
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
+ 
 export function InviteMemberDialog({ orgId }: { orgId: string }) {
   const [open, setOpen] = React.useState(false)
   const [email, setEmail] = React.useState('')

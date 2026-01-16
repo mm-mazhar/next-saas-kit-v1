@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
+ 
 // app/(dashboard)/_components/org-name-form.test.ts
 // Feature: orpc-ui-migration, Properties 1, 4: OrgNameForm Mutation Behavior Tests
 

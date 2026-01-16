@@ -70,7 +70,7 @@ describe('InviteMemberDialog Mutation Behavior Properties', () => {
         fc.asyncProperty(
           fc.emailAddress(), // valid email
           fc.constantFrom('ADMIN', 'MEMBER') as fc.Arbitrary<'ADMIN' | 'MEMBER'>,
-          // eslint-disable-next-line @typescript-eslint/no-unused-vars
+           
           async (email, role) => {
             let dialogOpen = true
             const setOpen = vi.fn((open: boolean) => {
@@ -107,7 +107,7 @@ describe('InviteMemberDialog Mutation Behavior Properties', () => {
         fc.asyncProperty(
           fc.emailAddress(),
           fc.constantFrom('ADMIN', 'MEMBER') as fc.Arbitrary<'ADMIN' | 'MEMBER'>,
-          // eslint-disable-next-line @typescript-eslint/no-unused-vars
+           
           async (email, initialRole) => {
             const setOpen = vi.fn()
             const setEmail = vi.fn()
