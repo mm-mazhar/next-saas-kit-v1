@@ -274,39 +274,71 @@ export async function POST(req: Request) {
 
       console.log(`  Organization: ${org.id}`)
 
-      console.log(`  Organization: ${org.id}`)
+      // Get subscription from Stripe (we already fetched it above, reuse if available)
+      let stripeSubscription = subscription
+      if (!stripeSubscription) {
+        const subs = await stripe.subscriptions.list({ customer: customerId, limit: 1, status: 'all' })
+        stripeSubscription = subs.data[0]
+      }
 
-      // Find subscription record in database
-      const subRecord = await prisma.subscription.findUnique({
+      if (!stripeSubscription) {
+        console.error(`[Stripe Webhook] ❌ No subscription found in Stripe for customer ${customerId}`)
+        return new Response('No subscription in Stripe', { status: 500 })
+      }
+
+      const subscriptionId = stripeSubscription.id
+      const priceId = stripeSubscription.items.data[0].price.id
+      const sp = stripeSubscription as unknown as PeriodFields
+
+      // Find or CREATE subscription record in database
+      // This handles the race condition where invoice.paid arrives before checkout.session.completed
+      let subRecord = await prisma.subscription.findUnique({
         where: { organizationId: org.id },
         select: { stripeSubscriptionId: true, planId: true }
       })
 
-      if (!subRecord?.stripeSubscriptionId) {
-        console.error(`[Stripe Webhook] ❌ No subscription found for organization ${org.id}`)
-        return new Response(null, { status: 200 })
+      if (!subRecord) {
+        console.log(`[Stripe Webhook] 📝 Creating subscription record (invoice.paid arrived before checkout)`)
+        
+        // Store organizationId in Stripe subscription metadata if not already there
+        if (!stripeSubscription.metadata?.organizationId) {
+          await stripe.subscriptions.update(subscriptionId, {
+            metadata: { organizationId: org.id }
+          })
+        }
+
+        // Create the subscription record
+        await prisma.subscription.create({
+          data: {
+            stripeSubscriptionId: subscriptionId,
+            organizationId: org.id,
+            currentPeriodStart: sp.current_period_start ?? Math.floor(Date.now() / 1000),
+            currentPeriodEnd: sp.current_period_end ?? Math.floor(Date.now() / 1000) + 30 * 24 * 60 * 60,
+            status: stripeSubscription.status,
+            planId: priceId,
+            interval: String(stripeSubscription.items.data[0].price.recurring?.interval || 'month'),
+            periodEndReminderSent: false,
+          },
+        })
+        console.log(`[Stripe Webhook] 💾 Subscription record created`)
+        
+        subRecord = { stripeSubscriptionId: subscriptionId, planId: priceId }
+      } else {
+        // Update existing subscription record
+        await prisma.subscription.update({
+          where: { stripeSubscriptionId: subRecord.stripeSubscriptionId },
+          data: {
+            currentPeriodStart: sp.current_period_start ?? undefined,
+            currentPeriodEnd: sp.current_period_end ?? undefined,
+            status: stripeSubscription.status,
+            planId: priceId,
+            interval: String(stripeSubscription.items.data[0].price.recurring?.interval || 'month'),
+            periodEndReminderSent: false,
+          },
+        })
       }
 
-      const subscriptionId = subRecord.stripeSubscriptionId
       console.log(`  Subscription: ${subscriptionId}`)
-
-      // Retrieve full subscription details from Stripe
-      const subscription = await stripe.subscriptions.retrieve(subscriptionId) as Stripe.Subscription
-      const priceId = subscription.items.data[0].price.id
-      const sp = subscription as unknown as PeriodFields
-
-      // Update subscription status in database
-      await prisma.subscription.update({
-        where: { stripeSubscriptionId: subscriptionId },
-        data: {
-          currentPeriodStart: sp.current_period_start ?? undefined,
-          currentPeriodEnd: sp.current_period_end ?? undefined,
-          status: subscription.status,
-          planId: priceId,
-          interval: String(subscription.items.data[0].price.recurring?.interval || 'month'),
-          periodEndReminderSent: false,
-        },
-      })
 
       // ADD CREDITS - This is the critical part
       const plan = PRICING_PLANS.find((pl) => pl.stripePriceId === priceId)
