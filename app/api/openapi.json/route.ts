@@ -2,7 +2,6 @@ import { OpenAPIGenerator } from '@orpc/openapi'
 import { ZodToJsonSchemaConverter } from '@orpc/zod'
 import { appRouter } from '@/lib/orpc/root'
 import { createClient } from '@/app/lib/supabase/server'
-import { NextResponse } from 'next/server'
 
 /**
  * OpenAPI specification generator for the oRPC API
@@ -39,18 +38,18 @@ export async function GET() {
 
   // Require authentication
   if (!user) {
-    return NextResponse.json(
-      { error: 'Unauthorized' },
-      { status: 401 }
-    )
+    return new Response('Unauthorized: Please log in to access this resource', {
+      status: 401,
+      headers: { 'Content-Type': 'text/plain' },
+    })
   }
 
   // Require super admin access
   if (!user.email || !SUPER_ADMINS.includes(user.email)) {
-    return NextResponse.json(
-      { error: 'Forbidden: Administrative access required' },
-      { status: 403 }
-    )
+    return new Response('Administrative access required', {
+      status: 403,
+      headers: { 'Content-Type': 'text/plain' },
+    })
   }
 
   const spec = await generateOpenAPISpec()

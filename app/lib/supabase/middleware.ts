@@ -1,8 +1,18 @@
 // app/lib/supabase/middleware.ts
- 
 
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
+
+const SUPER_ADMINS = process.env.SUPER_ADMIN_EMAILS?.split(',').map(e => e.trim()) || []
+
+// Routes that require super admin access
+const SUPER_ADMIN_ROUTES = ['/admin', '/docs/api', '/api/openapi.json']
+
+function isSuperAdminRoute(pathname: string): boolean {
+  return SUPER_ADMIN_ROUTES.some(
+    route => pathname === route || pathname.startsWith(`${route}/`)
+  )
+}
 
 export async function updateSession(request: NextRequest) {
   let supabaseResponse = NextResponse.next({
@@ -18,7 +28,7 @@ export async function updateSession(request: NextRequest) {
           return request.cookies.getAll()
         },
         setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value, options }) =>
+          cookiesToSet.forEach(({ name, value }) =>
             request.cookies.set(name, value)
           )
           supabaseResponse = NextResponse.next({
@@ -32,39 +42,37 @@ export async function updateSession(request: NextRequest) {
     }
   )
 
-  // IMPORTANT: Avoid writing any logic between createServerClient and
-  // supabase.auth.getUser(). A simple mistake could make it very hard to debug
-  // issues with users being randomly logged out.
-
   const {
     data: { user },
   } = await supabase.auth.getUser()
 
-//   if (
-//     !user &&
-//     !request.nextUrl.pathname.startsWith('/get-started') &&
-//     !request.nextUrl.pathname.startsWith('/auth') &&
-//     !request.nextUrl.pathname.startsWith('/api') &&
-//     request.nextUrl.pathname !== '/'
-//   ) {
-//     const url = request.nextUrl.clone()
-//     url.pathname = '/get-started'
-//     // Preserve intended destination so post-auth redirects correctly
-//     url.searchParams.set(
-//       'next',
-//       `${request.nextUrl.pathname}${request.nextUrl.search}`
-//     )
-//     return NextResponse.redirect(url)
-//   }
+  const pathname = request.nextUrl.pathname
+  const isApiRoute = pathname.startsWith('/api/')
+  const requiresSuperAdmin = isSuperAdminRoute(pathname)
 
-//   return supabaseResponse
-// }
-if (!user) {
+  // Not authenticated
+  if (!user) {
+    if (isApiRoute) {
+      return new NextResponse('Unauthorized', { status: 401 })
+    }
     const url = request.nextUrl.clone()
     url.pathname = '/get-started'
-    // Add 'next' param so they go back to dashboard after login
-    url.searchParams.set('next', request.nextUrl.pathname)
+    url.searchParams.set('next', pathname)
     return NextResponse.redirect(url)
+  }
+
+  // Super admin routes - check if user is super admin
+  if (requiresSuperAdmin) {
+    const isSuperAdmin = user.email && SUPER_ADMINS.includes(user.email)
+    if (!isSuperAdmin) {
+      if (isApiRoute) {
+        return new NextResponse('Administrative access required', { status: 403 })
+      }
+      // Redirect non-super-admins to dashboard
+      const url = request.nextUrl.clone()
+      url.pathname = '/dashboard'
+      return NextResponse.redirect(url)
+    }
   }
 
   return supabaseResponse
