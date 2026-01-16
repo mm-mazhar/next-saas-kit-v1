@@ -71,22 +71,37 @@ export async function POST(req: Request) {
     // Find organization ID
     let orgId = session.metadata?.organizationId || session.client_reference_id
 
+    console.log(`  metadata.organizationId: ${session.metadata?.organizationId}`)
+    console.log(`  client_reference_id: ${session.client_reference_id}`)
+
     if (!orgId && customerId) {
       const found = await prisma.organization.findUnique({ 
         where: { stripeCustomerId: customerId }, 
         select: { id: true } 
       })
       orgId = found?.id || null
+      console.log(`  Found by customerId: ${orgId}`)
     }
 
     if (!orgId) {
-      console.error('[Stripe Webhook] ❌ No Organization ID found')
+      console.error('[Stripe Webhook] ❌ No Organization ID found in session metadata or client_reference_id')
       return new Response(null, { status: 200 })
     }
 
     console.log(`  Organization: ${orgId}`)
 
     try {
+      // Verify organization exists before proceeding
+      const existingOrg = await prisma.organization.findUnique({
+        where: { id: orgId },
+        select: { id: true, stripeCustomerId: true }
+      })
+
+      if (!existingOrg) {
+        console.error(`[Stripe Webhook] ❌ Organization ${orgId} not found in database`)
+        return new Response(null, { status: 200 })
+      }
+
       // Enforce single subscription per organization
       if (customerId && subscriptionId) {
         const subscriptions = await stripe.subscriptions.list({
@@ -105,17 +120,30 @@ export async function POST(req: Request) {
         }
       }
 
-      // Link customer ID to organization
-      await prisma.organization.update({ 
-        where: { id: orgId }, 
-        data: { stripeCustomerId: customerId } 
-      })
-      console.log(`[Stripe Webhook] 🔗 Linked customer to organization`)
+      // Link customer ID to organization (only if not already linked)
+      if (existingOrg.stripeCustomerId !== customerId) {
+        await prisma.organization.update({ 
+          where: { id: orgId }, 
+          data: { stripeCustomerId: customerId } 
+        })
+        console.log(`[Stripe Webhook] 🔗 Linked customer to organization`)
+      } else {
+        console.log(`[Stripe Webhook] 🔗 Customer already linked to organization`)
+      }
 
       // Create/update subscription record
       if (subscriptionId) {
         const subscription = await stripe.subscriptions.retrieve(subscriptionId) as Stripe.Subscription
         const p = subscription as unknown as PeriodFields
+
+        // Store organizationId in subscription metadata for future reference
+        // This helps invoice.paid find the org even if checkout fails to link customer
+        if (!subscription.metadata?.organizationId) {
+          await stripe.subscriptions.update(subscriptionId, {
+            metadata: { organizationId: orgId }
+          })
+          console.log(`[Stripe Webhook] 📝 Stored organizationId in subscription metadata`)
+        }
 
         await prisma.subscription.upsert({
           where: { organizationId: orgId },
@@ -175,16 +203,76 @@ export async function POST(req: Request) {
     console.log(`  Customer: ${customerId}`)
 
     try {
-      // Find organization by customer ID
-      const org = await prisma.organization.findUnique({
-        where: { stripeCustomerId: customerId },
+      // For first-time purchases, stripeCustomerId won't be linked yet
+      // We need to find the organization through subscription metadata
+      
+      let org: { id: string; name: string; credits: number } | null = null
+      let orgId: string | null = null
+
+      // Strategy 1: Get organizationId from Stripe subscription metadata (most reliable for new purchases)
+      console.log(`[Stripe Webhook] 🔍 Looking up organization...`)
+      
+      // Get subscription from Stripe
+      const subs = await stripe.subscriptions.list({ customer: customerId, limit: 1, status: 'all' })
+      const subscription = subs.data[0]
+      
+      if (subscription?.metadata?.organizationId) {
+        orgId = subscription.metadata.organizationId
+        console.log(`  Found organizationId in subscription metadata: ${orgId}`)
+      }
+
+      // Strategy 2: Try to find by stripeCustomerId (works for renewals/existing customers)
+      if (!orgId) {
+        const orgByCustomer = await prisma.organization.findUnique({
+          where: { stripeCustomerId: customerId },
+          select: { id: true }
+        })
+        if (orgByCustomer) {
+          orgId = orgByCustomer.id
+          console.log(`  Found organization by stripeCustomerId: ${orgId}`)
+        }
+      }
+
+      // Strategy 3: Check checkout session metadata via subscription's latest_invoice
+      if (!orgId && subscription) {
+        // The subscription was created from a checkout session that has the organizationId
+        // We stored it in subscription metadata in checkout.session.completed
+        // But if that failed, we need another approach
+        console.log(`  Subscription found but no organizationId in metadata`)
+      }
+
+      if (!orgId) {
+        console.error(`[Stripe Webhook] ❌ Could not determine organizationId for customer ${customerId}`)
+        // Return 500 to trigger Stripe retry - checkout.session.completed might still be processing
+        return new Response('Organization not found, will retry', { status: 500 })
+      }
+
+      // Now fetch the full organization
+      org = await prisma.organization.findUnique({
+        where: { id: orgId },
         select: { id: true, name: true, credits: true }
       })
 
       if (!org) {
-        console.error(`[Stripe Webhook] ❌ No organization found for customer ${customerId}`)
-        return new Response(null, { status: 200 })
+        console.error(`[Stripe Webhook] ❌ Organization ${orgId} not found in database`)
+        return new Response('Organization not found in database', { status: 500 })
       }
+
+      // Link stripeCustomerId if not already linked (in case checkout.session.completed failed)
+      const currentOrg = await prisma.organization.findUnique({
+        where: { id: orgId },
+        select: { stripeCustomerId: true }
+      })
+      
+      if (!currentOrg?.stripeCustomerId) {
+        await prisma.organization.update({
+          where: { id: orgId },
+          data: { stripeCustomerId: customerId }
+        })
+        console.log(`[Stripe Webhook] 🔗 Linked customer ${customerId} to organization ${orgId}`)
+      }
+
+      console.log(`  Organization: ${org.id}`)
 
       console.log(`  Organization: ${org.id}`)
 
