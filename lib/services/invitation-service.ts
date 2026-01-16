@@ -14,11 +14,12 @@ export class InvitationService {
     }
     
     // For production, try multiple sources and clean up any quotes
-    const vercelUrl = process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : ''
+    // const vercelUrl = process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : ''
     const productionUrl = PRODUCTION_URL?.replace(/['"]/g, '') || ''
-    const siteUrl = SITE_URL?.replace(/['"]/g, '') || ''
+    // const siteUrl = SITE_URL?.replace(/['"]/g, '') || ''
     
-    return productionUrl || siteUrl || vercelUrl || 'http://localhost:3000'
+    // return productionUrl || siteUrl || vercelUrl || 'http://localhost:3000'
+    return productionUrl
   }
 
   static getInviteLink(token: string) {

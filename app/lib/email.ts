@@ -17,7 +17,8 @@ function getBaseUrl() {
     return process.env.LOCAL_SITE_URL || 'http://localhost:3000'
   }
   // return process.env.NEXT_PUBLIC_SITE_URL || process.env.PRODUCTION_URL || 'http://localhost:3000'
-  return process.env.PRODUCTION_URL || 'http://localhost:3000'
+  // return process.env.PRODUCTION_URL || 'http://localhost:3000'
+  return process.env.PRODUCTION_URL || ''
 }
 
 function getEmailContext(fromOverride?: string) {
