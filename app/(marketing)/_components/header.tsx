@@ -15,7 +15,7 @@ import LogoutButton from './HeaderLogoutButton'
 import SiteLogo from './Sitelogo'
 
 const menuItems = [
-  { name: 'Features', href: '#link' },
+  { name: 'Features', href: '/#features' },
   { name: 'Solution', href: '#link' },
   { name: 'Pricing', href: '/#pricing' },
   { name: 'About', href: '/about' },

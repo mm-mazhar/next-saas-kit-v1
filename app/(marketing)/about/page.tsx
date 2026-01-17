@@ -89,7 +89,7 @@ export default function AboutUs1() {
   const valuesInView = useInView(valuesRef, { once: true, amount: 0.3 });
 
   return (
-    <PageSection className="relative overflow-hidden pb-16 md:pb-16">
+    <PageSection className="relative overflow-hidden">
 
       <div className="flex flex-col items-center relative z-10 space-y-8 px-4">
         <Badge

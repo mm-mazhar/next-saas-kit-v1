@@ -12,7 +12,7 @@ import { Badge } from '@/components/ui/badge';
 
 export default function FaqPage() {
   return (
-    <PageSection className='bg-background pb-16 md:pb-16'>
+    <PageSection className='bg-background'>
       <div className='flex flex-col items-center space-y-8 px-4'>
         <Badge
           variant='outline'

@@ -10,23 +10,10 @@ import { Button } from '@/components/ui/button'
 import { ShineBorder } from '@/components/ui/shine-border'
 import HeroLight from '@/public/HeroDark-02.png'
 import HeroDark from '@/public/HeroDark-03.png'
-// import HeroLight from '@/public/HeroDark-04.png'
-// import HeroDark from '@/public/HeroLight-03.png'
 import BackgroundImage from '@/public/night-background.webp'
-import { ArrowRight } from 'lucide-react'
+import { ArrowRight, Building2, Rocket, ShieldCheck, Wrench } from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
-
-// import ArcjetLogo from '@/public/companies/arcjet.jpg'
-// import MotionLogo from '@/public/companies/motion.jpg'
-// import ShadCNLogo from '@/public/companies/shadcn.png'
-// import TailwindCSSLogo from '@/public/companies/tailwindcss.png'
-// import OrpcLogo from '@/public/companies/orpc.jpg'
-// import NextLogo from 'public/companies/nextjs.png'
-// import VercelLogo from 'public/companies/vercel.png'
-// import supabaseLogo from 'public/companies/supabase.png'
-// import PrismaLogo from 'public/companies/prisma.png'
-// import { ChevronRight } from 'lucide-react'
 
 import prisma from '@/app/lib/db'
 import { createClient } from '@/app/lib/supabase/server'
@@ -114,17 +101,12 @@ export default async function HeroSection() {
         {/* --- CONTENT LAYER --- */}
         <div className='relative z-10'>
           
-          <PageSection className='pt-16 md:pt-24 pb-0'>
-          {/* <PageSection> */}
-            
-            {/* 
-              ✅ TEXT CLUSTER WRAPPER 
-              This 'flex flex-col gap-8' controls the spacing between 
-              Badge, H1, P, and Buttons uniformly.
-            */}
-            <div className='pt-8 mx-auto flex max-w-4xl flex-col items-center gap-6 text-center md:pt-12'>
-              
-              {/* 1. BADGE */}
+          {/* 
+            HERO SECTION 
+            1. Removed bottom padding (pb-0) to allow the next section to slide up.
+          */}
+          <PageSection className='pt-24 md:pt-32 pb-0'>
+            <div className='mx-auto flex max-w-4xl flex-col items-center gap-6 text-center'>
               <AnimatedGroup variants={transitionVariants}>
                 <Link
                   href='/get-started'
@@ -144,22 +126,19 @@ export default async function HeroSection() {
                 </Link>
               </AnimatedGroup>
 
-              {/* 2. HEADLINE (Removed mt-classes for unified spacing) */}
               <TextEffect
                 preset='fade-in-blur'
                 speedSegment={0.3}
                 as='h1'
-                className='pt-8 mx-auto max-w-4xl text-balance text-5xl max-md:font-semibold md:pt-12 md:text-7xl xl:text-[5.25rem]'
+                className='mx-auto max-w-4xl text-balance text-5xl max-md:font-semibold md:text-7xl xl:text-[5.25rem]'
               >
                 {APP_DESCRIPTION}
               </TextEffect>
 
-              {/* 3. SUBHEAD (Removed mt-8) */}
-              <HyperText className='pt-8 max-w-2xl text-balance text-lg text-muted-foreground md:pt-12'>
+              <HyperText className='max-w-2xl text-balance text-lg text-muted-foreground'>
                 {APP_DESCRIPTION_LONG}
               </HyperText>
 
-              {/* 4. BUTTONS (Removed mt-12) */}
               <AnimatedGroup
                 variants={{
                   container: {
@@ -167,7 +146,7 @@ export default async function HeroSection() {
                   },
                   ...transitionVariants,
                 }}
-                className='pt-8 flex flex-col items-center justify-center gap-5 md:flex-row md:pt-12'
+                className='flex flex-col items-center justify-center gap-6 md:flex-row'
               >
                 {user ? (
                   <Button asChild size='lg' variant='default' className='px-5'>
@@ -178,24 +157,20 @@ export default async function HeroSection() {
                     <Link href='/get-started'><span className='text-nowrap'>Start Building</span></Link>
                   </Button>
                 )}
-                {/* <Button key={2} asChild size='lg' variant='secondary' className='h-10.5 rounded-xl px-5'>
-                  <Link href='#'><span className='text-nowrap'>Request a demo</span></Link>
-                </Button> */}
               </AnimatedGroup>
             </div>
 
-            {/* 
-              ✅ HERO IMAGE 
-              Moved out of the flex cluster. 
-              Added 'mt-16 md:mt-24' for deliberate separation.
-            */}
             <AnimatedGroup
               variants={{
                 container: { visible: { transition: { staggerChildren: 0.05, delayChildren: 0.75 } } },
                 ...transitionVariants,
               }}
-              className='mt-18'
+              className='mt-12 md:mt-16'
             >
+              {/* 
+                  The `mask-b-from-55%` below creates a fade effect, making the bottom half
+                  of this container invisible, but it still takes up DOM space.
+              */}
               <div className='mask-b-from-55% relative overflow-hidden px-2'>
                 <div className='inset-shadow-2xs ring-background dark:inset-shadow-white/20 bg-background relative mx-auto max-w-6xl overflow-hidden rounded-2xl border p-4 shadow-lg shadow-zinc-950/15 ring-1'>
                   <ShineBorder borderWidth={1} duration={20} shineColor={['var(--primary)']} />
@@ -205,21 +180,308 @@ export default async function HeroSection() {
               </div>
             </AnimatedGroup>
           </PageSection>
+          
+          {/* 
+            BUILT ON SECTION
+            1. Removed top padding (pt-0).
+            2. Added negative top margin (-mt-16 md:-mt-24) to pull this section UP 
+               into the invisible/faded space of the image container above.
+            3. Added `relative z-10` to ensure it sits above the image container if they overlap.
+          */}
+          {/* <PageSection className='pt-0 -mt-16 md:-mt-24 relative z-10 pb-8 md:pb-12'> */}
+          <PageSection className='pt-0 -mt-20 md:-mt-32 relative z-10 pb-8 md:pb-12'>
+            <div className='flex flex-wrap items-center justify-center gap-6 px-6 text-base text-muted-foreground'>
+              <span className='uppercase tracking-wide text-[0.8rem] font-semibold text-muted-foreground/85'>
+                Built on
+              </span>
+              <div className='flex flex-wrap items-center gap-4'>
+                <div className='rounded-full border border-border/60 bg-background/80 px-4 py-2'>
+                  <span className='text-[0.9rem] font-semibold text-foreground'>Next.js</span>
+                </div>
+                <div className='rounded-full border border-border/60 bg-background/80 px-4 py-2'>
+                  <span className='text-[0.9rem] font-semibold text-foreground'>Supabase</span>
+                </div>
+                <div className='rounded-full border border-border/60 bg-background/80 px-4 py-2'>
+                  <span className='text-[0.9rem] font-semibold text-foreground'>Prisma</span>
+                </div>
+                <div className='rounded-full border border-border/60 bg-background/80 px-4 py-2'>
+                  <span className='text-[0.9rem] font-semibold text-foreground'>oRPC</span>
+                </div>
+                <div className='rounded-full border border-border/60 bg-background/80 px-4 py-2'>
+                  <span className='text-[0.9rem] font-semibold text-foreground'>Stripe</span>
+                </div>
+              </div>
+            </div>
+          </PageSection>
+          
+          {/* 
+            SECTION 1: Features 
+          */}
+          <PageSection
+            id='features'
+            className='bg-background py-6 md:py-10'
+          >
+            <div className='mx-auto max-w-3xl text-center'>
+              <h2 className='text-3xl font-bold tracking-tight md:text-4xl'>
+                Everything you need for a real SaaS
+              </h2>
+              <p className='mt-4 text-muted-foreground'>
+                Stop wiring the same infrastructure from scratch. This kit focuses on the hard, boring parts so you can focus on your product.
+              </p>
+            </div>
+            
+            <div className='mx-auto mt-10 md:mt-12 grid w-full max-w-6xl gap-8 md:grid-cols-2'>
+              <div className='flex flex-col rounded-2xl border bg-card p-5 text-left shadow-sm'>
+                <div className='flex items-center gap-3'>
+                  <Rocket className='h-6 w-6 shrink-0 text-primary' />
+                  <h3 className='text-sm font-semibold tracking-tight'>
+                    Launch in days, not months
+                  </h3>
+                </div>
+                <ul className='mt-3 text-sm text-muted-foreground space-y-2 list-disc pl-5'>
+                  <li>Prewired auth, billing, and dashboard flows.</li>
+                  <li>Skip boilerplate setup and ship usable features faster.</li>
+                </ul>
+              </div>
+
+              <div className='flex flex-col rounded-2xl border bg-card p-5 text-left shadow-sm'>
+                <div className='flex items-center gap-3'>
+                  <Building2 className='h-6 w-6 shrink-0 text-primary' />
+                  <h3 className='text-sm font-semibold tracking-tight'>
+                    Multi-tenant out of the box
+                  </h3>
+                </div>
+                <ul className='mt-3 text-sm text-muted-foreground space-y-2 list-disc pl-5'>
+                  <li>Organizations, members, and roles modeled for you.</li>
+                  <li>Designed to work cleanly with row-level security.</li>
+                </ul>
+              </div>
+
+              <div className='flex flex-col rounded-2xl border bg-card p-5 text-left shadow-sm'>
+                <div className='flex items-center gap-3'>
+                  <ShieldCheck className='h-6 w-6 shrink-0 text-primary' />
+                  <h3 className='text-sm font-semibold tracking-tight'>
+                    Built-in auth, billing, RBAC
+                  </h3>
+                </div>
+                <ul className='mt-3 text-sm text-muted-foreground space-y-2 list-disc pl-5'>
+                  <li>Supabase Auth for signup, login, and sessions.</li>
+                  <li>Stripe subscriptions, credits, and role-based access control.</li>
+                </ul>
+              </div>
+
+              <div className='flex flex-col rounded-2xl border bg-card p-5 text-left shadow-sm'>
+                <div className='flex items-center gap-3'>
+                  <Wrench className='h-6 w-6 shrink-0 text-primary' />
+                  <h3 className='text-sm font-semibold tracking-tight'>
+                    Production-grade patterns
+                  </h3>
+                </div>
+                <ul className='mt-3 text-sm text-muted-foreground space-y-2 list-disc pl-5'>
+                  <li>Structured API layer and error handling.</li>
+                  <li>Patterns oriented toward long-term maintainability.</li>
+                </ul>
+              </div>
+            </div>
+          </PageSection>
 
           {/* 
-             ✅ PRICING SECTION
-             Standard PageSection padding (py-32) handles the top spacing here.
+            SECTION 2: Who this is for 
           */}
-          <PageSection id='pricing' className='pt-16 pb-16 md:pt-16 md:pb-16'>
-          {/* <PageSection> */}
-            <div className='flex flex-col items-center gap-4 mb-10 text-center'>
-              <h2 className='text-3xl font-bold'>
+          <PageSection className='bg-background py-6 md:py-10'>
+            <div className='mx-auto max-w-3xl text-center'>
+              <h2 className='text-3xl font-bold tracking-tight md:text-4xl'>
+                Who this is for
+              </h2>
+              <p className='mt-4 text-muted-foreground'>
+                Whether you are validating an idea or standardizing client projects, this kit gives you a solid SaaS foundation.
+              </p>
+            </div>
+            
+            <div className='mx-auto mt-10 md:mt-12 grid w-full max-w-6xl gap-8 md:grid-cols-2'>
+              <div className='flex flex-col rounded-2xl border bg-card p-5 text-left shadow-sm'>
+                <h3 className='text-sm font-semibold tracking-tight'>
+                  Solo founders
+                </h3>
+                <ul className='mt-2 text-sm text-muted-foreground space-y-2 list-disc pl-5'>
+                  <li>Avoid rebuilding auth, billing, and dashboards.</li>
+                  <li>Focus on your core idea and customer value.</li>
+                </ul>
+              </div>
+
+              <div className='flex flex-col rounded-2xl border bg-card p-5 text-left shadow-sm'>
+                <h3 className='text-sm font-semibold tracking-tight'>
+                  Agencies shipping SaaS for clients
+                </h3>
+                <ul className='mt-2 text-sm text-muted-foreground space-y-2 list-disc pl-5'>
+                  <li>Start every project from a proven multi-tenant template.</li>
+                  <li>Deliver more value per engagement with less setup time.</li>
+                </ul>
+              </div>
+
+              <div className='flex flex-col rounded-2xl border bg-card p-5 text-left shadow-sm'>
+                <h3 className='text-sm font-semibold tracking-tight'>
+                  Product teams validating new ideas
+                </h3>
+                <ul className='mt-2 text-sm text-muted-foreground space-y-2 list-disc pl-5'>
+                  <li>Prototype with real orgs, roles, and subscriptions.</li>
+                  <li>Test pricing and onboarding flows early.</li>
+                </ul>
+              </div>
+
+              <div className='flex flex-col rounded-2xl border bg-card p-5 text-left shadow-sm'>
+                <h3 className='text-sm font-semibold tracking-tight'>
+                  Developers wanting a production-ready template
+                </h3>
+                <ul className='mt-2 text-sm text-muted-foreground space-y-2 list-disc pl-5'>
+                  <li>Study a full-stack reference implementation.</li>
+                  <li>Reuse patterns instead of stitching together examples.</li>
+                </ul>
+              </div>
+            </div>
+          </PageSection>
+
+          {/* 
+            SECTION 3: How it works 
+          */}
+          <PageSection
+            id='how-it-works'
+            className='bg-background py-6 md:py-10'
+          >
+            <div className='mx-auto max-w-3xl text-center'>
+              <h2 className='text-3xl font-bold tracking-tight md:text-4xl'>
+                How it works
+              </h2>
+              <p className='mt-4 text-muted-foreground'>
+                Go from clone to charging customers in three straightforward steps.
+              </p>
+            </div>
+            
+            <div className='mx-auto mt-10 md:mt-12 grid w-full max-w-6xl gap-8 md:grid-cols-3'>
+              <div className='flex flex-col rounded-2xl border bg-card p-5 text-left shadow-sm'>
+                <div className='flex items-center gap-3'>
+                  <div className='flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-semibold uppercase tracking-wide text-primary'>
+                    1
+                  </div>
+                  <h3 className='text-sm font-semibold tracking-tight'>
+                    Clone and configure environment
+                  </h3>
+                </div>
+                <ul className='mt-3 text-sm text-muted-foreground space-y-2 list-disc pl-5'>
+                  <li>Clone the repo and install dependencies.</li>
+                  <li>Configure environment vars and secrets.</li>
+                  <li>Connect your database and Supabase project.</li>
+                </ul>
+              </div>
+
+              <div className='flex flex-col rounded-2xl border bg-card p-5 text-left shadow-sm'>
+                <div className='flex items-center gap-3'>
+                  <div className='flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-semibold uppercase tracking-wide text-primary'>
+                    2
+                  </div>
+                  <h3 className='text-sm font-semibold tracking-tight'>
+                    Customize domain logic and UI
+                  </h3>
+                </div>
+                <ul className='mt-3 text-sm text-muted-foreground space-y-2 list-disc pl-5'>
+                  <li>Plug in your product-specific features and flows.</li>
+                  <li>Adjust data models to match your domain.</li>
+                  <li>Refine marketing copy and visual branding.</li>
+                </ul>
+              </div>
+
+              <div className='flex flex-col rounded-2xl border bg-card p-5 text-left shadow-sm'>
+                <div className='flex items-center gap-3'>
+                  <div className='flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-semibold uppercase tracking-wide text-primary'>
+                    3
+                  </div>
+                  <h3 className='text-sm font-semibold tracking-tight'>
+                    Deploy and start charging
+                  </h3>
+                </div>
+                <ul className='mt-3 text-sm text-muted-foreground space-y-2 list-disc pl-5'>
+                  <li>Deploy to your preferred hosting platform.</li>
+                  <li>Wire up Stripe for payments and subscriptions.</li>
+                  <li>Invite your first customers and iterate.</li>
+                </ul>
+              </div>
+            </div>
+
+            <div className='mt-12 md:mt-16 flex justify-center'>
+              <Button asChild size='lg'>
+                <Link href='/get-started'>
+                  <span>Get Started</span>
+                </Link>
+              </Button>
+            </div>
+          </PageSection>
+
+          {/* 
+            SECTION 4: Testimonials 
+          */}
+          <PageSection className='bg-background py-6 md:py-10'>
+            <div className='mx-auto max-w-3xl text-center'>
+              <h2 className='text-3xl font-bold tracking-tight md:text-4xl'>
+                What builders are saying
+              </h2>
+              <p className='mt-4 text-muted-foreground'>
+                People use this kit to skip boilerplate and focus on the parts of their SaaS that actually differentiate.
+              </p>
+            </div>
+            
+            <div className='mx-auto mt-10 md:mt-12 grid w-full max-w-5xl gap-8 md:grid-cols-3'>
+              <div className='flex h-full flex-col justify-between rounded-2xl border bg-card p-6 text-left shadow-sm'>
+                <p className='text-sm text-muted-foreground'>
+                  “Instead of wiring auth, billing, and orgs again, we shipped a real, multi-tenant MVP in a weekend.”
+                </p>
+                <div className='mt-4'>
+                  <div className='text-sm font-semibold'>
+                    Alex R.
+                  </div>
+                  <div className='text-xs text-muted-foreground'>
+                    Solo SaaS founder
+                  </div>
+                </div>
+              </div>
+              <div className='flex h-full flex-col justify-between rounded-2xl border bg-card p-6 text-left shadow-sm'>
+                <p className='text-sm text-muted-foreground'>
+                  “For client work, starting from a solid SaaS base means we spend our hours on domain-specific features, not glue.”
+                </p>
+                <div className='mt-4'>
+                  <div className='text-sm font-semibold'>
+                    Priya S.
+                  </div>
+                  <div className='text-xs text-muted-foreground'>
+                    Agency owner
+                  </div>
+                </div>
+              </div>
+              <div className='flex h-full flex-col justify-between rounded-2xl border bg-card p-6 text-left shadow-sm'>
+                <p className='text-sm text-muted-foreground'>
+                  “Having auth, orgs, and subscriptions already modeled let our team validate pricing and onboarding flows much faster.”
+                </p>
+                <div className='mt-4'>
+                  <div className='text-sm font-semibold'>
+                    Daniel K.
+                  </div>
+                  <div className='text-xs text-muted-foreground'>
+                    Product lead
+                  </div>
+                </div>
+              </div>
+            </div>
+          </PageSection>
+
+          {/* 
+             PRICING SECTION
+          */}
+          <PageSection id='pricing' className='py-6 md:py-10'>
+            <div className='flex flex-col items-center gap-4 text-center'>
+              <h2 className='text-3xl font-bold md:text-4xl'>
                 {PRICE_HEADING}
               </h2>
-              {/* Optional subtext if you want it */}
-              {/* <p className="text-muted-foreground">Simple plans for everyone.</p> */}
             </div>
-            <div className='pt-10'>
+            <div className='mt-10 md:mt-12'>
               <PricingComponent
                 currentPlanId={currentPlanId}
                 isAuthenticated={!!user}
@@ -228,30 +490,6 @@ export default async function HeroSection() {
               />
             </div>
           </PageSection>
-            {/* ------------- Customer's Logo Section ------------- */}
-          {/* <PageSection className='bg-background pb-16 md:pb-32'>
-            <div className='group relative m-auto max-w-5xl px-6'>
-              <div className='absolute inset-0 z-10 flex scale-95 items-center justify-center opacity-0 duration-500 group-hover:scale-100 group-hover:opacity-100'>
-                <Link
-                  href='/'
-                  className='block text-sm duration-150 hover:opacity-75'
-                >
-                  <span> Meet Our Customers</span>
-                  <ChevronRight className='ml-1 inline-block size-3' />
-                </Link>
-              </div>
-              <div className='group-hover:blur-xs mx-auto mt-12 grid max-w-2xl grid-cols-4 gap-x-12 gap-y-8 transition-all duration-500 group-hover:opacity-50 sm:gap-x-16 sm:gap-y-14'>
-                <div className='flex'>
-                  <Image
-                    className='mx-auto h-5 object-contain'
-                    src={NextLogo}
-                    alt='Next Logo'
-                  />
-                </div>
-                // ... other logos
-              </div>
-            </div>
-          </PageSection> */}
         </div>
       </main>
     </>

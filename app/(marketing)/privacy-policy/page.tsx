@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge';
 
 export default function PrivacyPolicyPage() {
   return (
-    <PageSection className='pb-16 md:pb-16'>
+    <PageSection>
       <div className='flex flex-col items-center space-y-8 px-4'>
         <Badge
                   variant="outline"
